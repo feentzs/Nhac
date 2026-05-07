@@ -16,6 +16,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   late PageController _pageController;
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolledDown = false;
 
   @override
   void initState() {
@@ -31,79 +33,162 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _pageController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0.0,
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  IconData _getIconForIndex(int index) {
+    switch (index) {
+      case 0:
+        return Icons.house_outlined;
+      case 1:
+        return Icons.shopping_cart_outlined;
+      case 2:
+        return Icons.shopping_bag_outlined;
+      case 3:
+        return Icons.person_outline;
+      default:
+        return Icons.house_outlined;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return Scaffold(
       extendBody: true,
       backgroundColor: const Color(0xFFFFE7E5),
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification && notification.metrics.axis == Axis.vertical) {
+            if (notification.metrics.pixels > 150 && !_isScrolledDown) {
               setState(() {
-                _selectedIndex = index;
+                _isScrolledDown = true;
               });
-            },
+            } else if (notification.metrics.pixels <= 150 && _isScrolledDown) {
+              setState(() {
+                _isScrolledDown = false;
+              });
+            }
+          }
+          return false;
+        },
+        child: PrimaryScrollController(
+          controller: _scrollController,
+          child: Stack(
             children: [
-              const HomeContent(),
-              _buildPlaceholderContent(1),
-              _buildPlaceholderContent(2),
-              const ProfileContent(),
+              PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+                children: [
+                  const HomeContent(),
+                  _buildPlaceholderContent(1),
+                  _buildPlaceholderContent(2),
+                  const ProfileContent(),
+                ],
+              ),
+
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 40, 
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.7),
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.6),
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 50 + bottomPadding,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.0),
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.6),
+                          const Color(0xFFFFE7E5),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                bottom: _isScrolledDown 
+                    ? (bottomPadding + 10.0 + 75.0 + 16.0)
+                    : (bottomPadding + 10.0 + 12.5),
+                right: 24.0 + (75.0 / 2) - 25.0,
+                child: GestureDetector(
+                  onTap: _isScrolledDown ? _scrollToTop : null,
+                  child: Container(
+                    width: 50.0,
+                    height: 50.0,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6961),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6961).withValues(alpha: 0.3),
+                          blurRadius: 10.0,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                bottom: bottomPadding + 10.0,
+                left: _isScrolledDown ? MediaQuery.of(context).size.width - 24.0 - 75.0 : 24.0,
+                right: 24.0,
+                child: _buildDynamicNavBar(),
+              ),
             ],
           ),
-
-
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 40, 
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFFFFE7E5).withValues(alpha: 0.7),
-                      const Color(0xFFFFE7E5).withValues(alpha: 0.6),
-                      const Color(0xFFFFE7E5).withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 50,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFFFFE7E5).withValues(alpha: 0.0),
-                      const Color(0xFFFFE7E5).withValues(alpha: 0.6),
-                      const Color(0xFFFFE7E5),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
-
-      bottomNavigationBar: _buildFloatingNavBar(),
     );
   }
 
@@ -130,45 +215,90 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildFloatingNavBar() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 10.0),
-        child: Container(
-          height: 75.0,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(50.0),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFF5D201C).withValues(alpha: 0.1),
-                blurRadius: 15.0,
-                offset: const Offset(0, 9),
+  Widget _buildDynamicNavBar() {
+    return GestureDetector(
+      onTap: () {
+        if (_isScrolledDown) {
+          _scrollToTop();
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        height: 75.0,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(50.0),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF5D201C).withValues(alpha: 0.1),
+              blurRadius: 15.0,
+              offset: const Offset(0, 9),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(50.0),
+          child: AnimatedCrossFade(
+            duration: const Duration(milliseconds: 300),
+            crossFadeState: _isScrolledDown ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            alignment: Alignment.center,
+            layoutBuilder: (topChild, topChildKey, bottomChild, bottomChildKey) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    key: bottomChildKey,
+                    top: 0,
+                    bottom: 0,
+                    child: bottomChild,
+                  ),
+                  Positioned(
+                    key: topChildKey,
+                    child: topChild,
+                  ),
+                ],
+              );
+            },
+            firstChild: SizedBox(
+              width: MediaQuery.of(context).size.width - 48.0,
+              height: 75.0,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const NeverScrollableScrollPhysics(),
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width - 48.0,
+                  height: 75.0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildNavItem(icon: Icons.house_outlined, label: 'Home', index: 0),
+                      _buildNavItem(icon: Icons.shopping_cart_outlined, label: 'Carrinho', index: 1),
+                      _buildNavItem(icon: Icons.shopping_bag_outlined, label: 'N sei', index: 2),
+                      _buildNavItem(icon: Icons.person_outline, label: 'Perfil', index: 3),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(
-                  icon: Icons.house_outlined, label: 'Home', index: 0),
-              _buildNavItem(
-                  icon: Icons.shopping_cart_outlined,
-                  label: 'Carrinho',
-                  index: 1),
-              _buildNavItem(
-                  icon: Icons.shopping_bag_outlined, label: 'N sei', index: 2),
-              _buildNavItem(
-                  icon: Icons.person_outline, label: 'Perfil', index: 3),
-            ],
+            ),
+            secondChild: SizedBox(
+              width: 75.0,
+              height: 75.0,
+              child: Center(
+                child: Icon(
+                  _getIconForIndex(_selectedIndex),
+                  size: 28.0,
+                  color: const Color(0xFFFF6961),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(
-      {required IconData icon, required String label, required int index}) {
+  Widget _buildNavItem({required IconData icon, required String label, required int index}) {
     final isSelected = _selectedIndex == index;
 
     return GestureDetector(

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/components/home_banner_carousel.dart';
 import 'package:nhac/components/home_product_section.dart';
+import 'package:nhac/pages/search_page.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
 import 'package:nhac/services/local_cache_service.dart';
@@ -340,37 +341,54 @@ class _HomeContentState extends State<HomeContent> {
                       ],
                     ),
                     const SizedBox(height: 24.0),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 4.0,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(50.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF5D201C).withValues(alpha: 0.05),
-                            blurRadius: 10.0,
-                            offset: const Offset(0.0, 4.0),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.search, color: Colors.grey),
-                          const SizedBox(width: 8.0),
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Procurar',
-                                hintStyle: TextStyle(color: Colors.grey.shade400),
-                                border: InputBorder.none,
+                    Hero(
+                      tag: 'search_bar',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder: (context, animation, secondaryAnimation) => const SearchPage(),
+                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                  return FadeTransition(opacity: animation, child: child);
+                                },
+                                transitionDuration: const Duration(milliseconds: 300),
                               ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(50.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                                  blurRadius: 10.0,
+                                  offset: const Offset(0.0, 4.0),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search, color: Colors.grey),
+                                const SizedBox(width: 8.0),
+                                Expanded(
+                                  child: Text(
+                                    'Procurar',
+                                    style: TextStyle(color: Colors.grey.shade400, fontSize: 16.0),
+                                  ),
+                                ),
+                                const Icon(Icons.tune, color: Colors.grey),
+                              ],
                             ),
                           ),
-                          const Icon(Icons.tune, color: Colors.grey),
-                        ],
+                        ),
                       ),
                     ),
                   ],
