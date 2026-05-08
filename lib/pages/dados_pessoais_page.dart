@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/user_provider.dart';
@@ -41,13 +41,13 @@ class DadosPessoaisPage extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new,
-              color: Colors.black87, size: 20),
+              color: Color(0xFF5D201C), size: 20),
           onPressed: () => context.pop(),
         ),
         title: const Text(
           'Dados Pessoais',
           style: TextStyle(
-            color: Colors.black87,
+            color: Color(0xFF5D201C),
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),

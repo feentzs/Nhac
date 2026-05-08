@@ -108,7 +108,7 @@ class _ContinuarSenhaState extends State<ContinuarSenha> {
                       const Text(
                         'Bem-vindo Novamente!\nInsira sua senha',
                         style: TextStyle(
-                          fontSize: 24.0,
+                          fontSize: 28.0,
                           color: Color(0xFF5D201C),
                           fontFamily: 'Roboto',
                           fontWeight: FontWeight.w600,

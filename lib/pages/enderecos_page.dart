@@ -38,17 +38,16 @@ class _EnderecosPageState extends State<EnderecosPage> {
         child: Column(
           children: [
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+             padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SetaVoltar(),
-                  const SizedBox(height: 24.0),
+                  const SizedBox(height: 32.0),
                   const Text(
                     'Endereços Salvos',
                     style: TextStyle(
-                      fontSize: 26.0,
+                      fontSize: 28.0,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF5D201C),
                       height: 1.2,
@@ -58,7 +57,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
                   Text(
                     'Gerencie seus endereços para uma entrega mais rápida.',
                     style: TextStyle(
-                      fontSize: 15.0,
+                      fontSize: 16.0,
                       color: Colors.grey.shade800,
                       height: 1.5,
                     ),
@@ -276,7 +275,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
         borderRadius: BorderRadius.circular(24.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Color(0xFF5D201C).withValues(alpha: 0.04),
             blurRadius: 15.0,
             offset: const Offset(0, 5),
           ),
@@ -531,11 +530,11 @@ class _EnderecosPageState extends State<EnderecosPage> {
                     await context
                         .read<EnderecoProvider>()
                         .atualizarEndereco(enderecoAtualizado);
-                    if (mounted) {
+                    if (context.mounted) {
                       context.showSuccess('Endereço atualizado com sucesso!');
                     }
                   } catch (e) {
-                    if (mounted) context.showError('Erro ao atualizar endereço.');
+                    if (context.mounted) context.showError('Erro ao atualizar endereço.');
                   }
                 },
               ),
@@ -801,7 +800,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
                     child: const SizedBox(
                       width: 24.0,
                       height: 24.0,
-                      child: Icon(Icons.close, color: Colors.black87, size: 24),
+                      child: Icon(Icons.close, color: Color(0xFF5D201C), size: 24),
                     ),
                   ),
                   const SizedBox(height: 28.0),

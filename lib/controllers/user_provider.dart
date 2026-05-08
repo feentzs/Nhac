@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:nhac/models/usuario/usuario_model.dart';
 import 'package:nhac/repository/user_repository.dart';
+import 'package:nhac/services/local_cache_service.dart';
 
 class UserProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -16,25 +17,37 @@ class UserProvider with ChangeNotifier {
 
   UsuarioModel? get usuario => _usuario;
 
-  void iniciarEscutaUsuario() {
+  /// Inicia escuta do Firestore. Antes de conectar, carrega do cache
+  /// local para exibição instantânea.
+  Future<void> iniciarEscutaUsuario() async {
     final user = _auth.currentUser;
-    
-    if (user != null) {
-      _usuarioSubscription?.cancel(); 
-      
-      _usuarioSubscription = _userRepository.ouvirUsuario(user.uid).listen((usuarioAtualizado) {
-        
-        _usuario = usuarioAtualizado;
-        
-        if (_usuario != null && !_usuario!.ativo) {
-           _auth.signOut();
-           limparUsuario();
-           return;
-        }
+    if (user == null) return;
 
-        notifyListeners(); 
-      });
+    // 1. Carrega do cache local imediatamente (sem esperar rede)
+    final cached = await LocalCacheService.carregarUsuario();
+    if (cached != null && _usuario == null) {
+      _usuario = UsuarioModel.fromMap(cached, user.uid);
+      notifyListeners();
     }
+
+    // 2. Sincroniza com Firestore em background
+    _usuarioSubscription?.cancel();
+    _usuarioSubscription = _userRepository.ouvirUsuario(user.uid).listen((usuarioAtualizado) {
+      _usuario = usuarioAtualizado;
+
+      if (_usuario != null && !_usuario!.ativo) {
+        _auth.signOut();
+        limparUsuario();
+        return;
+      }
+
+      // Salva versão atualizada no cache
+      if (_usuario != null) {
+        LocalCacheService.salvarUsuario(_usuario!.toMap());
+      }
+
+      notifyListeners();
+    });
   }
 
   Future<void> carregarDadosUsuario() async {
@@ -86,7 +99,8 @@ class UserProvider with ChangeNotifier {
 
   void limparUsuario() {
     _usuario = null;
-    _usuarioSubscription?.cancel(); 
+    _usuarioSubscription?.cancel();
+    LocalCacheService.limparUsuario(); // limpa cache no logout
     notifyListeners();
   }
 

@@ -85,7 +85,7 @@ class _VerificacaoState extends State<Verificacao> {
                 const Text(
                   'Verifique seu email',
                   style: TextStyle(
-                    fontSize: 24.0,
+                    fontSize: 28.0,
                     color: Color(0xFF5D201C),
                     fontFamily: 'Roboto',
                     fontWeight: FontWeight.w600,

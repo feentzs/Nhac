@@ -18,7 +18,7 @@ class MockUserProvider extends ChangeNotifier implements UserProvider {
       );
 
   @override
-  void iniciarEscutaUsuario() {}
+  Future<void> iniciarEscutaUsuario() async {}
   @override
   void limparUsuario() {}
   @override

@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:go_router/go_router.dart';
@@ -158,7 +158,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                   else ...[
                     Text(
                       'Enviamos um código para $telefoneCompleto para confirmar sua identidade.',
-                      style: const TextStyle(color: Colors.black87),
+                      style: const TextStyle(color: Color(0xFF5D201C)),
                     ),
                     const SizedBox(height: 20),
                     PinCodeTextField(
@@ -279,7 +279,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                 children: [
                   const Text(
                     'Para sua segurança, digite sua senha atual antes de alterar o e-mail.',
-                    style: TextStyle(color: Colors.black87),
+                    style: TextStyle(color: Color(0xFF5D201C)),
                   ),
                   const SizedBox(height: 20),
                   NhacInputField(
@@ -391,7 +391,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
         backgroundColor: const Color(0xFFFFE7E5),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF5D201C), size: 20),
           onPressed: () => context.pop(),
         ),
       ),
@@ -411,9 +411,9 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                       const Text(
                         'Digite seu novo endereço de email',
                         style: TextStyle(
-                          fontSize: 26.0,
+                          fontSize: 28.0,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Color(0xFF5D201C),
                           height: 1.2,
                         ),
                       ),
@@ -421,7 +421,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                       Text(
                         'Enviaremos um link de confirmação para o seu novo endereço de email',
                         style: TextStyle(
-                          fontSize: 15.0,
+                          fontSize: 16.0,
                           color: Colors.grey.shade600,
                           height: 1.5,
                         ),

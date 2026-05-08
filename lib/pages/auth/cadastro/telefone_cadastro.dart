@@ -57,7 +57,7 @@ class _TelefoneCadastroState extends State<TelefoneCadastro> {
                       const Text(
                         'Qual é o seu número?',
                         style: TextStyle(
-                          fontSize: 26.0,
+                          fontSize: 28.0,
                           color: Color(0xFF5D201C),
                           fontWeight: FontWeight.bold,
                           height: 1.2,
@@ -66,7 +66,7 @@ class _TelefoneCadastroState extends State<TelefoneCadastro> {
                       const SizedBox(height: 12.0),
                       Text(
                         'Precisamos dele para que o entregador possa entrar em contato com você.',
-                        style: TextStyle(fontSize: 15.0, color: Colors.grey.shade800),
+                        style: TextStyle(fontSize: 16.0, color: Colors.grey.shade800),
                       ),
                       const SizedBox(height: 32.0),
                       NhacInputField(

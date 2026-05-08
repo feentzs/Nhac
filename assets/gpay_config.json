@@ -1,0 +1,33 @@
+{
+  "provider": "google_pay",
+  "data": {
+    "environment": "TEST",
+    "apiVersion": 2,
+    "apiVersionMinor": 0,
+    "allowedPaymentMethods": [
+      {
+        "type": "CARD",
+        "parameters": {
+          "allowedAuthMethods": ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+          "allowedCardNetworks": ["VISA", "MASTERCARD"]
+        },
+        "tokenizationSpecification": {
+          "type": "PAYMENT_GATEWAY",
+          "parameters": {
+            "gateway": "example",
+            "gatewayMerchantId": "BCR2DN5TY2LMX22X"
+          }
+        }
+      }
+    ],
+    "merchantInfo": {
+      "merchantName": "Nhac"
+    },
+    "transactionInfo": {
+      "totalPriceStatus": "FINAL",
+      "totalPrice": "100.00",
+      "currencyCode": "BRL",
+      "countryCode": "BR"
+    }
+  }
+}

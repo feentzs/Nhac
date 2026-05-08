@@ -33,9 +33,9 @@ class NoInternetPage extends StatelessWidget {
                 'Ops! Sem conexão',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF333333),
+                  color: Color(0xFF5D201C),
                 ),
               ),
               const SizedBox(height: 12),

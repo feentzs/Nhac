@@ -79,7 +79,7 @@ class _NomeState extends State<Nome> {
                       const Text(
                         'Qual o seu nome?',
                         style: TextStyle(
-                          fontSize: 24.0,
+                          fontSize: 28.0,
                           color: Color(0xFF5D201C),
                           fontFamily: 'Roboto',
                           fontWeight: FontWeight.w600,

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
@@ -57,7 +58,7 @@ class _ProfileContentState extends State<ProfileContent> {
                       child: const SizedBox(
                         width: 24.0,
                         height: 24.0,
-                        child: Icon(Icons.close, color: Colors.black87, size: 24),
+                        child: Icon(Icons.close, color: Color(0xFF5D201C), size: 24),
                       ),
                     ),
                     const SizedBox(height: 28.0),
@@ -278,7 +279,7 @@ class _ProfileContentState extends State<ProfileContent> {
                         color: Colors.white.withValues(alpha: 0.6),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.notifications_none, color: Colors.black87),
+                      child: const Icon(Icons.notifications_none, color: Color(0xFF5D201C)),
                     ),
                   ),
                   const Text(
@@ -286,7 +287,7 @@ class _ProfileContentState extends State<ProfileContent> {
                     style: TextStyle(
                       fontSize: 18.0,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Color(0xFF5D201C),
                     ),
                   ),
                   GestureDetector(
@@ -298,7 +299,7 @@ class _ProfileContentState extends State<ProfileContent> {
                         color: Colors.white.withValues(alpha: 0.6),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.more_horiz, color: Colors.black87),
+                      child: const Icon(Icons.more_horiz, color: Color(0xFF5D201C)),
                     ),
                   ),
                 ],
@@ -320,13 +321,13 @@ class _ProfileContentState extends State<ProfileContent> {
                         color: Colors.white,
                         image: (usuario.fotoUrl.isNotEmpty)
                             ? DecorationImage(
-                                image: NetworkImage(usuario.fotoUrl),
+                                image: CachedNetworkImageProvider(usuario.fotoUrl),
                                 fit: BoxFit.cover,
                               )
                             : null,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: Color(0xFF5D201C).withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -396,7 +397,7 @@ class _ProfileContentState extends State<ProfileContent> {
                             child: Container(
                               padding: const EdgeInsets.all(4.0),
                               decoration: const BoxDecoration(
-                                color: Colors.black87,
+                                color: Color(0xFF5D201C),
                                 shape: BoxShape.circle,
                               ),
                                child: _isUploading
@@ -461,7 +462,10 @@ class _ProfileContentState extends State<ProfileContent> {
                   Container(height: 30, width: 1, color: Colors.grey.shade300),
                   _buildStatItem('1', 'Avaliações'),
                   Container(height: 30, width: 1, color: Colors.grey.shade300),
-                  _buildStatItem('67', 'Cupons'),
+                  GestureDetector(
+                    onTap: () => context.push('/cupons'),
+                    child: _buildStatItem('67', 'Cupons'),
+                  ),
                 ],
               ),
               const SizedBox(height: 40.0),
@@ -471,7 +475,7 @@ class _ProfileContentState extends State<ProfileContent> {
                 style: TextStyle(
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Color(0xFF5D201C),
                 ),
               ),
               const SizedBox(height: 16.0),
@@ -482,7 +486,7 @@ class _ProfileContentState extends State<ProfileContent> {
                   borderRadius: BorderRadius.circular(24.0),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
+                      color: Color(0xFF5D201C).withValues(alpha: 0.03),
                       blurRadius: 15.0,
                       offset: const Offset(0, 5),
                     ),
@@ -516,6 +520,7 @@ class _ProfileContentState extends State<ProfileContent> {
                       iconColor: const Color(0xFFFF6961),
                       title: 'Formas de Pagamento',
                       subtitle: 'PIX, Cartões de Crédito...',
+                      onTap: () => context.push('/formas-pagamento'),
                     ),
                   ],
                 ),
@@ -527,7 +532,7 @@ class _ProfileContentState extends State<ProfileContent> {
                 style: TextStyle(
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Color(0xFF5D201C),
                 ),
               ),
               const SizedBox(height: 16.0),
@@ -540,7 +545,7 @@ class _ProfileContentState extends State<ProfileContent> {
                   border: Border.all(color: Colors.white, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
+                      color: Color(0xFF5D201C).withValues(alpha: 0.03),
                       blurRadius: 15.0,
                       offset: const Offset(0, 5),
                     ),
@@ -584,7 +589,7 @@ class _ProfileContentState extends State<ProfileContent> {
           value,
           style: const TextStyle(
             fontSize: 24.0,
-            color: Colors.black,
+            color: Color(0xFF5D201C),
             fontWeight: FontWeight.w300,
           ),
         ),
@@ -593,7 +598,7 @@ class _ProfileContentState extends State<ProfileContent> {
           label,
           style: const TextStyle(
             fontSize: 12.0,
-            color: Colors.black54,
+            color: Color(0xFF5D201C),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -632,7 +637,7 @@ class _ProfileContentState extends State<ProfileContent> {
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15.0,
-                      color: Colors.black87,
+                      color: Color(0xFF5D201C),
                     ),
                   ),
                   Text(
@@ -674,7 +679,7 @@ class _ProfileContentState extends State<ProfileContent> {
           ),
           child: Icon(
             icon,
-            color: isSelected ? const Color(0xFFFF6961) : Colors.black54,
+            color: isSelected ? const Color(0xFFFF6961) : Color(0xFF5D201C),
             size: 28,
           ),
         ),
@@ -684,7 +689,7 @@ class _ProfileContentState extends State<ProfileContent> {
           style: TextStyle(
             fontSize: 11.0,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: Colors.black87,
+            color: Color(0xFF5D201C),
           ),
         ),
       ],
@@ -699,7 +704,7 @@ class _ProfileContentState extends State<ProfileContent> {
         child: GestureDetector(
           onTap: () => Navigator.of(context).pop(),
           child: Container(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Color(0xFF5D201C).withValues(alpha: 0.4),
             child: Center(
               child: Container(
                 width: 260,
@@ -710,13 +715,13 @@ class _ProfileContentState extends State<ProfileContent> {
                   border: Border.all(color: Colors.white, width: 4),
                   image: (fotoUrl != null && fotoUrl.isNotEmpty)
                       ? DecorationImage(
-                          image: NetworkImage(fotoUrl),
+                          image: CachedNetworkImageProvider(fotoUrl),
                           fit: BoxFit.cover,
                         )
                       : null,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: Color(0xFF5D201C).withValues(alpha: 0.3),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),

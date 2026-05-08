@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class NhacMenuTile extends StatelessWidget {
   final String titulo;
@@ -28,7 +28,7 @@ class NhacMenuTile extends StatelessWidget {
                   titulo,
                   style: const TextStyle(
                     fontSize: 16.0,
-                    color: Colors.black87,
+                    color: Color(0xFF5D201C),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -48,7 +48,7 @@ class NhacMenuTile extends StatelessWidget {
             const Icon(
               Icons.arrow_forward_ios_rounded,
               size: 16,
-              color: Colors.black45,
+              color: Color(0xFF5D201C),
             ),
           ],
         ),

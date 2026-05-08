@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
 import 'package:nhac/repository/endereco_repository.dart';
+import 'package:nhac/services/local_cache_service.dart';
 
 class EnderecoProvider with ChangeNotifier {
   final EnderecoRepository _enderecoRepository = EnderecoRepository();
@@ -15,17 +16,31 @@ class EnderecoProvider with ChangeNotifier {
   List<EnderecoModel> get enderecos => _enderecos;
   bool get isLoading => _isLoading;
 
-  void iniciarEscutaEnderecos() {
+  Future<void> iniciarEscutaEnderecos() async {
     final user = _auth.currentUser;
-    if (user != null) {
-      _isLoading = true;
-      _subscription?.cancel();
-      _subscription = _enderecoRepository.ouvirEnderecos(user.uid).listen((lista) {
-        _enderecos = lista;
-        _isLoading = false;
-        notifyListeners();
-      });
+    if (user == null) return;
+
+    // 1. Carrega do cache local imediatamente
+    final cached = await LocalCacheService.carregarEnderecos();
+    if (cached != null && _enderecos.isEmpty) {
+      _enderecos = cached.map((m) => EnderecoModel.fromMap(m, m['id_documento'] ?? '')).toList();
+      notifyListeners();
     }
+
+    // 2. Sincroniza com Firestore em background
+    _isLoading = _enderecos.isEmpty; // só mostra loading se não tem cache
+    _subscription?.cancel();
+    _subscription = _enderecoRepository.ouvirEnderecos(user.uid).listen((lista) {
+      _enderecos = lista;
+      _isLoading = false;
+
+      // Atualiza cache com dados novos
+      LocalCacheService.salvarEnderecos(
+        lista.map((e) => {...e.toMap(), 'id_documento': e.idDocumento}).toList(),
+      );
+
+      notifyListeners();
+    });
   }
 
   Future<void> definirComoPadrao(String enderecoId) async {

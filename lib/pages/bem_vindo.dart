@@ -95,7 +95,7 @@ class _BemVindoState extends State<BemVindo> {
                   child: Text(
                     'O Nhac que sua fome pedia',
                     style: TextStyle(
-                      fontSize: 24.0,
+                      fontSize: 28.0,
                       color: Color(0xFF5D201C),
                       fontFamily: 'Roboto',
                       fontWeight: FontWeight.w600,
@@ -107,6 +107,7 @@ class _BemVindoState extends State<BemVindo> {
                 const Text(
                   'Encontre os melhores restaurantes locais e peça sua comida favorita com rapidez e facilidade.',
                   style: TextStyle(
+                    fontSize: 16.0,
                     color: Color(0x995D201C),
                     fontWeight: FontWeight.w600,
                   ),

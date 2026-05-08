@@ -1,3 +1,5 @@
+import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
@@ -35,7 +37,7 @@ class ProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Color(0xFF5D201C).withValues(alpha: 0.05),
             blurRadius: 10.0,
             offset: const Offset(0.0, 4.0),
           ),
@@ -49,10 +51,27 @@ class ProductCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16.0),
               ),
-              child: Image.network(
-                imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
                 fit: BoxFit.cover,
                 width: double.infinity,
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(
+                    color: Colors.white,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: const Color(0xFFFFF0EE),
+                  child: const Icon(
+                    Icons.image_not_supported_outlined,
+                    color: Color(0xFF5D201C),
+                    size: 32,
+                  ),
+                ),
               ),
             ),
           ),
@@ -66,7 +85,7 @@ class ProductCard extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14.0,
-                    color: Colors.black,
+                    color: Color(0xFF5D201C),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -81,11 +100,11 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '\$${price.toStringAsFixed(2)}',
+                      'R\$ ${price.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16.0,
-                        color: Colors.black,
+                        color: Color(0xFF5D201C),
                       ),
                     ),
                InkWell(
@@ -99,7 +118,7 @@ class ProductCard extends StatelessWidget {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$name adicionado ao carrinho! 🍔'),
+        content: Text('$name adicionado ao carrinho!'),
         duration: const Duration(seconds: 1),
         backgroundColor: Colors.green,
       ),
@@ -109,7 +128,7 @@ class ProductCard extends StatelessWidget {
   child: Container(
     padding: const EdgeInsets.all(4.0),
     decoration: const BoxDecoration(
-      color: Colors.black,
+      color: Color(0xFF5D201C),
       shape: BoxShape.circle,
     ),
     child: const Icon(

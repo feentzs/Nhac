@@ -1,13 +1,57 @@
-name: Build Release APK
+name: Build APK
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch: # Allows manual trigger from the Actions tab
+      - eu-e-tu
+  workflow_dispatch:
 
 jobs:
-  build:
+
+  # ── Build DEBUG (branch: eu-e-tu) ────────────────────────────────────────
+  build-debug:
+    name: Build Debug APK
+    if: github.ref == 'refs/heads/eu-e-tu'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Debug APK
+        run: flutter build apk --debug
+
+      - name: Upload Debug APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+
+  # ── Build RELEASE (branch: main) ─────────────────────────────────────────
+  build-release:
+    name: Build Release APK
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,7 +83,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build APK
+      - name: Build Release APK
         run: flutter build apk --release
         env:
           CM_BUILD_DIR: ${{ github.workspace }}
@@ -50,8 +94,8 @@ jobs:
       - name: Create Pre-Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.0.${{ github.run_number }}"
-          name: "Pre-Release v1.0.${{ github.run_number }}"
+          tag_name: "v0.${{ github.run_number }}.0"
+          name: "Pre-Release v0.${{ github.run_number }}.0"
           prerelease: true
           generate_release_notes: true
           files: build/app/outputs/flutter-apk/app-release.apk

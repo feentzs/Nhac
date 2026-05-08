@@ -18,6 +18,8 @@ import 'package:nhac/services/auth_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:nhac/pages/auth/cadastro/telefone_cadastro.dart';
 import 'package:nhac/pages/enderecos_page.dart';
+import 'package:nhac/pages/formas_pagamento_page.dart';
+import 'package:nhac/pages/cupons_page.dart';
 
 class _SlideRightToLeftPageRoute<T> extends PageRoute<T>
     with MaterialRouteTransitionMixin<T> {
@@ -63,7 +65,7 @@ class _SlideRightToLeftPageRoute<T> extends PageRoute<T>
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Color(0xFF5D201C).withValues(alpha: 0.1),
               blurRadius: 10,
               spreadRadius: 2,
             ),
@@ -254,6 +256,20 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _buildSlideRightToLeftPage(
         key: state.pageKey,
         child: const EnderecosPage(),
+      ),
+    ),
+    GoRoute(
+      path: '/formas-pagamento',
+      pageBuilder: (context, state) => _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: const FormasPagamentoPage(),
+      ),
+    ),
+    GoRoute(
+      path: '/cupons',
+      pageBuilder: (context, state) => _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: const CuponsPage(),
       ),
     ),
   ],

@@ -96,7 +96,7 @@ class _VerificacaoNumeroState extends State<VerificacaoNumero> {
                 const Text(
                   'Verifique seu número',
                   style: TextStyle(
-                    fontSize: 24.0,
+                    fontSize: 28.0,
                     color: Color(0xFF5D201C),
                     fontFamily: 'Roboto',
                     fontWeight: FontWeight.w600,
