@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nhac/models/loja/lojas.dart';
+import 'package:nhac/models/produto/produtos.dart';
+import 'package:nhac/pages/loja_page.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
@@ -29,6 +33,218 @@ class _HomeContentState extends State<HomeContent> {
   String _currentAddress = 'Buscando localização...';
   static bool _jaCarregouUmaVez = false;
   late bool _isLoading;
+
+  Widget _buildListaDeLojas() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('lojas').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Column(
+            children: List.generate(
+              3, 
+              (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: _buildBoxSkeleton(width: double.infinity, height: 90, borderRadius: 12),
+              )
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                'Nenhum restaurante encontrado na região.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          );
+        }
+
+        final lojas = snapshot.data!.docs.map((doc) {
+          return LojasModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
+
+        // Desenha a lista
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(), 
+          padding: EdgeInsets.zero,
+          itemCount: lojas.length,
+          itemBuilder: (context, index) {
+            final loja = lojas[index];
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                    blurRadius: 10.0,
+                    offset: const Offset(0.0, 4.0),
+                  ),
+                ],
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+onTap: () {
+  if (loja.aberta) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LojaPage(loja: loja), 
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${loja.nome} está fechado no momento.')),
+    );
+  }
+},
+// ...
+                child: Opacity(
+                  opacity: loja.aberta ? 1.0 : 0.5,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: loja.imagemUrl.isNotEmpty
+                              ? Image.network(
+                                  loja.imagemUrl,
+                                  width: 70,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  width: 70,
+                                  height: 70,
+                                  color: Colors.grey.shade100,
+                                  child: const Icon(Icons.store, color: Colors.grey),
+                                ),
+                        ),
+                        const SizedBox(width: 16),
+                        
+                        // Informações do Restaurante
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      loja.nome,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Color(0xFF5D201C),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        loja.mediaAvaliacao.toStringAsFixed(1),
+                                        style: const TextStyle(
+                                          color: Colors.amber,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                loja.categoria,
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                loja.aberta ? 'Aberto agora' : 'Fechado',
+                                style: TextStyle(
+                                  color: loja.aberta ? const Color(0xFFFF6961) : Colors.red.shade300,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+Widget _buildSecaoProdutosFirebase(String titulo) {
+
+  
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance.collection('produtos').limit(5).snapshots(),
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        print("🔴 ERRO DO FIREBASE: ${snapshot.error}");
+      } else if (snapshot.hasData) {
+        print("🟢 LOJAS ENCONTRADAS: ${snapshot.data!.docs.length}");
+      }
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return _buildSectionSkeleton(); 
+      }
+
+      if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return const SizedBox.shrink(); 
+      }
+
+      final produtosFirebase = snapshot.data!.docs.map((doc) {
+        return ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+
+      final produtosParaTela = produtosFirebase.map((prod) {
+        return ProductSectionItem(
+          idProduto: prod.uid,
+          imageUrl: prod.imagemUrl.isNotEmpty 
+              ? prod.imagemUrl 
+              : 'https://via.placeholder.com/150', 
+          name: prod.nome,
+          weight: '', 
+          price: prod.preco,
+          discountPercent: null, 
+        );
+      }).toList();
+
+      return HomeProductSection(
+        title: titulo,
+        onSeeAll: () {
+          // TODO: Ir para uma tela com todos os produtos
+        },
+        products: produtosParaTela,
+      );
+    },
+  );
+}
 
   final List<ProductSectionItem> _produtosNecessidades = [
     const ProductSectionItem(
@@ -446,17 +662,12 @@ class _HomeContentState extends State<HomeContent> {
                     ),
                   );
                 },
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 600),
-                  child: _isLoading
-                      ? _buildSectionSkeleton(key: const ValueKey('section1_skeleton'))
-                      : HomeProductSection(
-                          key: const ValueKey('section1_content'),
-                          title: 'Temos tudo que você precisa',
-                          onSeeAll: () {},
-                          products: _produtosNecessidades,
-                        ),
-                ),
+                child:AnimatedSwitcher(
+  duration: const Duration(milliseconds: 600),
+  child: _isLoading
+      ? _buildSectionSkeleton(key: const ValueKey('section1_skeleton'))
+      : _buildSecaoProdutosFirebase('Temos tudo que você precisa'),
+),
               ),
               
               const SizedBox(height: 28.0),
@@ -486,7 +697,40 @@ class _HomeContentState extends State<HomeContent> {
                         ),
                 ),
               ),
-              const SizedBox(height: 100.0),
+              
+              const SizedBox(height: 28.0),
+
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween(begin: 0.0, end: 1.0),
+                curve: const Interval(0.8, 1.0, curve: Curves.easeOutCubic),
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 30 * (1 - value)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Restaurantes',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20.0,
+                        color: Color(0xFF5D201C),
+                      ),
+                    ),
+                    const SizedBox(height: 16.0),
+                    _buildListaDeLojas(), 
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 100.0), 
             ]),
           ),
         ),
@@ -725,3 +969,5 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
     );
   }
 }
+
+
