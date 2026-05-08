@@ -26,6 +26,7 @@ class MockUserProvider extends ChangeNotifier implements UserProvider {
 
   @override
   Future<void> atualizarFotoPerfil(File imagem) {
+    // TODO: implement atualizarFotoPerfil
     throw UnimplementedError();
   }
 

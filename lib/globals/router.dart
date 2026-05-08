@@ -250,6 +250,7 @@ final GoRouter appRouter = GoRouter(
         child: const EditarFotoPage(),
       ),
     ),
+
     GoRoute(
       path: '/enderecos-salvos',
       pageBuilder: (context, state) => _buildSlideRightToLeftPage(
