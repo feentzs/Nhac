@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/components/botao_largo_nhac.dart';
 import 'package:nhac/controllers/user_provider.dart';
