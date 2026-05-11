@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class LojasModel{
+class LojasModel {
   final String uid;
   final bool aberta;
   final String categoria;
@@ -51,24 +51,25 @@ class LojasModel{
     String? numero,
     String? rua,
     int? totalAvaliacoes,
-  }) => LojasModel(
-    uid: uid ?? this.uid,
-    aberta: aberta ?? this.aberta,
-    categoria: categoria ?? this.categoria,
-    cep: cep ?? this.cep,
-    cidade: cidade ?? this.cidade,
-    descricao: descricao ?? this.descricao,
-    estado: estado ?? this.estado,
-    horarios: horarios ?? this.horarios,
-    imagemUrl: imagemUrl ?? this.imagemUrl,
-    mediaAvaliacao: mediaAvaliacao ?? this.mediaAvaliacao,
-    nome: nome ?? this.nome,
-    numero: numero ?? this.numero,
-    rua: rua ?? this.rua,
-    totalAvaliacoes: totalAvaliacoes ?? this.totalAvaliacoes,
-  );
+  }) =>
+      LojasModel(
+        uid: uid ?? this.uid,
+        aberta: aberta ?? this.aberta,
+        categoria: categoria ?? this.categoria,
+        cep: cep ?? this.cep,
+        cidade: cidade ?? this.cidade,
+        descricao: descricao ?? this.descricao,
+        estado: estado ?? this.estado,
+        horarios: horarios ?? this.horarios,
+        imagemUrl: imagemUrl ?? this.imagemUrl,
+        mediaAvaliacao: mediaAvaliacao ?? this.mediaAvaliacao,
+        nome: nome ?? this.nome,
+        numero: numero ?? this.numero,
+        rua: rua ?? this.rua,
+        totalAvaliacoes: totalAvaliacoes ?? this.totalAvaliacoes,
+      );
 
-  factory LojasModel.fromMap(Map<String, dynamic> map, String uid){
+  factory LojasModel.fromMap(Map<String, dynamic> map, String uid) {
     return LojasModel(
       uid: uid,
       aberta: map['aberta'] ?? false,
@@ -88,7 +89,7 @@ class LojasModel{
     );
   }
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'aberta': aberta,
       'categoria': categoria,

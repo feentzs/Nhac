@@ -4,6 +4,7 @@ import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/loja_page.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/material.dart';
@@ -41,16 +42,18 @@ class _HomeContentState extends State<HomeContent> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Column(
             children: List.generate(
-              3, 
-              (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: _buildBoxSkeleton(width: double.infinity, height: 90, borderRadius: 12),
-              )
-            ),
+                3,
+                (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: _buildBoxSkeleton(
+                          width: double.infinity, height: 90, borderRadius: 12),
+                    )),
           );
         }
 
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (snapshot.hasError ||
+            !snapshot.hasData ||
+            snapshot.data!.docs.isEmpty) {
           return Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24.0),
@@ -74,7 +77,7 @@ class _HomeContentState extends State<HomeContent> {
         // Desenha a lista
         return ListView.builder(
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(), 
+          physics: const NeverScrollableScrollPhysics(),
           padding: EdgeInsets.zero,
           itemCount: lojas.length,
           itemBuilder: (context, index) {
@@ -95,20 +98,22 @@ class _HomeContentState extends State<HomeContent> {
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-onTap: () {
-  if (loja.aberta) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LojaPage(loja: loja), 
-      ),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${loja.nome} está fechado no momento.')),
-    );
-  }
-},
+                onTap: () {
+                  if (loja.aberta) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LojaPage(loja: loja),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content:
+                              Text('${loja.nome} está fechado no momento.')),
+                    );
+                  }
+                },
 // ...
                 child: Opacity(
                   opacity: loja.aberta ? 1.0 : 0.5,
@@ -118,29 +123,38 @@ onTap: () {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: loja.imagemUrl.isNotEmpty
-                              ? Image.network(
-                                  loja.imagemUrl,
-                                  width: 70,
-                                  height: 70,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  width: 70,
-                                  height: 70,
-                                  color: Colors.grey.shade100,
-                                  child: const Icon(Icons.store, color: Colors.grey),
-                                ),
+                          child: CachedNetworkImage(
+                            imageUrl: loja.imagemUrl,
+                            width: 70,
+                            height: 70,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Shimmer.fromColors(
+                              baseColor: Colors.grey.shade300,
+                              highlightColor: Colors.grey.shade100,
+                              child: Container(
+                                width: 70,
+                                height: 70,
+                                color: Colors.white,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              width: 70,
+                              height: 70,
+                              color: Colors.grey.shade100,
+                              child: const Icon(Icons.store, color: Colors.grey),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 16),
-                        
+
                         // Informações do Restaurante
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Text(
@@ -156,7 +170,8 @@ onTap: () {
                                   ),
                                   Row(
                                     children: [
-                                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                                      const Icon(Icons.star,
+                                          color: Colors.amber, size: 16),
                                       const SizedBox(width: 4),
                                       Text(
                                         loja.mediaAvaliacao.toStringAsFixed(1),
@@ -173,13 +188,16 @@ onTap: () {
                               const SizedBox(height: 4),
                               Text(
                                 loja.categoria,
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                style: TextStyle(
+                                    color: Colors.grey.shade600, fontSize: 13),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 loja.aberta ? 'Aberto agora' : 'Fechado',
                                 style: TextStyle(
-                                  color: loja.aberta ? const Color(0xFFFF6961) : Colors.red.shade300,
+                                  color: loja.aberta
+                                      ? const Color(0xFFFF6961)
+                                      : Colors.red.shade300,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
@@ -199,57 +217,62 @@ onTap: () {
     );
   }
 
-Widget _buildSecaoProdutosFirebase(String titulo) {
+  Widget _buildSecaoProdutosFirebase(String titulo) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('produtos')
+          .limit(5)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("🔴 ERRO DO FIREBASE: ${snapshot.error}");
+        } else if (snapshot.hasData) {
+          debugPrint("🟢 LOJAS ENCONTRADAS: ${snapshot.data!.docs.length}");
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildSectionSkeleton();
+        }
 
-  
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('produtos').limit(5).snapshots(),
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        print("🔴 ERRO DO FIREBASE: ${snapshot.error}");
-      } else if (snapshot.hasData) {
-        print("🟢 LOJAS ENCONTRADAS: ${snapshot.data!.docs.length}");
-      }
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return _buildSectionSkeleton(); 
-      }
+        if (snapshot.hasError ||
+            !snapshot.hasData ||
+            snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-      if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
-        return const SizedBox.shrink(); 
-      }
+        final produtosFirebase = snapshot.data!.docs.map((doc) {
+          return ProdutosModel.fromMap(
+              doc.data() as Map<String, dynamic>, doc.id);
+        }).toList();
 
-      final produtosFirebase = snapshot.data!.docs.map((doc) {
-        return ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
+        final produtosParaTela = produtosFirebase.map((prod) {
+          return ProductSectionItem(
+            idProduto: prod.uid,
+            imageUrl: prod.imagemUrl.isNotEmpty
+                ? prod.imagemUrl
+                : 'https://via.placeholder.com/150',
+            name: prod.nome,
+            weight: '',
+            price: prod.preco,
+            discountPercent: null,
+          );
+        }).toList();
 
-      final produtosParaTela = produtosFirebase.map((prod) {
-        return ProductSectionItem(
-          idProduto: prod.uid,
-          imageUrl: prod.imagemUrl.isNotEmpty 
-              ? prod.imagemUrl 
-              : 'https://via.placeholder.com/150', 
-          name: prod.nome,
-          weight: '', 
-          price: prod.preco,
-          discountPercent: null, 
+        return HomeProductSection(
+          title: titulo,
+          onSeeAll: () {
+            // TODO: Ir para uma tela com todos os produtos
+          },
+          products: produtosParaTela,
         );
-      }).toList();
-
-      return HomeProductSection(
-        title: titulo,
-        onSeeAll: () {
-          // TODO: Ir para uma tela com todos os produtos
-        },
-        products: produtosParaTela,
-      );
-    },
-  );
-}
+      },
+    );
+  }
 
   final List<ProductSectionItem> _produtosNecessidades = [
     const ProductSectionItem(
       idProduto: 'prod_001',
-      imageUrl: 'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
+      imageUrl:
+          'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
       name: 'Pãozinho',
       weight: '50 g.',
       price: 16.00,
@@ -257,7 +280,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
     ),
     const ProductSectionItem(
       idProduto: 'prod_002',
-      imageUrl: 'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
+      imageUrl:
+          'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
       name: 'Carne',
       weight: '68 g.',
       price: 16.00,
@@ -265,7 +289,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
     ),
     const ProductSectionItem(
       idProduto: 'prod_003',
-      imageUrl: 'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
+      imageUrl:
+          'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
       name: 'Coxinha',
       weight: '140 g.',
       price: 1.90,
@@ -273,7 +298,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
     ),
     const ProductSectionItem(
       idProduto: 'prod_004',
-      imageUrl: 'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
+      imageUrl:
+          'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
       name: 'Refrigerante Viver',
       weight: '2L',
       price: 03.99,
@@ -284,7 +310,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
   final List<ProductSectionItem> _produtosPromocao = [
     const ProductSectionItem(
       idProduto: 'prod_005',
-      imageUrl: 'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
+      imageUrl:
+          'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
       name: 'Pãozinho',
       weight: '50 g.',
       price: 16.00,
@@ -292,7 +319,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
     ),
     const ProductSectionItem(
       idProduto: 'prod_006',
-      imageUrl: 'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
+      imageUrl:
+          'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
       name: 'Carne',
       weight: '68 g.',
       price: 16.00,
@@ -300,7 +328,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
     ),
     const ProductSectionItem(
       idProduto: 'prod_007',
-      imageUrl: 'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
+      imageUrl:
+          'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
       name: 'Coxinha',
       weight: '140 g.',
       price: 1.90,
@@ -308,7 +337,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
     ),
     const ProductSectionItem(
       idProduto: 'prod_008',
-      imageUrl: 'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
+      imageUrl:
+          'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
       name: 'Refrigerante Viver',
       weight: '2L',
       price: 03.99,
@@ -320,11 +350,11 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
   void initState() {
     super.initState();
     _isLoading = !_jaCarregouUmaVez;
-    
+
     _produtosNecessidades.shuffle();
     _produtosPromocao.shuffle();
     _carregarGpsComCache();
-    
+
     if (_isLoading) {
       Timer(const Duration(seconds: 2), () {
         if (mounted) {
@@ -453,7 +483,6 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               const SizedBox(height: 16.0),
-              
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -482,7 +511,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                                      color: const Color(0xFF5D201C)
+                                          .withValues(alpha: 0.05),
                                       blurRadius: 10.0,
                                       offset: const Offset(0.0, 4.0),
                                     ),
@@ -531,7 +561,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                               borderRadius: BorderRadius.circular(50.0),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                                  color: const Color(0xFF5D201C)
+                                      .withValues(alpha: 0.05),
                                   blurRadius: 10.0,
                                   offset: const Offset(0.0, 4.0),
                                 ),
@@ -566,11 +597,16 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                             Navigator.push(
                               context,
                               PageRouteBuilder(
-                                pageBuilder: (context, animation, secondaryAnimation) => const SearchPage(),
-                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                  return FadeTransition(opacity: animation, child: child);
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const SearchPage(),
+                                transitionsBuilder: (context, animation,
+                                    secondaryAnimation, child) {
+                                  return FadeTransition(
+                                      opacity: animation, child: child);
                                 },
-                                transitionDuration: const Duration(milliseconds: 300),
+                                transitionDuration:
+                                    const Duration(milliseconds: 300),
                               ),
                             );
                           },
@@ -584,7 +620,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                               borderRadius: BorderRadius.circular(50.0),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                                  color: const Color(0xFF5D201C)
+                                      .withValues(alpha: 0.05),
                                   blurRadius: 10.0,
                                   offset: const Offset(0.0, 4.0),
                                 ),
@@ -597,7 +634,9 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                                 Expanded(
                                   child: Text(
                                     'Procurar',
-                                    style: TextStyle(color: Colors.grey.shade400, fontSize: 16.0),
+                                    style: TextStyle(
+                                        color: Colors.grey.shade400,
+                                        fontSize: 16.0),
                                   ),
                                 ),
                                 const Icon(Icons.tune, color: Colors.grey),
@@ -610,9 +649,7 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                   ],
                 ),
               ),
-              
               const SizedBox(height: 24.0),
-
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -643,12 +680,11 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                             ],
                           ),
                         )
-                      : const HomeBannerCarousel(key: ValueKey('carousel_content')),
+                      : const HomeBannerCarousel(
+                          key: ValueKey('carousel_content')),
                 ),
               ),
-              
               const SizedBox(height: 28.0),
-
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -662,16 +698,16 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                     ),
                   );
                 },
-                child:AnimatedSwitcher(
-  duration: const Duration(milliseconds: 600),
-  child: _isLoading
-      ? _buildSectionSkeleton(key: const ValueKey('section1_skeleton'))
-      : _buildSecaoProdutosFirebase('Temos tudo que você precisa'),
-),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  child: _isLoading
+                      ? _buildSectionSkeleton(
+                          key: const ValueKey('section1_skeleton'))
+                      : _buildSecaoProdutosFirebase(
+                          'Temos tudo que você precisa'),
+                ),
               ),
-              
               const SizedBox(height: 28.0),
-
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -688,7 +724,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 600),
                   child: _isLoading
-                      ? _buildSectionSkeleton(key: const ValueKey('section2_skeleton'))
+                      ? _buildSectionSkeleton(
+                          key: const ValueKey('section2_skeleton'))
                       : HomeProductSection(
                           key: const ValueKey('section2_content'),
                           title: 'Tudo abaixo de R\$ 20',
@@ -697,9 +734,7 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                         ),
                 ),
               ),
-              
               const SizedBox(height: 28.0),
-
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
                 tween: Tween(begin: 0.0, end: 1.0),
@@ -725,12 +760,11 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
                       ),
                     ),
                     const SizedBox(height: 16.0),
-                    _buildListaDeLojas(), 
+                    _buildListaDeLojas(),
                   ],
                 ),
               ),
-              
-              const SizedBox(height: 100.0), 
+              const SizedBox(height: 100.0),
             ]),
           ),
         ),
@@ -738,7 +772,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
     );
   }
 
-  Widget _buildBoxSkeleton({double? width, double? height, double borderRadius = 8}) {
+  Widget _buildBoxSkeleton(
+      {double? width, double? height, double borderRadius = 8}) {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
@@ -791,7 +826,8 @@ Widget _buildSecaoProdutosFirebase(String titulo) {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: _buildBoxSkeleton(width: 160, height: double.infinity, borderRadius: 16),
+            child: _buildBoxSkeleton(
+                width: 160, height: double.infinity, borderRadius: 16),
           ),
           Padding(
             padding: const EdgeInsets.all(12.0),
@@ -969,5 +1005,3 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
     );
   }
 }
-
-

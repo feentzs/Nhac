@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/loja/lojas.dart';
 import '../models/produto/produtos.dart';
 import '../components/product_card.dart'; 
@@ -26,15 +27,20 @@ class LojaPage extends StatelessWidget {
               child: SetaVoltar(),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: loja.imagemUrl.isNotEmpty
-                  ? Image.network(
-                      loja.imagemUrl,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      color: Colors.grey.shade300,
-                      child: const Icon(Icons.store, size: 80, color: Colors.grey),
-                    ),
+              background: CachedNetworkImage(
+                imageUrl: loja.imagemUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey.shade100,
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFFF6961)),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey.shade300,
+                  child: const Icon(Icons.store, size: 80, color: Colors.grey),
+                ),
+              ),
             ),
           ),
 
