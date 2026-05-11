@@ -28,7 +28,7 @@ class _ProfileContentState extends State<ProfileContent> {
     final userProvider = context.read<UserProvider>();
     final carrinho = context.read<CartProvider>();
 
-    Navigator.pop(context); 
+    Navigator.pop(context);
 
     userProvider.limparUsuario();
     carrinho.limparCarrinhoLocal();
@@ -49,7 +49,8 @@ class _ProfileContentState extends State<ProfileContent> {
             backgroundColor: Colors.white,
             body: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32.0, vertical: 32.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -58,7 +59,8 @@ class _ProfileContentState extends State<ProfileContent> {
                       child: const SizedBox(
                         width: 24.0,
                         height: 24.0,
-                        child: Icon(Icons.close, color: Color(0xFF5D201C), size: 24),
+                        child: Icon(Icons.close,
+                            color: Color(0xFF5D201C), size: 24),
                       ),
                     ),
                     const SizedBox(height: 28.0),
@@ -76,11 +78,13 @@ class _ProfileContentState extends State<ProfileContent> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey.shade300),
+                            Icon(Icons.notifications_off_outlined,
+                                size: 64, color: Colors.grey.shade300),
                             const SizedBox(height: 16),
                             Text(
                               'Você não tem novas notificações.',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                              style: TextStyle(
+                                  color: Colors.grey.shade600, fontSize: 16),
                             ),
                           ],
                         ),
@@ -96,7 +100,8 @@ class _ProfileContentState extends State<ProfileContent> {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
           const curve = Curves.fastOutSlowIn;
-          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
           return SlideTransition(
             position: animation.drive(tween),
             child: child,
@@ -143,7 +148,11 @@ class _ProfileContentState extends State<ProfileContent> {
                         children: [
                           Icon(Icons.help_outline, color: Colors.grey.shade700),
                           const SizedBox(width: 12),
-                          Text('Ajuda', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
+                          Text('Ajuda',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700)),
                         ],
                       ),
                       Icon(Icons.chevron_right, color: Colors.grey.shade400),
@@ -153,7 +162,7 @@ class _ProfileContentState extends State<ProfileContent> {
               ),
               const SizedBox(height: 16),
               InkWell(
-                onTap: () => _logoutUsuario(context), 
+                onTap: () => _logoutUsuario(context),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Row(
@@ -163,7 +172,11 @@ class _ProfileContentState extends State<ProfileContent> {
                         children: [
                           Icon(Icons.logout, color: Colors.grey.shade700),
                           const SizedBox(width: 12),
-                          Text('Sair da conta', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade700)),
+                          Text('Sair da conta',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700)),
                         ],
                       ),
                       Icon(Icons.chevron_right, color: Colors.grey.shade400),
@@ -210,8 +223,9 @@ class _ProfileContentState extends State<ProfileContent> {
     final usuario = userProvider.usuario;
 
     final enderecoProvider = context.watch<EnderecoProvider>();
-    final enderecoPadrao = enderecoProvider.enderecos.where((e) => e.padrao).firstOrNull;
-    final String textoEndereco = enderecoPadrao != null 
+    final enderecoPadrao =
+        enderecoProvider.enderecos.where((e) => e.padrao).firstOrNull;
+    final String textoEndereco = enderecoPadrao != null
         ? '${enderecoPadrao.rua}, ${enderecoPadrao.numero}${enderecoPadrao.complemento.isNotEmpty ? ' - ${enderecoPadrao.complemento}' : ''}'
         : 'Nenhum endereço cadastrado';
 
@@ -245,16 +259,18 @@ class _ProfileContentState extends State<ProfileContent> {
               onRefresh: () async {
                 await context.read<UserProvider>().carregarDadosUsuario();
               },
-              builder: (context, refreshState, pulledExtent, refreshTriggerPullDistance, refreshIndicatorExtent) {
+              builder: (context, refreshState, pulledExtent,
+                  refreshTriggerPullDistance, refreshIndicatorExtent) {
                 return Center(
                   child: Opacity(
-                    opacity: (pulledExtent / refreshIndicatorExtent).clamp(0.0, 1.0),
+                    opacity:
+                        (pulledExtent / refreshIndicatorExtent).clamp(0.0, 1.0),
                     child: Lottie.asset(
                       'assets/animations/loading_nhac.json',
                       width: 240,
                       height: 240,
                       animate: refreshState == RefreshIndicatorMode.refresh ||
-                               refreshState == RefreshIndicatorMode.armed,
+                          refreshState == RefreshIndicatorMode.armed,
                     ),
                   ),
                 );
@@ -264,320 +280,335 @@ class _ProfileContentState extends State<ProfileContent> {
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-              const SizedBox(height: 16.0),
-              const SizedBox(height: 16.0),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () => _abrirNotificacoes(context), 
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        shape: BoxShape.circle,
+                  const SizedBox(height: 16.0),
+                  const SizedBox(height: 16.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _abrirNotificacoes(context),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.notifications_none,
+                              color: Color(0xFF5D201C)),
+                        ),
                       ),
-                      child: const Icon(Icons.notifications_none, color: Color(0xFF5D201C)),
-                    ),
+                      const Text(
+                        'Perfil',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF5D201C),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => _mostrarOpcoesConta(context),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.more_horiz,
+                              color: Color(0xFF5D201C)),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 32.0),
+                  Row(
+                    children: [
+                      Stack(
+                        children: [
+                          GestureDetector(
+                            onLongPress: () =>
+                                _mostrarPreviewFoto(context, usuario.fotoUrl),
+                            onLongPressUp: () => Navigator.of(context).pop(),
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF5D201C)
+                                        .withValues(alpha: 0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: _isUploading
+                                  ? Center(
+                                      child: Lottie.asset(
+                                        'assets/animations/loading_nhac.json',
+                                        width: 40,
+                                        height: 40,
+                                      ),
+                                    )
+                                  : ClipOval(
+                                      child: CachedNetworkImage(
+                                        imageUrl: usuario.fotoUrl,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) =>
+                                            const Center(
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                            Icon(
+                                          Icons.person,
+                                          size: 48,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: _isUploading
+                                  ? null
+                                  : () async {
+                                      final picker = ImagePicker();
+                                      final pickedFile = await picker.pickImage(
+                                        source: ImageSource.gallery,
+                                        imageQuality: 70,
+                                      );
+                                      if (pickedFile != null && mounted) {
+                                        setState(() => _isUploading = true);
+                                        try {
+                                          if (!context.mounted) return;
+                                          await context
+                                              .read<UserProvider>()
+                                              .atualizarFotoPerfil(
+                                                  File(pickedFile.path));
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      'Erro ao carregar imagem: $e')),
+                                            );
+                                          }
+                                        } finally {
+                                          if (mounted) {
+                                            setState(
+                                                () => _isUploading = false);
+                                          }
+                                        }
+                                      }
+                                    },
+                              child: Container(
+                                padding: const EdgeInsets.all(4.0),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4.0),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF5D201C),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: _isUploading
+                                      ? SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: Lottie.asset(
+                                            'assets/animations/loading_nhac.json',
+                                          ),
+                                        )
+                                      : const Icon(Icons.edit,
+                                          size: 12, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 16.0),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RichText(
+                              text: TextSpan(
+                                text: usuario.nome,
+                                style: const TextStyle(
+                                  fontSize: 22.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF5D201C),
+                                  fontFamily: 'Roboto',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4.0),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_outlined,
+                                    size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 4.0),
+                                Expanded(
+                                  child: Text(
+                                    textoEndereco,
+                                    style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8.0),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatItem('3', 'Pedidos'),
+                      Container(
+                          height: 30, width: 1, color: Colors.grey.shade300),
+                      _buildStatItem('1', 'Avaliações'),
+                      Container(
+                          height: 30, width: 1, color: Colors.grey.shade300),
+                      GestureDetector(
+                        onTap: () => context.push('/cupons'),
+                        child: _buildStatItem('67', 'Cupons'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40.0),
                   const Text(
-                    'Perfil',
+                    'Sua Conta',
                     style: TextStyle(
                       fontSize: 18.0,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF5D201C),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => _mostrarOpcoesConta(context), 
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.more_horiz, color: Color(0xFF5D201C)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32.0),
-
-              Row(
-                children: [
-                  Stack(
-                    children: [
-                  GestureDetector(
-                    onLongPress: () => _mostrarPreviewFoto(context, usuario.fotoUrl),
-                    onLongPressUp: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        image: (usuario.fotoUrl.isNotEmpty)
-                            ? DecorationImage(
-                                image: CachedNetworkImageProvider(usuario.fotoUrl),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF5D201C).withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: _isUploading
-                          ? Center(
-                              child: Lottie.asset(
-                                'assets/animations/loading_nhac.json',
-                                width: 40,
-                                height: 40,
-                              ),
-                            )
-                          : (usuario.fotoUrl.isNotEmpty)
-                              ? null
-                              : Icon(
-                                  Icons.person,
-                                  size: 48,
-                                  color: Colors.grey.shade400,
-                                ),
-                    ),
-                  ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _isUploading
-                              ? null
-                              : () async {
-                                  final picker = ImagePicker();
-                                  final pickedFile = await picker.pickImage(
-                                    source: ImageSource.gallery,
-                                    imageQuality: 70, 
-                                  );
-                                  if (pickedFile != null && mounted) {
-                                    setState(() => _isUploading = true);
-                                    try {
-                                      if(!context.mounted) return;
-                                      await context
-                                          .read<UserProvider>()
-                                          .atualizarFotoPerfil(
-                                              File(pickedFile.path));
-                                    } catch (e) {
-                                                                            if(!context.mounted) return;
-
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                              content: Text(
-                                                  'Erro ao carregar imagem: $e')),
-                                        );
-                                      }
-                                    } finally {
-                                      if (mounted) {
-                                        setState(() => _isUploading = false);
-                                      }
-                                    }
-                                  }
-                                },
-                          child: Container(
-                            padding: const EdgeInsets.all(4.0),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(4.0),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF5D201C),
-                                shape: BoxShape.circle,
-                              ),
-                               child: _isUploading
-                                  ? SizedBox(
-                                      width: 12,
-                                      height: 12,
-                                      child: Lottie.asset(
-                                        'assets/animations/loading_nhac.json',
-                                      ),
-                                    )
-                                  : const Icon(Icons.edit,
-                                      size: 12, color: Colors.white),
-                            ),
-                          ),
+                  const SizedBox(height: 16.0),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(24.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0xFF5D201C).withValues(alpha: 0.03),
+                          blurRadius: 15.0,
+                          offset: const Offset(0, 5),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16.0),
-                  Expanded(
+                      ],
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        RichText(
-                          text: TextSpan(
-                            text: usuario.nome,
-                            style: const TextStyle(
-                              fontSize: 22.0,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF5D201C),
-                              fontFamily: 'Roboto',
-                            ),
-                          ),
+                        _buildAccountRow(
+                          icon: Icons.person_outline,
+                          iconColor: const Color(0xFFFF6961),
+                          title: 'Dados Pessoais',
+                          subtitle: 'Nome, e-mail, telefone...',
+                          onTap: () async {
+                            final autenticado =
+                                await BiometricService.authenticate();
+                            if (autenticado && context.mounted) {
+                              context.push('/dados-pessoais');
+                            }
+                          },
                         ),
-                        const SizedBox(height: 4.0),
-                        Row(
-                            children: [
-                              Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade600),
-                              const SizedBox(width: 4.0),
-                              Expanded(
-                                child: Text(
-                                  textoEndereco,
-                                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-                                  overflow: TextOverflow.ellipsis, 
-                                  maxLines: 1, 
-                                ),
-                              ),
-                            ],
-                          ),
-                        const SizedBox(height: 8.0),
+                        Divider(
+                            height: 1, color: Colors.grey.shade100, indent: 64),
+                        _buildAccountRow(
+                          icon: Icons.location_on_outlined,
+                          iconColor: const Color(0xFFFF6961),
+                          title: 'Endereços Salvos',
+                          subtitle: 'Casa, Trabalho...',
+                          onTap: () => context.push('/enderecos-salvos'),
+                        ),
+                        Divider(
+                            height: 1, color: Colors.grey.shade100, indent: 64),
+                        _buildAccountRow(
+                          icon: Icons.credit_card_outlined,
+                          iconColor: const Color(0xFFFF6961),
+                          title: 'Formas de Pagamento',
+                          subtitle: 'PIX, Cartões de Crédito...',
+                          onTap: () => context.push('/formas-pagamento'),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 32.0),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildStatItem('3', 'Pedidos'),
-                  Container(height: 30, width: 1, color: Colors.grey.shade300),
-                  _buildStatItem('1', 'Avaliações'),
-                  Container(height: 30, width: 1, color: Colors.grey.shade300),
-                  GestureDetector(
-                    onTap: () => context.push('/cupons'),
-                    child: _buildStatItem('67', 'Cupons'),
+                  const SizedBox(height: 32.0),
+                  const Text(
+                    'Preferências de Comida',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF5D201C),
+                    ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 40.0),
-
-              const Text(
-                'Sua Conta',
-                style: TextStyle(
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF5D201C),
-                ),
-              ),
-              const SizedBox(height: 16.0),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(24.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFF5D201C).withValues(alpha: 0.03),
-                      blurRadius: 15.0,
-                      offset: const Offset(0, 5),
+                  const SizedBox(height: 16.0),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(24.0),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0xFF5D201C).withValues(alpha: 0.03),
+                          blurRadius: 15.0,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    _buildAccountRow(
-                      icon: Icons.person_outline,
-                      iconColor: const Color(0xFFFF6961),
-                      title: 'Dados Pessoais',
-                      subtitle: 'Nome, e-mail, telefone...',
-                      onTap: () async {
-                        final autenticado = await BiometricService.authenticate();
-                        if (autenticado && context.mounted) {
-                          context.push('/dados-pessoais');
-                        }
-                      },
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildPreferenceItem(
+                              Icons.local_pizza, 'Pizza', true),
+                          const SizedBox(width: 20.0),
+                          _buildPreferenceItem(
+                              Icons.ramen_dining, 'Vegetariana', false),
+                          const SizedBox(width: 20.0),
+                          _buildPreferenceItem(
+                              Icons.fastfood, 'Salgados', false),
+                          const SizedBox(width: 20.0),
+                          _buildPreferenceItem(
+                              Icons.bakery_dining, 'Padarias', false),
+                          const SizedBox(width: 20.0),
+                          _buildPreferenceItem(
+                              Icons.set_meal, 'Frutos do mar', false),
+                          const SizedBox(width: 20.0),
+                          _buildPreferenceItem(Icons.cake, 'Doces', false),
+                        ],
+                      ),
                     ),
-                    Divider(height: 1, color: Colors.grey.shade100, indent: 64),
-                    _buildAccountRow(
-                      icon: Icons.location_on_outlined,
-                      iconColor: const Color(0xFFFF6961),
-                      title: 'Endereços Salvos',
-                      subtitle: 'Casa, Trabalho...',
-                      onTap: () => context.push('/enderecos-salvos'),
-                    ),
-                    Divider(height: 1, color: Colors.grey.shade100, indent: 64),
-                    _buildAccountRow(
-                      icon: Icons.credit_card_outlined,
-                      iconColor: const Color(0xFFFF6961),
-                      title: 'Formas de Pagamento',
-                      subtitle: 'PIX, Cartões de Crédito...',
-                      onTap: () => context.push('/formas-pagamento'),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32.0),
-              const Text(
-                'Preferências de Comida',
-                style: TextStyle(
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF5D201C),
-                ),
-              ),
-              const SizedBox(height: 16.0),
-
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(24.0),
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFF5D201C).withValues(alpha: 0.03),
-                      blurRadius: 15.0,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  physics: const BouncingScrollPhysics(),
-                  child: Row(
-                    children: [
-                      _buildPreferenceItem(Icons.local_pizza, 'Pizza', true),
-                      const SizedBox(width: 20.0),
-                      _buildPreferenceItem(Icons.ramen_dining, 'Vegetariana', false),
-                      const SizedBox(width: 20.0),
-                      _buildPreferenceItem(Icons.fastfood, 'Salgados', false),
-                      const SizedBox(width: 20.0),
-                      _buildPreferenceItem(Icons.bakery_dining, 'Padarias', false),
-                      const SizedBox(width: 20.0),
-                      _buildPreferenceItem(Icons.set_meal, 'Frutos do mar', false),
-                      const SizedBox(width: 20.0),
-                      _buildPreferenceItem(Icons.cake, 'Doces', false),
-                    ],
                   ),
-                ),
+                  const SizedBox(height: 120.0),
+                ]),
               ),
-                const SizedBox(height: 120.0),
-              ]),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

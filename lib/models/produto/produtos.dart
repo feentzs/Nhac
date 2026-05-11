@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ProdutosModel{
+class ProdutosModel {
   final String uid;
   final String categoria;
   final Timestamp? criadoEm;
@@ -39,21 +39,22 @@ class ProdutosModel{
     String? nome,
     double? preco,
     int? totalAvaliacoes,
-  }) => ProdutosModel(
-    uid: uid ?? this.uid,
-    categoria: categoria ?? this.categoria,
-    criadoEm: criadoEm ?? this.criadoEm,
-    descricao: descricao ?? this.descricao,
-    disponivel: disponivel ?? this.disponivel,
-    imagemUrl: imagemUrl ?? this.imagemUrl,
-    lojaId: lojaId ?? this.lojaId,
-    mediaAvaliacao: mediaAvaliacao ?? this.mediaAvaliacao,
-    nome: nome ?? this.nome,
-    preco: preco ?? this.preco,
-    totalAvaliacoes: totalAvaliacoes ?? this.totalAvaliacoes,
-  );
+  }) =>
+      ProdutosModel(
+        uid: uid ?? this.uid,
+        categoria: categoria ?? this.categoria,
+        criadoEm: criadoEm ?? this.criadoEm,
+        descricao: descricao ?? this.descricao,
+        disponivel: disponivel ?? this.disponivel,
+        imagemUrl: imagemUrl ?? this.imagemUrl,
+        lojaId: lojaId ?? this.lojaId,
+        mediaAvaliacao: mediaAvaliacao ?? this.mediaAvaliacao,
+        nome: nome ?? this.nome,
+        preco: preco ?? this.preco,
+        totalAvaliacoes: totalAvaliacoes ?? this.totalAvaliacoes,
+      );
 
-  factory ProdutosModel.fromMap(Map<String, dynamic> map, String id){
+  factory ProdutosModel.fromMap(Map<String, dynamic> map, String id) {
     return ProdutosModel(
       uid: id,
       categoria: map['categoria'] ?? '',
@@ -69,7 +70,7 @@ class ProdutosModel{
     );
   }
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'categoria': categoria,
       'criado_em': criadoEm ?? FieldValue.serverTimestamp(),
