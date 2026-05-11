@@ -4,6 +4,7 @@ import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/controllers/user_provider.dart';
+import 'package:nhac/pages/carrinho_page.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -96,7 +97,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 children: [
                   const HomeContent(),
-                  _buildPlaceholderContent(1),
+                  const CarrinhoPage(),
                   _buildPlaceholderContent(2),
                   const ProfileContent(),
                 ],
