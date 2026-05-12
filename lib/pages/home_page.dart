@@ -446,7 +446,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
   Widget _buildCartTotalBar(double total) {
-    const Color primaryColor = Color(0xFFFF6961);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
