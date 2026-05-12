@@ -17,20 +17,16 @@ class UserProvider with ChangeNotifier {
 
   UsuarioModel? get usuario => _usuario;
 
-  /// Inicia escuta do Firestore. Antes de conectar, carrega do cache
-  /// local para exibição instantânea.
   Future<void> iniciarEscutaUsuario() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    // 1. Carrega do cache local imediatamente (sem esperar rede)
     final cached = await LocalCacheService.carregarUsuario();
     if (cached != null && _usuario == null) {
       _usuario = UsuarioModel.fromMap(cached, user.uid);
       notifyListeners();
     }
 
-    // 2. Sincroniza com Firestore em background
     _usuarioSubscription?.cancel();
     _usuarioSubscription = _userRepository.ouvirUsuario(user.uid).listen((usuarioAtualizado) {
       _usuario = usuarioAtualizado;
@@ -41,7 +37,6 @@ class UserProvider with ChangeNotifier {
         return;
       }
 
-      // Salva versão atualizada no cache
       if (_usuario != null) {
         LocalCacheService.salvarUsuario(_usuario!.toMap());
       }
@@ -100,7 +95,7 @@ class UserProvider with ChangeNotifier {
   void limparUsuario() {
     _usuario = null;
     _usuarioSubscription?.cancel();
-    LocalCacheService.limparUsuario(); // limpa cache no logout
+    LocalCacheService.limparUsuario();
     notifyListeners();
   }
 

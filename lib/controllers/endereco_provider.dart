@@ -20,21 +20,19 @@ class EnderecoProvider with ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    // 1. Carrega do cache local imediatamente
     final cached = await LocalCacheService.carregarEnderecos();
     if (cached != null && _enderecos.isEmpty) {
       _enderecos = cached.map((m) => EnderecoModel.fromMap(m, m['id_documento'] ?? '')).toList();
       notifyListeners();
     }
 
-    // 2. Sincroniza com Firestore em background
-    _isLoading = _enderecos.isEmpty; // só mostra loading se não tem cache
+    
+    _isLoading = _enderecos.isEmpty; 
     _subscription?.cancel();
     _subscription = _enderecoRepository.ouvirEnderecos(user.uid).listen((lista) {
       _enderecos = lista;
       _isLoading = false;
 
-      // Atualiza cache com dados novos
       LocalCacheService.salvarEnderecos(
         lista.map((e) => {...e.toMap(), 'id_documento': e.idDocumento}).toList(),
       );
