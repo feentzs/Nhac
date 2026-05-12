@@ -1,11 +1,14 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:nhac/components/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
+import 'package:nhac/components/botao_nhac.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:nhac/pages/carrinho_page.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,16 +17,27 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late PageController _pageController;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledDown = false;
+  late final AnimationController _cartBarController;
+  final NumberFormat currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedIndex);
+    _cartBarController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    if (_selectedIndex == 1) {
+      _cartBarController.forward();
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<UserProvider>().iniciarEscutaUsuario();
       context.read<CartProvider>().iniciarEscutaCarrinho();
@@ -35,6 +49,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _pageController.dispose();
     _scrollController.dispose();
+    _cartBarController.dispose();
     super.dispose();
   }
 
@@ -97,7 +112,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 children: [
                   const HomeContent(),
-                  const CarrinhoPage(),
+                  CarrinhoPage(isActive: _selectedIndex == 1),
                   _buildPlaceholderContent(2),
                   const ProfileContent(),
                 ],
@@ -184,7 +199,51 @@ class _HomePageState extends State<HomePage> {
                 bottom: bottomPadding + 10.0,
                 left: _isScrolledDown ? MediaQuery.of(context).size.width - 24.0 - 75.0 : 24.0,
                 right: 24.0,
-                child: _buildDynamicNavBar(),
+                child: AnimatedBuilder(
+                  animation: _cartBarController,
+                  builder: (context, child) {
+                    final t = _cartBarController.value;
+                    final bounceAmount = math.sin(t * math.pi) * 8.0;
+                    
+                    final isReversing = _cartBarController.status == AnimationStatus.reverse;
+                    final offsetY = isReversing ? bounceAmount : -bounceAmount;
+                    
+                    return Transform.translate(
+                      offset: Offset(0, offsetY),
+                      child: child,
+                    );
+                  },
+                  child: _buildDynamicNavBar(),
+                ),
+              ),
+
+              AnimatedBuilder(
+                animation: _cartBarController,
+                builder: (context, child) {
+                  final t = Curves.easeOutCubic.transform(_cartBarController.value);
+                  final baseBottom = bottomPadding + 95.0;
+                  final interpolatedBottom = (baseBottom - 80.0) + (80.0 * t);
+                  final scaleX = 0.2 + 0.8 * t;
+                  final opacity = t.clamp(0.0, 1.0);
+
+                  if (t == 0) return const SizedBox.shrink();
+
+                  return Positioned(
+                    bottom: interpolatedBottom,
+                    left: 24,
+                    right: 24,
+                    child: Transform.scale(
+                      scaleX: scaleX,
+                      scaleY: 1.0,
+                      child: Opacity(
+                        opacity: opacity,
+                        child: Consumer<CartProvider>(
+                          builder: (context, cart, _) => _buildCartTotalBar(cart.valorTotal),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -304,6 +363,7 @@ class _HomePageState extends State<HomePage> {
 
     return GestureDetector(
       onTap: () {
+        final oldIndex = _selectedIndex;
         setState(() {
           _selectedIndex = index;
         });
@@ -312,6 +372,12 @@ class _HomePageState extends State<HomePage> {
           duration: const Duration(milliseconds: 400),
           curve: Curves.fastOutSlowIn,
         );
+
+        if (index == 1) {
+          _cartBarController.forward();
+        } else if (oldIndex == 1) {
+          _cartBarController.animateBack(0, duration: const Duration(milliseconds: 150));
+        }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
@@ -376,6 +442,48 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+  Widget _buildCartTotalBar(double total) {
+    const Color primaryColor = Color(0xFFFF6961);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(50),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5D201C).withValues(alpha: 0.1),
+            blurRadius: 15.0,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Total com frete',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                Text(
+                  currencyFormat.format(total),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
+          BotaoNhac(
+            label: 'Continuar',
+            onPressed: () {},
+            fontSize: 15,
+          ),
+        ],
       ),
     );
   }
