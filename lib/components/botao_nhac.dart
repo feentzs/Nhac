@@ -4,37 +4,39 @@ import 'package:go_router/go_router.dart';
 
 @NowaGenerated({'auto-width': 351, 'auto-height': 49})
 class BotaoNhac extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  final double fontSize;
+
   @NowaGenerated({'loader': 'auto-constructor'})
-  const BotaoNhac({super.key});
+  const BotaoNhac({
+    super.key,
+    this.label = 'Começar',
+    this.onPressed,
+    this.fontSize = 18.0,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
+    return ElevatedButton(
+      onPressed: onPressed ?? () {
         context.push('/email-cliente');
       },
-      child: ElevatedButton(
-        onPressed: () {
-          context.push('/email-cliente');
-        },
-        style: const ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll<Color?>(Color(0xFFFE645C)),
-          foregroundColor: WidgetStatePropertyAll<Color?>(null),
-          shadowColor: WidgetStatePropertyAll<Color?>(null),
-          elevation: WidgetStatePropertyAll<double?>(null),
-          side: WidgetStatePropertyAll<BorderSide?>(null),
-          shape: WidgetStatePropertyAll<RoundedRectangleBorder?>(null),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFFE645C),
+        foregroundColor: const Color(0xFFFEE3E1),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50.0),
         ),
-        child: const Text(
-          'Começar',
-          style: TextStyle(
-            color: Color(0xFFFEE3E1),
-            fontSize: 18.0,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-          ),
-          textAlign: TextAlign.start,
-          textDirection: TextDirection.rtl,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
         ),
       ),
     );

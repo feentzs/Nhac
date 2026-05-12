@@ -7,38 +7,19 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class CarrinhoPage extends StatefulWidget {
-  const CarrinhoPage({super.key});
+  final bool isActive;
+  const CarrinhoPage({super.key, this.isActive = true});
 
   @override
   State<CarrinhoPage> createState() => _CarrinhoPageState();
 }
 
-class _CarrinhoPageState extends State<CarrinhoPage>
-    with SingleTickerProviderStateMixin {
+class _CarrinhoPageState extends State<CarrinhoPage> {
+
   final Color primaryColor = const Color(0xFFFF6961);
   final Color lightAccentColor = const Color(0xFFFFEBD9);
   final NumberFormat currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
-  late final AnimationController _animController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _animController.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,32 +63,9 @@ class _CarrinhoPageState extends State<CarrinhoPage>
                   const SizedBox(height: 24),
                 ],
               ),
-              AnimatedBuilder(
-                animation: _animController,
-                builder: (context, child) {
-                  final t = Curves.easeOutCubic.transform(_animController.value);
-                  final interpolatedBottom = 10.0 + (110.0 - 10.0) * t;
-                  final scaleX = 0.2 + 0.8 * t;
-                  final opacity = t.clamp(0.0, 1.0);
-
-                  return Positioned(
-                    bottom: interpolatedBottom,
-                    left: 16,
-                    right: 16,
-                    child: Transform.scale(
-                      scaleX: scaleX,
-                      scaleY: 1.0,
-                      child: Opacity(
-                        opacity: opacity,
-                        child: child!,
-                      ),
-                    ),
-                  );
-                },
-                child: _buildBottomAction(cartProvider.valorTotal),
-              ),
             ],
           );
+
         },
       ),
     );
@@ -398,59 +356,5 @@ class _CarrinhoPageState extends State<CarrinhoPage>
     );
   }
 
-  Widget _buildBottomAction(double total) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(50),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF5D201C).withValues(alpha: 0.1),
-            blurRadius: 15.0,
-            offset: const Offset(0, 9),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        bottom: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Total com frete',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                  Text(
-                    currencyFormat.format(total),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Continuar',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 }
