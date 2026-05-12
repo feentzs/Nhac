@@ -42,12 +42,14 @@ main() async {
 
 @NowaGenerated({'visibleInNowa': false})
 class MyApp extends StatelessWidget {
+  
   @NowaGenerated({'loader': 'auto-constructor'})
   const MyApp({super.key});
   
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
+      
       providers: [
         ChangeNotifierProvider<AppState>(create: (context) => AppState()),
         ChangeNotifierProvider<AuthService>(create: (context) => AuthService()), 
@@ -61,6 +63,7 @@ class MyApp extends StatelessWidget {
         return Consumer<ConnectivityService>(
           builder: (context, connectivity, child) {
             return MaterialApp.router(
+              debugShowCheckedModeBanner: false,
               theme: AppState.of(context).theme,
               routerConfig: appRouter,
               builder: (context, navigator) {
