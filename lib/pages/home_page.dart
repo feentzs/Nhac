@@ -534,12 +534,10 @@ class _AnimatedTotalText extends StatefulWidget {
 class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _bounceAnimation;
-  double _lastTotal = 0;
 
   @override
   void initState() {
     super.initState();
-    _lastTotal = widget.total;
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -568,7 +566,6 @@ class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTicke
       ]).animate(_controller);
 
       _controller.forward(from: 0.0);
-      _lastTotal = widget.total;
     }
   }
 
