@@ -47,7 +47,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       cartProvider.iniciarEscutaCarrinho();
       enderecoProvider.iniciarEscutaEnderecos();
       
-      // Adiciona listener para mostrar/ocultar a barra do carrinho dinamicamente
       cartProvider.addListener(_onCartChanged);
     });
   }
@@ -55,7 +54,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void _onCartChanged() {
     if (!mounted) return;
     
-    // Só agimos se estivermos na aba do carrinho
     if (_selectedIndex == 1) {
       final cart = context.read<CartProvider>();
       if (cart.itens.isNotEmpty) {
@@ -72,11 +70,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // Tenta remover o listener de forma segura
     try {
       context.read<CartProvider>().removeListener(_onCartChanged);
     } catch (_) {
-      // O provider pode já ter sido destruído em alguns cenários de navegação
     }
     _pageController.dispose();
     _scrollController.dispose();
@@ -224,30 +220,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
 
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                bottom: bottomPadding + 10.0,
-                left: _isScrolledDown ? MediaQuery.of(context).size.width - 24.0 - 75.0 : 24.0,
-                right: 24.0,
-                child: AnimatedBuilder(
-                  animation: _cartBarController,
-                  builder: (context, child) {
-                    final t = _cartBarController.value;
-                    final bounceAmount = math.sin(t * math.pi) * 8.0;
-                    
-                    final isReversing = _cartBarController.status == AnimationStatus.reverse;
-                    final offsetY = isReversing ? bounceAmount : -bounceAmount;
-                    
-                    return Transform.translate(
-                      offset: Offset(0, offsetY),
-                      child: child,
-                    );
-                  },
-                  child: _buildDynamicNavBar(),
-                ),
-              ),
-
               AnimatedBuilder(
                 animation: _cartBarController,
                 builder: (context, child) {
@@ -275,6 +247,30 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                   );
                 },
+              ),
+
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                bottom: bottomPadding + 10.0,
+                left: _isScrolledDown ? MediaQuery.of(context).size.width - 24.0 - 75.0 : 24.0,
+                right: 24.0,
+                child: AnimatedBuilder(
+                  animation: _cartBarController,
+                  builder: (context, child) {
+                    final t = _cartBarController.value;
+                    final bounceAmount = math.sin(t * math.pi) * 8.0;
+                    
+                    final isReversing = _cartBarController.status == AnimationStatus.reverse;
+                    final offsetY = isReversing ? bounceAmount : -bounceAmount;
+                    
+                    return Transform.translate(
+                      offset: Offset(0, offsetY),
+                      child: child,
+                    );
+                  },
+                  child: _buildDynamicNavBar(),
+                ),
               ),
             ],
           ),
@@ -504,9 +500,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   'Total com frete',
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
-                Text(
-                  currencyFormat.format(total),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                _AnimatedTotalText(
+                  total: total,
+                  currencyFormat: currencyFormat,
                 ),
               ],
             ),
@@ -518,6 +514,87 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AnimatedTotalText extends StatefulWidget {
+  final double total;
+  final NumberFormat currencyFormat;
+
+  const _AnimatedTotalText({
+    required this.total,
+    required this.currencyFormat,
+  });
+
+  @override
+  State<_AnimatedTotalText> createState() => _AnimatedTotalTextState();
+}
+
+class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _bounceAnimation;
+  double _lastTotal = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastTotal = widget.total;
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    
+    _bounceAnimation = Tween<double>(begin: 0.0, end: 0.0).animate(_controller);
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedTotalText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.total != oldWidget.total) {
+      final isIncreasing = widget.total > oldWidget.total;
+      
+      final double bounceDist = isIncreasing ? -4.0 : 4.0;
+
+      _bounceAnimation = TweenSequence<double>([
+        TweenSequenceItem(
+          tween: Tween(begin: 0.0, end: bounceDist).chain(CurveTween(curve: Curves.easeOutCubic)),
+          weight: 30,
+        ),
+        TweenSequenceItem(
+          tween: Tween(begin: bounceDist, end: 0.0).chain(CurveTween(curve: Curves.elasticOut)),
+          weight: 70,
+        ),
+      ]).animate(_controller);
+
+      _controller.forward(from: 0.0);
+      _lastTotal = widget.total;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _bounceAnimation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _bounceAnimation.value),
+          child: Text(
+            widget.currencyFormat.format(widget.total),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold, 
+              fontSize: 16, 
+              color: Colors.black,
+            ),
+          ),
+        );
+      },
     );
   }
 }
