@@ -39,14 +39,45 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<UserProvider>().iniciarEscutaUsuario();
-      context.read<CartProvider>().iniciarEscutaCarrinho();
-      context.read<EnderecoProvider>().iniciarEscutaEnderecos();
+      final userProvider = context.read<UserProvider>();
+      final cartProvider = context.read<CartProvider>();
+      final enderecoProvider = context.read<EnderecoProvider>();
+
+      userProvider.iniciarEscutaUsuario();
+      cartProvider.iniciarEscutaCarrinho();
+      enderecoProvider.iniciarEscutaEnderecos();
+      
+      // Adiciona listener para mostrar/ocultar a barra do carrinho dinamicamente
+      cartProvider.addListener(_onCartChanged);
     });
+  }
+
+  void _onCartChanged() {
+    if (!mounted) return;
+    
+    // Só agimos se estivermos na aba do carrinho
+    if (_selectedIndex == 1) {
+      final cart = context.read<CartProvider>();
+      if (cart.itens.isNotEmpty) {
+        if (_cartBarController.status != AnimationStatus.forward && _cartBarController.value != 1.0) {
+          _cartBarController.forward();
+        }
+      } else {
+        if (_cartBarController.status != AnimationStatus.reverse && _cartBarController.value != 0.0) {
+          _cartBarController.animateBack(0, duration: const Duration(milliseconds: 150));
+        }
+      }
+    }
   }
 
   @override
   void dispose() {
+    // Tenta remover o listener de forma segura
+    try {
+      context.read<CartProvider>().removeListener(_onCartChanged);
+    } catch (_) {
+      // O provider pode já ter sido destruído em alguns cenários de navegação
+    }
     _pageController.dispose();
     _scrollController.dispose();
     _cartBarController.dispose();
@@ -374,7 +405,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         );
 
         if (index == 1) {
-          _cartBarController.forward();
+          final cart = context.read<CartProvider>();
+          if (cart.itens.isNotEmpty) {
+            _cartBarController.forward();
+          }
         } else if (oldIndex == 1) {
           _cartBarController.animateBack(0, duration: const Duration(milliseconds: 150));
         }
