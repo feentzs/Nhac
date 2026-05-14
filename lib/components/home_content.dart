@@ -260,7 +260,7 @@ class _HomeContentState extends State<HomeContent> {
         return HomeProductSection(
           title: titulo,
           onSeeAll: () {
-            // TODO: Ir para uma tela com todos os produtos
+            
           },
           products: produtosParaTela,
         );
