@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nhac/components/product_card.dart';
+import 'package:nhac/models/produto/produtos.dart';
+import 'package:nhac/pages/produto_detalhes_page.dart';
 
 class ProductSectionItem {
   const ProductSectionItem({
@@ -72,12 +74,32 @@ class HomeProductSection extends StatelessWidget {
               final item = products[index];
               return Stack(
                 children: [
-                  ProductCard(
-                    idProduto: item.idProduto,
-                    imageUrl: item.imageUrl,
-                    name: item.name,
-                    weight: item.weight,
-                    price: item.price,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProdutoDetalhesPage(
+                            produto: ProdutosModel(
+                              uid: item.idProduto,
+                              categoria: 'Geral',
+                              disponivel: true,
+                              imagemUrl: item.imageUrl,
+                              lojaId: '',
+                              nome: item.name,
+                              preco: item.price,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    child: ProductCard(
+                      idProduto: item.idProduto,
+                      imageUrl: item.imageUrl,
+                      name: item.name,
+                      weight: item.weight,
+                      price: item.price,
+                    ),
                   ),
                   if (item.discountPercent != null)
                     Positioned(
