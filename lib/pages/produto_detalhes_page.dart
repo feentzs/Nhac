@@ -203,7 +203,21 @@ class ProdutoDetalhesPage extends StatelessWidget {
                                 padding: EdgeInsets.symmetric(vertical: 8),
                                 child: Divider(height: 1, color: Color(0xFFEEEEEE)),
                               ),
-                              _buildServiceRow(Icons.storefront_outlined, 'Vendido por: ${produto.lojaId.isEmpty ? "Loja Parceira" : produto.lojaId}'),
+                              FutureBuilder<DocumentSnapshot?>(
+                                future: produto.lojaId.isNotEmpty
+                                    ? FirebaseFirestore.instance.collection('lojas').doc(produto.lojaId).get()
+                                    : Future.value(null),
+                                builder: (context, snapshot) {
+                                  String nomeLoja = 'Loja Parceira';
+                                  if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data!.exists) {
+                                    final data = snapshot.data!.data() as Map<String, dynamic>?;
+                                    if (data != null && data['nome'] != null) {
+                                      nomeLoja = data['nome'];
+                                    }
+                                  }
+                                  return _buildServiceRow(Icons.storefront_outlined, 'Vendido por: $nomeLoja');
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -239,7 +253,6 @@ class ProdutoDetalhesPage extends StatelessWidget {
 
                       const SizedBox(height: 32),
 
-                      // Produtos Relacionados
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: StreamBuilder<QuerySnapshot>(
@@ -254,7 +267,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
 
                             final produtosRelacionados = snapshot.data!.docs
                                 .map((doc) => ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-                                .where((p) => p.uid != produto.uid) // Não mostrar o próprio produto
+                                .where((p) => p.uid != produto.uid)
                                 .map((prod) => ProductSectionItem(
                                       idProduto: prod.uid,
                                       imageUrl: prod.imagemUrl.isNotEmpty ? prod.imagemUrl : 'https://via.placeholder.com/150',
