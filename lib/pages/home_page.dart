@@ -540,7 +540,7 @@ class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTicke
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 300),
     );
     
     _bounceAnimation = Tween<double>(begin: 0.0, end: 0.0).animate(_controller);
