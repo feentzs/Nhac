@@ -1,6 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:nhac/components/home_product_section.dart';
 import 'package:nhac/models/produto/produtos.dart';
 
 class ProdutoDetalhesPage extends StatelessWidget {
@@ -50,7 +53,16 @@ class ProdutoDetalhesPage extends StatelessWidget {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.share_outlined, color: Colors.black, size: 20),
-                        onPressed: () {},
+                        onPressed: () {
+                          final link = 'https://nhac.app/produto/${produto.uid}';
+                          Share.share(
+                            'Confira este produto no Nhac!\n\n'
+                            '${produto.nome}\n'
+                            'Por R\$ ${produto.preco.toStringAsFixed(2).replaceAll('.', ',')}\n\n'
+                            '$link',
+                            subject: produto.nome,
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -222,6 +234,45 @@ class ProdutoDetalhesPage extends StatelessWidget {
                             color: Colors.black54,
                             height: 1.5,
                           ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Produtos Relacionados
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('produtos')
+                              .limit(5)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final produtosRelacionados = snapshot.data!.docs
+                                .map((doc) => ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+                                .where((p) => p.uid != produto.uid) // Não mostrar o próprio produto
+                                .map((prod) => ProductSectionItem(
+                                      idProduto: prod.uid,
+                                      imageUrl: prod.imagemUrl.isNotEmpty ? prod.imagemUrl : 'https://via.placeholder.com/150',
+                                      name: prod.nome,
+                                      weight: '',
+                                      price: prod.preco,
+                                      discountPercent: null,
+                                    ))
+                                .toList();
+
+                            if (produtosRelacionados.isEmpty) return const SizedBox.shrink();
+
+                            return HomeProductSection(
+                              title: 'Produtos Relacionados',
+                              products: produtosRelacionados,
+                              onSeeAll: () {},
+                            );
+                          },
                         ),
                       ),
 
