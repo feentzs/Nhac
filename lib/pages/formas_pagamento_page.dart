@@ -20,7 +20,7 @@ class _FormasPagamentoPageState extends State<FormasPagamentoPage> {
 
   void _onGooglePayResult(dynamic paymentResult) {
     debugPrint('Resultado do Google Pay: $paymentResult');
-    // TODO: Enviar o paymentResult para o backend do MercadoPago
+   
   }
 
   @override
