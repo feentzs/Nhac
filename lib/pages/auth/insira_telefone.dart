@@ -1,4 +1,4 @@
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
