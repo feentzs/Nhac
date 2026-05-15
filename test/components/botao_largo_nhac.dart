@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nhac/components/botao_largo_nhac.dart'; 
+import 'package:nhac/components/botoes/botao_largo_nhac.dart'; 
 
 void main() {
   testWidgets('Deve mostrar o texto correto e responder ao clique na tela', (WidgetTester tester) async {

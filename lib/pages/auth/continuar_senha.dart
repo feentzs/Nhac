@@ -1,7 +1,7 @@
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:nhac/services/auth_service.dart';

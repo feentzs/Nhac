@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/globals/ui_utils.dart';

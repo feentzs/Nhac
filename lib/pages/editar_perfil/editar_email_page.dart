@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
-import 'package:nhac/components/botao_largo_nhac.dart'; 
+import 'package:nhac/components/botoes/botao_largo_nhac.dart'; 
 import 'dart:async';
 import 'package:pin_code_fields/pin_code_fields.dart';
 

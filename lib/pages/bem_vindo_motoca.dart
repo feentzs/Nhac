@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nhac/components/botao_nhac.dart';
+import 'package:nhac/components/botoes/botao_nhac.dart';
 
 @NowaGenerated()
 class BemVindoMotoca extends StatelessWidget {
@@ -25,7 +25,7 @@ class BemVindoMotoca extends StatelessWidget {
           children: [
             const Positioned.fill(
               child: Image(
-                image: AssetImage('assets/motoca-vindo.png'),
+                image: AssetImage('assets/um cara em cima da moto de delivery entregando uma pizza para um morador.jpg'),
                 fit: BoxFit.cover,
               ),
             ),

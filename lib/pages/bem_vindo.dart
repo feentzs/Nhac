@@ -3,7 +3,7 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:flutter/services.dart';
 import 'package:nhac/components/nhac_logo.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nhac/components/botao_nhac.dart';
+import 'package:nhac/components/botoes/botao_nhac.dart';
 
 @NowaGenerated()
 class BemVindo extends StatefulWidget {

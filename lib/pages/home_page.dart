@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:nhac/components/home_content.dart';
+import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
-import 'package:nhac/components/botao_nhac.dart';
+import 'package:nhac/components/botoes/botao_nhac.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/controllers/user_provider.dart';

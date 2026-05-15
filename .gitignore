@@ -104,3 +104,5 @@ app.*.map.json
 # Arquivos do emulador
 .android/
 avd.ini
+
+sentry.properties

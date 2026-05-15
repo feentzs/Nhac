@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/services/connectivity_service.dart';
 import 'package:provider/provider.dart';
 

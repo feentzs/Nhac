@@ -12,6 +12,7 @@ import 'package:nhac/controllers/user_provider.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:nhac/services/biometric_service.dart';
 import 'package:provider/provider.dart';
+import 'package:sentry/sentry.dart';
 
 class ProfileContent extends StatefulWidget {
   const ProfileContent({super.key});
