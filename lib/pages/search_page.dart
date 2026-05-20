@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nhac/models/produto/produtos.dart';
+import 'package:nhac/pages/produto_detalhes_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:nhac/components/product_card.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -10,10 +15,18 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _animationController;
+  String _searchQuery = '';
+  bool _hasSubmitted = false;
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+        _hasSubmitted = false;
+      });
+    });
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -46,7 +59,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
         return Opacity(
           opacity: animation.value,
           child: Transform.translate(
-            offset: Offset(0, 15 * (1 - animation.value)),
+            offset: Offset(0, 30 * (1 - animation.value)),
             child: child,
           ),
         );
@@ -118,6 +131,13 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                                 child: TextField(
                                   controller: _searchController,
                                   autofocus: true,
+                                  textInputAction: TextInputAction.search,
+                                  onSubmitted: (value) {
+                                    setState(() {
+                                      _hasSubmitted = true;
+                                    });
+                                    _animationController.forward(from: 0.0);
+                                  },
                                   decoration: InputDecoration(
                                     hintText: 'Procurar',
                                     hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -137,40 +157,42 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
             ),
             
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                children: [
-                  _buildAnimatedItem(
-                    const Text(
-                      'Sugestões',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF5D201C),
-                      ),
-                    ),
-                    0,
-                  ),
-                  const SizedBox(height: 16.0),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Pãozinho'), 1),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Coxinha'), 2),
-                  const SizedBox(height: 24.0),
-                  _buildAnimatedItem(
-                    const Text(
-                      'Em alta',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF5D201C),
-                      ),
-                    ),
-                    3,
-                  ),
-                  const SizedBox(height: 16.0),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.trending_up, 'Refrigerante Viver', isTrending: true), 4),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.trending_up, 'Carne', isTrending: true), 5),
-                ],
-              ),
+              child: _searchQuery.isEmpty
+                  ? ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      children: [
+                        _buildAnimatedItem(
+                          const Text(
+                            'Sugestões',
+                            style: TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5D201C),
+                            ),
+                          ),
+                          0,
+                        ),
+                        const SizedBox(height: 16.0),
+                        _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Pãozinho'), 1),
+                        _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Coxinha'), 2),
+                        const SizedBox(height: 24.0),
+                        _buildAnimatedItem(
+                          const Text(
+                            'Em alta',
+                            style: TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5D201C),
+                            ),
+                          ),
+                          3,
+                        ),
+                        const SizedBox(height: 16.0),
+                        _buildAnimatedItem(_buildSuggestionItem(Icons.trending_up, 'Refrigerante Viver', isTrending: true), 4),
+                        _buildAnimatedItem(_buildSuggestionItem(Icons.trending_up, 'Carne', isTrending: true), 5),
+                      ],
+                    )
+                  : _buildSearchResults(),
             ),
           ],
         ),
@@ -204,6 +226,111 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       contentPadding: const EdgeInsets.only(bottom: 8.0),
       onTap: () {
         _searchController.text = text;
+      },
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('produtos').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6961)),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text('Nenhum produto encontrado.', style: TextStyle(color: Colors.grey)));
+        }
+
+        final produtos = snapshot.data!.docs.map((doc) {
+          return ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        }).where((p) => p.nome.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+
+        if (produtos.isEmpty) {
+          return const Center(child: Text('Nenhum produto encontrado para sua pesquisa.', style: TextStyle(color: Colors.grey)));
+        }
+
+        if (_hasSubmitted) {
+          return GridView.builder(
+            padding: const EdgeInsets.all(24.0),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16.0,
+              crossAxisSpacing: 16.0,
+              childAspectRatio: 0.7,
+            ),
+            itemCount: produtos.length,
+            itemBuilder: (context, index) {
+              final produto = produtos[index];
+              return _buildAnimatedItem(
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProdutoDetalhesPage(produto: produto),
+                      ),
+                    );
+                  },
+                  child: ProductCard(
+                    idProduto: produto.uid,
+                    imageUrl: produto.imagemUrl.isNotEmpty ? produto.imagemUrl : 'https://via.placeholder.com/150',
+                    name: produto.nome,
+                    weight: '1 un',
+                    price: produto.preco,
+                  ),
+                ),
+                index,
+              );
+            },
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          itemCount: produtos.length,
+          itemBuilder: (context, index) {
+            final produto = produtos[index];
+            return _buildAnimatedItem(
+              ListTile(
+                contentPadding: const EdgeInsets.only(bottom: 8.0),
+                leading: Container(
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.search,
+                    color: Colors.grey,
+                    size: 20.0,
+                  ),
+                ),
+                title: Text(
+                  produto.nome,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.normal,
+                    fontSize: 15.0,
+                  ),
+                ),
+                trailing: const Icon(Icons.north_west, color: Colors.grey, size: 16.0),
+                onTap: () {
+                  _searchController.text = produto.nome;
+                  setState(() {
+                    _hasSubmitted = true;
+                  });
+                  _animationController.forward(from: 0.0);
+                },
+              ),
+              index,
+            );
+          },
+        );
       },
     );
   }
