@@ -4,6 +4,7 @@ import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/produto_detalhes_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nhac/components/product_card.dart';
+import 'package:nhac/services/local_cache_service.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -17,10 +18,18 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
   late AnimationController _animationController;
   String _searchQuery = '';
   bool _hasSubmitted = false;
+  List<String> _historicoPesquisa = [];
 
   @override
   void initState() {
     super.initState();
+    LocalCacheService.carregarHistoricoPesquisa().then((lista) {
+      if (mounted) {
+        setState(() {
+          _historicoPesquisa = lista;
+        });
+      }
+    });
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.trim();
@@ -39,6 +48,18 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
     _animationController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _salvarPesquisa(String termo) {
+    if (termo.trim().isEmpty) return;
+    setState(() {
+      _historicoPesquisa.remove(termo);
+      _historicoPesquisa.insert(0, termo);
+      if (_historicoPesquisa.length > 5) {
+        _historicoPesquisa.removeLast();
+      }
+    });
+    LocalCacheService.salvarHistoricoPesquisa(_historicoPesquisa);
   }
 
   Widget _buildAnimatedItem(Widget child, int index) {
@@ -133,6 +154,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                                   autofocus: true,
                                   textInputAction: TextInputAction.search,
                                   onSubmitted: (value) {
+                                    _salvarPesquisa(value);
                                     setState(() {
                                       _hasSubmitted = true;
                                     });
@@ -159,23 +181,30 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
             Expanded(
               child: _searchQuery.isEmpty
                   ? ListView(
+                      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       children: [
-                        _buildAnimatedItem(
-                          const Text(
-                            'Sugestões',
-                            style: TextStyle(
-                              fontSize: 18.0,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF5D201C),
+                        if (_historicoPesquisa.isNotEmpty) ...[
+                          _buildAnimatedItem(
+                            const Text(
+                              'Sugestões',
+                              style: TextStyle(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5D201C),
+                              ),
                             ),
+                            0,
                           ),
-                          0,
-                        ),
-                        const SizedBox(height: 16.0),
-                        _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Pãozinho'), 1),
-                        _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Coxinha'), 2),
-                        const SizedBox(height: 24.0),
+                          const SizedBox(height: 16.0),
+                          ..._historicoPesquisa.asMap().entries.map((entry) {
+                            return _buildAnimatedItem(
+                              _buildSuggestionItem(Icons.history, entry.value),
+                              entry.key + 1,
+                            );
+                          }),
+                          const SizedBox(height: 24.0),
+                        ],
                         _buildAnimatedItem(
                           const Text(
                             'Em alta',
@@ -226,6 +255,11 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
       contentPadding: const EdgeInsets.only(bottom: 8.0),
       onTap: () {
         _searchController.text = text;
+        _salvarPesquisa(text);
+        setState(() {
+          _hasSubmitted = true;
+        });
+        _animationController.forward(from: 0.0);
       },
     );
   }
@@ -256,6 +290,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
 
         if (_hasSubmitted) {
           return GridView.builder(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.all(24.0),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -271,8 +306,23 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => ProdutoDetalhesPage(produto: produto),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => ProdutoDetalhesPage(
+                          produto: produto,
+                        ),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(0.0, 1.0);
+                          const end = Offset.zero;
+                          const curve = Curves.easeOutCubic;
+
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                          return SlideTransition(
+                            position: animation.drive(tween),
+                            child: child,
+                          );
+                        },
+                        transitionDuration: const Duration(milliseconds: 300),
                       ),
                     );
                   },
@@ -291,6 +341,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
         }
 
         return ListView.builder(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           itemCount: produtos.length,
           itemBuilder: (context, index) {
@@ -321,6 +372,7 @@ class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateM
                 trailing: const Icon(Icons.north_west, color: Colors.grey, size: 16.0),
                 onTap: () {
                   _searchController.text = produto.nome;
+                  _salvarPesquisa(produto.nome);
                   setState(() {
                     _hasSubmitted = true;
                   });
