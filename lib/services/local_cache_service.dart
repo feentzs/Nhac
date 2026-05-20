@@ -6,7 +6,26 @@ class LocalCacheService {
   static const String _keyUsuario = 'cache_usuario';
   static const String _keyEnderecos = 'cache_enderecos';
   static const String _keyLocalizacaoGps = 'cache_localizacao_gps';
+  static const String _keySearchHistory = 'cache_search_history';
 
+  static Future<void> salvarHistoricoPesquisa(List<String> historico) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_keySearchHistory, historico);
+    } catch (e) {
+      debugPrint('LocalCacheService: erro ao salvar histórico — $e');
+    }
+  }
+
+  static Future<List<String>> carregarHistoricoPesquisa() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getStringList(_keySearchHistory) ?? [];
+    } catch (e) {
+      debugPrint('LocalCacheService: erro ao carregar histórico — $e');
+      return [];
+    }
+  }
 
   static Future<void> salvarUsuario(Map<String, dynamic> dados) async {
     try {
