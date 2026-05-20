@@ -13,10 +13,17 @@ import 'package:nhac/globals/app_state.dart';
 import 'package:nhac/globals/router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import './firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:nhac/services/push_notification_service.dart';
 
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';import 'package:sentry_flutter/sentry_flutter.dart';
-
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Notificação em background recebida!");
+}
 
 @NowaGenerated()
 late final SharedPreferences sharedPrefs;
@@ -30,6 +37,11 @@ main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  final pushService = PushNotificationService();
+  await pushService.initialize();
 
   sharedPrefs = await SharedPreferences.getInstance();
 
