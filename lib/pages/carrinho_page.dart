@@ -3,6 +3,7 @@ import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/carrinho_model.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
+import 'package:nhac/pages/formas_pagamento_page.dart'; // 👈 IMPORTANTE: Novo import
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +22,15 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   final Color lightAccentColor = const Color(0xFFFFEBD9);
   final NumberFormat currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
+  final TextEditingController _observacaoController = TextEditingController();
+  String _formaPagamentoSelecionada = 'Selecionar forma de pagamento';
+  IconData _iconePagamentoSelecionado = Icons.payment_outlined;
+
+  @override
+  void dispose() {
+    _observacaoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,11 +102,41 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   ),
                   
                   const SizedBox(height: 16),
-                  
+
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 750),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+                      );
+                    },
+                    child: _buildObservacaoField(),
+                  ),
+
+                  const SizedBox(height: 24),
+
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 800),
                     tween: Tween(begin: 0.0, end: 1.0),
                     curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+                      );
+                    },
+                    child: _buildPaymentSection(context),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 850),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
                     builder: (context, value, child) {
                       return Opacity(
                         opacity: value,
@@ -134,6 +174,116 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           );
 
         },
+      ),
+    );
+  }
+
+  Widget _buildObservacaoField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Observações para o restaurante',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF5D201C)),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _observacaoController,
+          maxLines: 2,
+          maxLength: 140, 
+          decoration: InputDecoration(
+            hintText: 'Ex: Tirar cebola, maionese à parte, troco para R\$ 50...',
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.all(16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.white),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: lightAccentColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(_iconePagamentoSelecionado, color: primaryColor),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pagamento na entrega',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formaPagamentoSelecionada,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF5D201C)),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+
+              final resultado = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FormasPagamentoPage()),
+              );
+
+              if (resultado != null && resultado is String) {
+                setState(() {
+                  _formaPagamentoSelecionada = resultado;
+                  if (resultado.toLowerCase().contains('pix')) {
+                    _iconePagamentoSelecionado = Icons.pix;
+                  } else if (resultado.toLowerCase().contains('dinheiro')) {
+                    _iconePagamentoSelecionado = Icons.money;
+                  } else {
+                    _iconePagamentoSelecionado = Icons.credit_card;
+                  }
+                });
+              }
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.grey[100],
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+            child: const Text(
+              'Alterar',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -541,6 +691,4 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       ),
     );
   }
-
-
 }
