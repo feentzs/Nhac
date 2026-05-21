@@ -119,21 +119,25 @@ class _FormasPagamentoPageState extends State<FormasPagamentoPage> {
                 ),
                 const SizedBox(height: 32),
                 _buildPaymentItem(
+                  context: context, 
                   icon: Icons.credit_card,
                   title: 'Cartão de crédito',
                   subtitle: 'Mastercard final 1234',
                 ),
                 _buildPaymentItem(
+                  context: context,
                   icon: Icons.credit_card_outlined,
                   title: 'Cartão de débito',
                   subtitle: 'Visa final 5678',
                 ),
                 _buildPaymentItem(
+                  context: context,
                   icon: Icons.pix,
                   title: 'Pix',
                   subtitle: 'Pagamento instantâneo',
                 ),
                 _buildPaymentItem(
+                  context: context,
                   icon: Icons.money,
                   title: 'Dinheiro',
                   subtitle: 'Pagamento na entrega',
@@ -147,42 +151,51 @@ class _FormasPagamentoPageState extends State<FormasPagamentoPage> {
   }
 
   Widget _buildPaymentItem({
+    required BuildContext context, 
     required IconData icon,
     required String title,
     required String subtitle,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 32.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 26, color: const Color(0xFF5D201C)),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF5D201C),
+
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+
+          Navigator.pop(context, title);
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, size: 26, color: const Color(0xFF5D201C)),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF5D201C),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.more_vert, color: Color(0xFF5D201C)),
-        ],
+            const Icon(Icons.more_vert, color: Color(0xFF5D201C)),
+          ],
+        ),
       ),
     );
   }
