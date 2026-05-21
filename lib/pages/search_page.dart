@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/produto_detalhes_page.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nhac/components/product_card.dart';
 import 'package:nhac/services/local_cache_service.dart';
 
