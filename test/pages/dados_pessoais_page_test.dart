@@ -25,10 +25,7 @@ class MockUserProvider extends ChangeNotifier implements UserProvider {
   bool get hasListeners => false;
 
   @override
-  Future<void> atualizarFotoPerfil(File imagem) {
-    // TODO: implement atualizarFotoPerfil
-    throw UnimplementedError();
-  }
+  Future<void> atualizarFotoPerfil(File imagem) async {}
 
   @override
   Future<void> carregarDadosUsuario() {

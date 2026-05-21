@@ -23,9 +23,9 @@ class PushNotificationService {
 
 
       String? token = await _fcm.getToken();
-      print('====================================');
-      print('MEU FCM TOKEN: $token');
-      print('====================================');
+      debugPrint('====================================');
+      debugPrint('MEU FCM TOKEN: $token');
+      debugPrint('====================================');
       
       await _localNotifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
