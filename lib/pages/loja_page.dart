@@ -3,11 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/loja/lojas.dart';
 import '../models/produto/produtos.dart';
-import '../components/product_card.dart'; 
-import '../components/seta_voltar.dart'; 
+import '../components/product_card.dart';
+import '../components/seta_voltar.dart';
+import '../pages/produto_detalhes_page.dart';
 
 class LojaPage extends StatelessWidget {
-
   final LojasModel loja;
 
   const LojaPage({super.key, required this.loja});
@@ -104,19 +104,22 @@ class LojaPage extends StatelessWidget {
                 stream: FirebaseFirestore.instance
                     .collection('produtos')
                     .where('loja_id', isEqualTo: loja.uid)
-                    .where('disponivel', isEqualTo: true) 
+                    .where('disponivel', isEqualTo: true)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(color: Color(0xFFFF6961)),
+                        child:
+                            CircularProgressIndicator(color: Color(0xFFFF6961)),
                       ),
                     );
                   }
 
-                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data!.docs.isEmpty) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32.0),
@@ -129,30 +132,44 @@ class LojaPage extends StatelessWidget {
                   }
 
                   final produtos = snapshot.data!.docs.map((doc) {
-                    return ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+                    return ProdutosModel.fromMap(
+                        doc.data() as Map<String, dynamic>, doc.id);
                   }).toList();
 
                   return GridView.builder(
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(), 
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, 
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
-                      childAspectRatio: 0.75, 
+                      childAspectRatio: 0.75,
                     ),
                     itemCount: produtos.length,
                     itemBuilder: (context, index) {
                       final produto = produtos[index];
 
-                      return ProductCard(
-                        idProduto: produto.uid,
-                        imageUrl: produto.imagemUrl.isNotEmpty 
-                            ? produto.imagemUrl 
-                            : 'https://via.placeholder.com/150', 
-                        name: produto.nome,
-                        weight: '', 
-                        price: produto.preco,
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProdutoDetalhesPage(
+                                produto: produto,
+                              ),
+                            ),
+                          );
+                        },
+                        child: ProductCard(
+                          idProduto: produto.uid,
+                          imageUrl: produto.imagemUrl.isNotEmpty
+                              ? produto.imagemUrl
+                              : 'https://via.placeholder.com/150',
+                          name: produto.nome,
+                          weight: '',
+                          price: produto.preco,
+                        ),
                       );
                     },
                   );
@@ -160,7 +177,7 @@ class LojaPage extends StatelessWidget {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)), 
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
