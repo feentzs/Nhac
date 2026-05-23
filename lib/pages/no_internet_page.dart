@@ -20,20 +20,38 @@ class NoInternetPage extends StatelessWidget {
               const Spacer(),
               Image.asset('assets/nhac-logo.png', height: 120.h),
               SizedBox(height: 48.h),
-              Icon(Icons.wifi_off_rounded, size: 80.sp, color: const Color(0xFFFE645C)),
+              Icon(Icons.wifi_off_rounded,
+                  size: 80.sp, color: const Color(0xFFFE645C)),
               SizedBox(height: 24.h),
-              Text('Ops! Sem conexão', textAlign: TextAlign.center, style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C))),
+              Text('Ops! Sem conexão',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 28.sp,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF5D201C))),
               SizedBox(height: 12.h),
-              Text('Parece que você está sem internet. Verifique sua conexão para continuar pedindo no Nhac.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16.sp, color: const Color(0xFF666666))),
+              Text(
+                  'Parece que você está sem internet. Verifique sua conexão para continuar pedindo no Nhac.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 16.sp, color: const Color(0xFF666666))),
               const Spacer(),
               BotaoLargoNhac(
                 texto: 'Tentar Novamente',
                 onPressed: () async {
-                  final service = Provider.of<ConnectivityService>(context, listen: false);
+                  final service =
+                      Provider.of<ConnectivityService>(context, listen: false);
                   await service.checkConnection();
                   if (!context.mounted) return;
-                  if (service.isOnline) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Conexão restabelecida!'), backgroundColor: Colors.green));
-                  else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ainda sem conexão. Tente novamente.'), backgroundColor: Color(0xFFFE645C)));
+                  if (service.isOnline) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Conexão restabelecida!'),
+                        backgroundColor: Colors.green));
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Ainda sem conexão. Tente novamente.'),
+                        backgroundColor: Color(0xFFFE645C)));
+                  }
                 },
               ),
               SizedBox(height: 32.h),

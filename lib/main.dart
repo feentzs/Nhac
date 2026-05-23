@@ -59,11 +59,10 @@ main() async {
       options.tracesSampleRate = 1.0;
       // The sampling rate for profiling is relative to tracesSampleRate
       // Setting to 1.0 will profile 100% of sampled transactions:
-      options.profilesSampleRate = 1.0;
+      //options.profilesSampleRate = 1.0;
     },
     appRunner: () => runApp(SentryWidget(child: const MyApp())),
   );
-  // TODO: Remove this line after sending the first sample event to sentry.
   await Sentry.captureException(Exception('This is a sample exception.'));
 }
 
