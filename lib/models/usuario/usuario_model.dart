@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class UsuarioModel{
+class UsuarioModel {
   final String uid;
   final String nome;
   final String email;
@@ -10,6 +10,7 @@ class UsuarioModel{
   final Timestamp? criadoEm;
   final Timestamp? ultimoLogin;
   final bool ativo;
+  final String? fcmToken; 
 
   UsuarioModel({
     required this.uid,
@@ -21,6 +22,7 @@ class UsuarioModel{
     this.criadoEm,
     this.ultimoLogin,
     this.ativo = true,
+    this.fcmToken, 
   });
 
   UsuarioModel copyWith({
@@ -33,21 +35,22 @@ class UsuarioModel{
     Timestamp? criadoEm,
     Timestamp? ultimoLogin,
     bool? ativo,
-  }) => UsuarioModel(
-    uid: uid ?? this.uid,
-    nome: nome ?? this.nome,
-    email: email ?? this.email,
-    fotoUrl: fotoUrl ?? this.fotoUrl,
-    cpf: cpf ?? this.cpf,
-    telefone: telefone ?? this.telefone,
-    criadoEm: criadoEm ?? this.criadoEm,
-    ultimoLogin: ultimoLogin ?? this.ultimoLogin,
-    ativo: ativo ?? this.ativo
-  );
+    String? fcmToken,
+  }) =>
+      UsuarioModel(
+        uid: uid ?? this.uid,
+        nome: nome ?? this.nome,
+        email: email ?? this.email,
+        fotoUrl: fotoUrl ?? this.fotoUrl,
+        cpf: cpf ?? this.cpf,
+        telefone: telefone ?? this.telefone,
+        criadoEm: criadoEm ?? this.criadoEm,
+        ultimoLogin: ultimoLogin ?? this.ultimoLogin,
+        ativo: ativo ?? this.ativo,
+        fcmToken: fcmToken ?? this.fcmToken,
+      );
 
-
-
-  factory UsuarioModel.fromMap(Map<String, dynamic> map, String id){
+  factory UsuarioModel.fromMap(Map<String, dynamic> map, String id) {
     return UsuarioModel(
       uid: id,
       nome: map['nome'] ?? '',
@@ -58,10 +61,11 @@ class UsuarioModel{
       criadoEm: map['criado_em'] as Timestamp?,
       ultimoLogin: map['ultimo_login'] as Timestamp?,
       ativo: map['ativo'] ?? true,
+      fcmToken: map['fcmToken'] as String?,
     );
   }
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'nome': nome,
       'email': email,
@@ -71,6 +75,7 @@ class UsuarioModel{
       'criado_em': criadoEm ?? FieldValue.serverTimestamp(),
       'ultimo_login': ultimoLogin ?? FieldValue.serverTimestamp(),
       'ativo': ativo,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 }
