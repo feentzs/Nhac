@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; 
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
@@ -31,28 +32,28 @@ class ProdutoDetalhesPage extends StatelessWidget {
                 backgroundColor: Colors.white,
                 elevation: 0,
                 leading: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(8.w),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.8),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+                      icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20.sp),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
                 ),
                 actions: [
                   Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: EdgeInsets.all(8.w),
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.8),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.share_outlined, color: Colors.black, size: 20),
+                        icon: Icon(Icons.share_outlined, color: Colors.black, size: 20.sp),
                         onPressed: () {
                           final link = 'https://nhac.app/produto/${produto.uid}';
                           Share.share(
@@ -67,14 +68,14 @@ class ProdutoDetalhesPage extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: EdgeInsets.all(8.w),
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.8),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.more_horiz, color: Colors.black, size: 20),
+                        icon: Icon(Icons.more_horiz, color: Colors.black, size: 20.sp),
                         onPressed: () {},
                       ),
                     ),
@@ -97,12 +98,12 @@ class ProdutoDetalhesPage extends StatelessWidget {
                             ),
                             errorWidget: (context, url, error) => Container(
                               color: const Color(0xFFF5F5F5),
-                              child: const Icon(Icons.fastfood, size: 80, color: Colors.grey),
+                              child: Icon(Icons.fastfood, size: 80.sp, color: Colors.grey),
                             ),
                           )
                         : Container(
                             color: const Color(0xFFF5F5F5),
-                            child: const Icon(Icons.fastfood, size: 80, color: Colors.grey),
+                            child: Icon(Icons.fastfood, size: 80.sp, color: Colors.grey),
                           ),
                   ),
                 ),
@@ -110,23 +111,23 @@ class ProdutoDetalhesPage extends StatelessWidget {
 
               SliverToBoxAdapter(
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+                      topLeft: Radius.circular(24.r),
+                      topRight: Radius.circular(24.r),
                     ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 10.h),
                         child: Text(
                           produto.nome,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 22,
+                          style: TextStyle(
+                            fontSize: 22.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                             height: 1.3,
@@ -134,45 +135,45 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
                               currencyFormat.format(produto.preco),
-                              style: const TextStyle(
-                                fontSize: 42,
+                              style: TextStyle(
+                                fontSize: 42.sp,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFFFF6961),
-                                letterSpacing: -1.5,
+                                color: const Color(0xFFFF6961),
+                                letterSpacing: -1.5.sp,
                                 shadows: [
-                                  Shadow(offset: Offset(-0.8, -0.8), color: Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8, -0.8), color: Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8, 0.8), color: Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(-0.8, 0.8), color: Color(0xFFFF6961)),
+                                  Shadow(offset: Offset(-0.8.w, -0.8.h), color: const Color(0xFFFF6961)),
+                                  Shadow(offset: Offset(0.8.w, -0.8.h), color: const Color(0xFFFF6961)),
+                                  Shadow(offset: Offset(0.8.w, 0.8.h), color: const Color(0xFFFF6961)),
+                                  Shadow(offset: Offset(-0.8.w, 0.8.h), color: const Color(0xFFFF6961)),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             if (produto.totalAvaliacoes > 0)
                               Container(
-                                margin: const EdgeInsets.only(bottom: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                margin: EdgeInsets.only(bottom: 6.h),
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFFF5E5),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.star, color: Colors.amber, size: 14),
-                                    const SizedBox(width: 4),
+                                    Icon(Icons.star, color: Colors.amber, size: 14.sp),
+                                    SizedBox(width: 4.w),
                                     Text(
                                       produto.mediaAvaliacao.toStringAsFixed(1),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Colors.orange,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                        fontSize: 12.sp,
                                       ),
                                     ),
                                   ],
@@ -181,27 +182,27 @@ class ProdutoDetalhesPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20.h),
 
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16.w),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF9F9F9),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16.r),
                           ),
                           child: Column(
                             children: [
                               _buildServiceRow(Icons.bolt, 'Envio imediato após a compra'),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                              Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8.h),
+                                child: Divider(height: 1.h, color: const Color(0xFFEEEEEE)),
                               ),
                               _buildServiceRow(Icons.check_circle_outline, 'Garantia de reembolso em caso de problemas'),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                              Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8.h),
+                                child: Divider(height: 1.h, color: const Color(0xFFEEEEEE)),
                               ),
                               FutureBuilder<DocumentSnapshot?>(
                                 future: produto.lojaId.isNotEmpty
@@ -223,38 +224,38 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24.h),
 
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Text(
                           'Detalhes do Produto',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.h),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Text(
                           produto.descricao.isNotEmpty 
                               ? produto.descricao 
                               : 'Este produto é preparado com ingredientes frescos e selecionados. Perfeito para qualquer momento do dia.',
-                          style: const TextStyle(
-                            fontSize: 15,
+                          style: TextStyle(
+                            fontSize: 15.sp,
                             color: Colors.black54,
                             height: 1.5,
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      SizedBox(height: 32.h),
 
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance
                               .collection('produtos')
@@ -289,7 +290,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         ),
                       ),
 
-                      SizedBox(height: 100 + bottomPadding),
+                      SizedBox(height: (100 + bottomPadding).h),
                     ],
                   ),
                 ),
@@ -303,44 +304,43 @@ class ProdutoDetalhesPage extends StatelessWidget {
             right: 0,
             child: Container(
               padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 12,
-                bottom: bottomPadding > 0 ? bottomPadding : 12,
+                left: 16.w,
+                right: 16.w,
+                top: 12.h,
+                bottom: bottomPadding > 0 ? bottomPadding : 12.h,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
+                    blurRadius: 10.r,
+                    offset: Offset(0, -5.h),
                   ),
                 ],
               ),
               child: Row(
                 children: [
                   _buildIconAction(Icons.star_border, 'Favoritar', '118'),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16.w),
                   _buildIconAction(Icons.chat_bubble_outline, 'Chat', ''),
-                  const SizedBox(width: 24),
+                  SizedBox(width: 24.w),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                      },
+                      onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6961),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(50),
+                          borderRadius: BorderRadius.circular(50.r),
                         ),
                       ),
                       child: Text(
                         'Comprar  ${currencyFormat.format(produto.preco)}',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -358,18 +358,18 @@ class ProdutoDetalhesPage extends StatelessWidget {
   Widget _buildServiceRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF888888)),
-        const SizedBox(width: 12),
+        Icon(icon, size: 20.sp, color: const Color(0xFF888888)),
+        SizedBox(width: 12.w),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF555555),
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: const Color(0xFF555555),
             ),
           ),
         ),
-        const Icon(Icons.chevron_right, size: 20, color: Color(0xFFCCCCCC)),
+        Icon(Icons.chevron_right, size: 20.sp, color: const Color(0xFFCCCCCC)),
       ],
     );
   }
@@ -378,13 +378,13 @@ class ProdutoDetalhesPage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 24, color: const Color(0xFF666666)),
-        const SizedBox(height: 4),
+        Icon(icon, size: 24.sp, color: const Color(0xFF666666)),
+        SizedBox(height: 4.h),
         Text(
           count.isNotEmpty ? count : label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Color(0xFF888888),
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: const Color(0xFF888888),
           ),
         ),
       ],
