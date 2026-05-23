@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:nhac/controllers/cart_provider.dart';
@@ -375,9 +376,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             onPressed: () {
               // Limpar carrinho
               context.read<CartProvider>().esvaziarCarrinho();
-              Navigator.pop(context); // fecha o dialog
-              Navigator.pop(context); // volta para o carrinho ou home
-              Navigator.pop(context); // se necessário, volta mais uma tela
+              Navigator.pop(context); 
+              Navigator.pop(context); 
+              Navigator.pop(context);
             },
             child: const Text('OK'),
           ),
@@ -479,8 +480,7 @@ class _AddressSelectionSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: InkWell(
               onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/enderecos-salvos');
+                context.push('/enderecos-salvos');
               },
               borderRadius: BorderRadius.circular(12.r),
               child: Padding(

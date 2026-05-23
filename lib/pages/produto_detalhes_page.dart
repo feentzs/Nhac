@@ -392,8 +392,9 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                     ))
                                 .toList();
 
-                            if (produtosRelacionados.isEmpty)
+                            if (produtosRelacionados.isEmpty) {
                               return const SizedBox.shrink();
+                            }
 
                             return HomeProductSection(
                               title: 'Produtos Relacionados',
@@ -442,29 +443,22 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        final cartProvider = Provider.of<CartProvider>(
-                            context, listen: false);
-                        // Adiciona o produto ao carrinho com a quantidade selecionada
-                        for (int i = 0; i < _quantidade; i++) {
-                          cartProvider.adicionarItem(
-                            idProduto: widget.produto.uid,
-                            nome: widget.produto.nome,
-                            preco: widget.produto.preco,
-                            imagemUrl: widget.produto.imagemUrl,
-                          );
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                '$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-                            duration: const Duration(seconds: 2),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        // Opcional: navegar para o carrinho
-                        // Navigator.pushNamed(context, '/carrinho');
-                      },
-                      style: ElevatedButton.styleFrom(
+  final cartProvider = Provider.of<CartProvider>(context, listen: false);
+  cartProvider.adicionarItemComQuantidade(
+    idProduto: widget.produto.uid,
+    nome: widget.produto.nome,
+    preco: widget.produto.preco,
+    imagemUrl: widget.produto.imagemUrl,
+    quantidade: _quantidade,
+  );
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
+      duration: const Duration(seconds: 2),
+      backgroundColor: Colors.green,
+    ),
+  );
+},style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6961),
                         foregroundColor: Colors.white,
                         elevation: 0,
@@ -474,7 +468,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         ),
                       ),
                       child: Text(
-                        'Comprar  ${currencyFormat.format(widget.produto.preco * _quantidade)}',
+                        'Adicionar  ${currencyFormat.format(widget.produto.preco * _quantidade)}',
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.bold,

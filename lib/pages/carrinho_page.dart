@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/carrinho_model.dart';
@@ -62,7 +63,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     SizedBox(height: 24.h),
                     ...cartProvider.itens.values
                         .map((item) => _buildCartItem(item, cartProvider))
-                        .toList(),
+                        ,
                   ],
                 ),
               ),
@@ -181,9 +182,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/enderecos-salvos');
-              },
+context.push('/enderecos-salvos');              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFE645C),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
@@ -207,7 +206,9 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   }
 
   Widget _buildBottomButton(CartProvider cartProvider) {
-    return Container(
+  return Padding(
+    padding: EdgeInsets.only(bottom: 80.h),
+    child: Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -226,10 +227,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Total',
-                  style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-                ),
+                Text('Total', style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
                 Text(
                   currencyFormat.format(cartProvider.valorTotal),
                   style: TextStyle(
@@ -245,30 +243,21 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             width: 140.w,
             height: 49.h,
             child: ElevatedButton(
-             onPressed: () {
-  Navigator.pushNamed(context, '/checkout');
-},
+              onPressed: () => context.push('/checkout'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFE645C),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50.r),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
               ),
-              child: Text(
-                'Continuar',
-                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
-              ),
+              child: Text('Continuar', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
             ),
           ),
-         
         ],
-        
       ),
-    );
-  }
-
+    ),
+  );
+}
 
   Widget _buildCartItem(CarrinhoModel item, CartProvider cartProvider) {
     double swipeProgress = 0.0;
@@ -632,9 +621,7 @@ class _AddressSelectionSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: InkWell(
               onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/enderecos-salvos');
-              },
+context.push('/enderecos-salvos');              },
               borderRadius: BorderRadius.circular(12.r),
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 8.h),

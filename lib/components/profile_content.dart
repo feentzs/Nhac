@@ -293,7 +293,7 @@ class _ProfileContentState extends State<ProfileContent> {
                                         try {
                                           if (context.mounted) await context.read<UserProvider>().atualizarFotoPerfil(File(pickedFile.path));
                                         } catch (e) {
-                                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao carregar imagem: $e')));
+                                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao carregar imagem: $e')));
                                         } finally {
                                           if (mounted) setState(() => _isUploading = false);
                                         }

@@ -76,6 +76,34 @@ class CartProvider extends ChangeNotifier {
 
     await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
   }
+  Future<void> adicionarItemComQuantidade({
+  required String idProduto,
+  required String nome,
+  required double preco,
+  required String imagemUrl,
+  required int quantidade,
+}) async {
+  final user = _auth.currentUser;
+  if (user == null) return;
+
+  final int novaQuantidade;
+  if (_itens.containsKey(idProduto)) {
+    novaQuantidade = _itens[idProduto]!.quantidade + quantidade;
+  } else {
+    novaQuantidade = quantidade;
+  }
+
+  final novoItem = CarrinhoModel(
+    idDocumento: idProduto,
+    idProduto: idProduto,
+    nome: nome,
+    preco: preco,
+    quantidade: novaQuantidade,
+    imagemUrl: imagemUrl,
+  );
+
+  await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
+}
 
   Future<void> removerItem(String idProduto) async {
     final user = _auth.currentUser;
