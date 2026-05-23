@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // 🟢 NOVO IMPORT
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/loja_page.dart';
@@ -9,13 +8,18 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/components/home/home_banner_carousel.dart';
 import 'package:nhac/components/home/home_product_section.dart';
 import 'package:nhac/pages/search_page.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
+import 'package:nhac/services/local_cache_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
 @NowaGenerated()
@@ -28,7 +32,7 @@ class HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<HomeContent> {
-  final String _currentAddress = 'Buscando localização...';
+  String _currentAddress = 'Buscando localização...';
   static bool _jaCarregouUmaVez = false;
   late bool _isLoading;
 
@@ -58,10 +62,10 @@ class _HomeContentState extends State<HomeContent> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Center(
+            child: const Center(
               child: Text(
                 'Nenhum restaurante encontrado na região.',
-                style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+                style: TextStyle(color: Colors.grey),
               ),
             ),
           );
@@ -88,7 +92,7 @@ class _HomeContentState extends State<HomeContent> {
                   BoxShadow(
                     color: const Color(0xFF5D201C).withValues(alpha: 0.05),
                     blurRadius: 10.r,
-                    offset: Offset(0.0, 4.h),
+                    offset: const Offset(0.0, 4.0),
                   ),
                 ],
               ),
@@ -121,7 +125,7 @@ class _HomeContentState extends State<HomeContent> {
                           child: CachedNetworkImage(
                             imageUrl: loja.imagemUrl,
                             width: 70.w,
-                            height: 70.w, // largura e altura devem ter a mesma métrica num quadrado
+                            height: 70.w,
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Shimmer.fromColors(
                               baseColor: Colors.grey.shade300,
@@ -136,11 +140,13 @@ class _HomeContentState extends State<HomeContent> {
                               width: 70.w,
                               height: 70.w,
                               color: Colors.grey.shade100,
-                              child: Icon(Icons.store, color: Colors.grey, size: 24.sp),
+                              child: Icon(Icons.store, color: Colors.grey, size: 24.r),
                             ),
                           ),
                         ),
                         SizedBox(width: 16.w),
+
+                        // Informações do Restaurante
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +170,7 @@ class _HomeContentState extends State<HomeContent> {
                                   Row(
                                     children: [
                                       Icon(Icons.star,
-                                          color: Colors.amber, size: 16.sp),
+                                          color: Colors.amber, size: 16.r),
                                       SizedBox(width: 4.w),
                                       Text(
                                         loja.mediaAvaliacao.toStringAsFixed(1),
@@ -217,6 +223,11 @@ class _HomeContentState extends State<HomeContent> {
           .limit(5)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("🔴 ERRO DO FIREBASE: ${snapshot.error}");
+        } else if (snapshot.hasData) {
+          debugPrint("🟢 LOJAS ENCONTRADAS: ${snapshot.data!.docs.length}");
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildSectionSkeleton();
         }
@@ -255,11 +266,81 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   final List<ProductSectionItem> _produtosNecessidades = [
-    // ... os itens mantêm-se iguais
+    const ProductSectionItem(
+      idProduto: 'prod_001',
+      imageUrl:
+          'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
+      name: 'Pãozinho',
+      weight: '50 g.',
+      price: 16.00,
+      discountPercent: null,
+    ),
+    const ProductSectionItem(
+      idProduto: 'prod_002',
+      imageUrl:
+          'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
+      name: 'Carne',
+      weight: '68 g.',
+      price: 16.00,
+      discountPercent: 20,
+    ),
+    const ProductSectionItem(
+      idProduto: 'prod_003',
+      imageUrl:
+          'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
+      name: 'Coxinha',
+      weight: '140 g.',
+      price: 1.90,
+      discountPercent: null,
+    ),
+    const ProductSectionItem(
+      idProduto: 'prod_004',
+      imageUrl:
+          'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
+      name: 'Refrigerante Viver',
+      weight: '2L',
+      price: 03.99,
+      discountPercent: 10,
+    ),
   ];
 
   final List<ProductSectionItem> _produtosPromocao = [
-    // ... os itens mantêm-se iguais
+    const ProductSectionItem(
+      idProduto: 'prod_005',
+      imageUrl:
+          'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
+      name: 'Pãozinho',
+      weight: '50 g.',
+      price: 16.00,
+      discountPercent: null,
+    ),
+    const ProductSectionItem(
+      idProduto: 'prod_006',
+      imageUrl:
+          'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
+      name: 'Carne',
+      weight: '68 g.',
+      price: 16.00,
+      discountPercent: 20,
+    ),
+    const ProductSectionItem(
+      idProduto: 'prod_007',
+      imageUrl:
+          'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
+      name: 'Coxinha',
+      weight: '140 g.',
+      price: 1.90,
+      discountPercent: null,
+    ),
+    const ProductSectionItem(
+      idProduto: 'prod_008',
+      imageUrl:
+          'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
+      name: 'Refrigerante Viver',
+      weight: '2L',
+      price: 03.99,
+      discountPercent: 10,
+    ),
   ];
 
   @override
@@ -283,8 +364,67 @@ class _HomeContentState extends State<HomeContent> {
     }
   }
 
-  Future<void> _carregarGpsComCache() async { /*...*/ }
-  Future<void> _onRefresh() async { /*...*/ }
+  Future<void> _carregarGpsComCache() async {
+    final cachedGps = await LocalCacheService.carregarLocalizacaoGps();
+    if (cachedGps != null && mounted) {
+      setState(() => _currentAddress = cachedGps);
+    }
+    _pegarLocalizacaoUsuario();
+  }
+
+  Future<void> _pegarLocalizacaoUsuario() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) setState(() => _currentAddress = 'GPS desativado');
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (mounted) setState(() => _currentAddress = 'Permissão negada');
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        setState(() => _currentAddress = 'Permissão negada permanentemente');
+      }
+      return;
+    }
+
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.high));
+
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        final endereco = '${place.street}, ${place.subLocality}';
+        if (mounted) {
+          setState(() => _currentAddress = endereco);
+          LocalCacheService.salvarLocalizacaoGps(endereco);
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _currentAddress = 'Erro ao buscar endereço');
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    await Future.wait([
+      _pegarLocalizacaoUsuario(),
+      context.read<UserProvider>().carregarDadosUsuario(),
+    ]);
+  }
 
   void _abrirSelecaoEndereco(BuildContext context) {
     showModalBottomSheet(
@@ -315,8 +455,8 @@ class _HomeContentState extends State<HomeContent> {
       ),
       slivers: [
         CupertinoSliverRefreshControl(
-          refreshIndicatorExtent: 140.0.h,
-          refreshTriggerPullDistance: 180.0.h,
+          refreshIndicatorExtent: 140.h,
+          refreshTriggerPullDistance: 180.h,
           onRefresh: _onRefresh,
           builder: (context, refreshState, pulledExtent,
               refreshTriggerPullDistance, refreshIndicatorExtent) {
@@ -371,14 +511,14 @@ class _HomeContentState extends State<HomeContent> {
                                       color: const Color(0xFF5D201C)
                                           .withValues(alpha: 0.05),
                                       blurRadius: 10.r,
-                                      offset: Offset(0.0, 4.h),
+                                      offset: const Offset(0.0, 4.0),
                                     ),
                                   ],
                                 ),
                                 child: Icon(
                                   Icons.location_on_outlined,
                                   color: Colors.grey,
-                                  size: 20.sp,
+                                  size: 20.r,
                                 ),
                               ),
                               SizedBox(width: 12.w),
@@ -421,7 +561,7 @@ class _HomeContentState extends State<HomeContent> {
                                   color: const Color(0xFF5D201C)
                                       .withValues(alpha: 0.05),
                                   blurRadius: 10.r,
-                                  offset: Offset(0.0, 4.h),
+                                  offset: const Offset(0.0, 4.0),
                                 ),
                               ],
                             ),
@@ -437,7 +577,7 @@ class _HomeContentState extends State<HomeContent> {
                                   ),
                                 ),
                                 Icon(Icons.chevron_right,
-                                    color: const Color(0xFFFF6961), size: 18.sp),
+                                    color: const Color(0xFFFF6961), size: 18.r),
                               ],
                             ),
                           ),
@@ -480,13 +620,13 @@ class _HomeContentState extends State<HomeContent> {
                                   color: const Color(0xFF5D201C)
                                       .withValues(alpha: 0.05),
                                   blurRadius: 10.r,
-                                  offset: Offset(0.0, 4.h),
+                                  offset: const Offset(0.0, 4.0),
                                 ),
                               ],
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.search, color: Colors.grey, size: 24.sp),
+                                Icon(Icons.search, color: Colors.grey, size: 22.r),
                                 SizedBox(width: 8.w),
                                 Expanded(
                                   child: Text(
@@ -496,7 +636,7 @@ class _HomeContentState extends State<HomeContent> {
                                         fontSize: 16.sp),
                                   ),
                                 ),
-                                Icon(Icons.tune, color: Colors.grey, size: 24.sp),
+                                Icon(Icons.tune, color: Colors.grey, size: 22.r),
                               ],
                             ),
                           ),
@@ -704,7 +844,7 @@ class _HomeContentState extends State<HomeContent> {
                       highlightColor: Colors.grey.shade100,
                       child: Container(
                         width: 24.w,
-                        height: 24.w,
+                        height: 24.h,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -796,7 +936,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                           ? Icons.work_outline
                           : Icons.home_outlined,
                       color: const Color(0xFFFF6961),
-                      size: 20.sp,
+                      size: 20.r,
                     ),
                   ),
                   title: Text(
@@ -813,7 +953,8 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                     style: TextStyle(fontSize: 13.sp),
                   ),
                   trailing: endereco.padrao
-                      ? Icon(Icons.check_circle, color: const Color(0xFFFF6961), size: 24.sp)
+                      ? Icon(Icons.check_circle,
+                          color: const Color(0xFFFF6961), size: 22.r)
                       : null,
                 );
               },
@@ -821,7 +962,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Divider(height: 32.h),
+            child: const Divider(height: 32),
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -841,7 +982,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                         color: Colors.grey.shade100,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.add, color: Colors.grey, size: 24.sp),
+                      child: Icon(Icons.add, color: Colors.grey, size: 20.r),
                     ),
                     SizedBox(width: 16.w),
                     Text(
