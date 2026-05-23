@@ -1,6 +1,8 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PushNotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
@@ -20,13 +22,17 @@ class PushNotificationService {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('Permissão de notificações concedida!');
-
-
-      String? token = await _fcm.getToken();
-      print('====================================');
-      print('MEU FCM TOKEN: $token');
-      print('====================================');
       
+      String? token = await _fcm.getToken();
+      if (token != null) {
+        print('MEU FCM TOKEN: $token');
+        await _guardarTokenNoBancoDeDados(token); 
+      }
+
+      _fcm.onTokenRefresh.listen((novoToken) {
+        _guardarTokenNoBancoDeDados(novoToken);
+      });
+
       await _localNotifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(_androidChannel);
@@ -60,6 +66,28 @@ class PushNotificationService {
           );
         }
       });
+    }
+  }
+
+  Future<void> _guardarTokenNoBancoDeDados(String token) async {
+
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('usuarios') 
+            .doc(userId)
+            .set({
+              'fcmToken': token,
+            }, SetOptions(merge: true)); 
+
+        debugPrint('✅ FCM Token atualizado no Firestore com sucesso!');
+      } catch (e) {
+        debugPrint('❌ Erro ao guardar o token no Firestore: $e');
+      }
+    } else {
+      debugPrint('Nenhum utilizador logado. O token não foi guardado na base de dados.');
     }
   }
 }

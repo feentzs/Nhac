@@ -41,14 +41,19 @@ class HomeProductSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20.0,
-                color: Color(0xFF5D201C),
+           Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20.0,
+                  color: Color(0xFF5D201C),
+                ),
+                maxLines: 1, 
+                overflow: TextOverflow.ellipsis, 
               ),
             ),
+            const SizedBox(width: 8.0), 
             GestureDetector(
               onTap: onSeeAll,
               child: const Text(
