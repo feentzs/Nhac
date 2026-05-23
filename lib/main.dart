@@ -16,6 +16,7 @@ import './firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/services/push_notification_service.dart';
 
 
@@ -58,10 +59,12 @@ main() async {
       options.tracesSampleRate = 1.0;
       // The sampling rate for profiling is relative to tracesSampleRate
       // Setting to 1.0 will profile 100% of sampled transactions:
-      // options.profilesSampleRate = 1.0;
+      options.profilesSampleRate = 1.0;
     },
     appRunner: () => runApp(SentryWidget(child: const MyApp())),
   );
+  // TODO: Remove this line after sending the first sample event to sentry.
+  await Sentry.captureException(Exception('This is a sample exception.'));
 }
 
 @NowaGenerated({'visibleInNowa': false})
@@ -86,15 +89,23 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return Consumer<ConnectivityService>(
           builder: (context, connectivity, child) {
-            return MaterialApp.router(
-              debugShowCheckedModeBanner: false,
-              theme: AppState.of(context).theme,
-              routerConfig: appRouter,
-              builder: (context, navigator) {
-                // if (!connectivity.isOnline) {
-                //   return const NoInternetPage();
-                // }
-                return navigator!;
+            
+          return ScreenUtilInit(
+              designSize: const Size(390, 844), // Tamanho base do seu design no Figma
+              minTextAdapt: true,
+              splitScreenMode: true,
+              builder: (context, child) {
+                return MaterialApp.router(
+                  debugShowCheckedModeBanner: false,
+                  theme: AppState.of(context).theme,
+                  routerConfig: appRouter,
+                  builder: (context, navigator) {
+                    // if (!connectivity.isOnline) {
+                    //   return const NoInternetPage();
+                    // }
+                    return navigator!;
+                  },
+                );
               },
             );
           },

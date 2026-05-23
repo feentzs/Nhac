@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; 
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/components/botoes/botao_nhac.dart';
@@ -72,8 +73,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void dispose() {
     try {
       context.read<CartProvider>().removeListener(_onCartChanged);
-    } catch (_) {
-    }
+    } catch (_) {}
     _pageController.dispose();
     _scrollController.dispose();
     _cartBarController.dispose();
@@ -149,7 +149,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 40, 
+                height: 40.h, 
                 child: IgnorePointer(
                   child: Container(
                     decoration: BoxDecoration(
@@ -171,7 +171,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 50 + bottomPadding,
+                height: 50.h + bottomPadding,
                 child: IgnorePointer(
                   child: Container(
                     decoration: BoxDecoration(
@@ -193,28 +193,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 bottom: _isScrolledDown 
-                    ? (bottomPadding + 10.0 + 75.0 + 16.0)
-                    : (bottomPadding + 10.0 + 12.5),
-                right: 24.0 + (75.0 / 2) - 25.0,
+                    ? (bottomPadding + 10.h + 75.h + 16.h)
+                    : (bottomPadding + 10.h + 12.5.h),
+                right: 24.w + (75.w / 2) - 25.w,
                 child: GestureDetector(
                   onTap: _isScrolledDown ? _scrollToTop : null,
                   child: Container(
-                    width: 50.0,
-                    height: 50.0,
+                    width: 50.w,
+                    height: 50.w, // Mantenho .w na altura para ser um círculo perfeito
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF6961),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFFFF6961).withValues(alpha: 0.3),
-                          blurRadius: 10.0,
-                          offset: const Offset(0, 4),
+                          blurRadius: 10.r,
+                          offset: Offset(0, 4.h),
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_upward_rounded,
                       color: Colors.white,
+                      size: 24.sp,
                     ),
                   ),
                 ),
@@ -224,8 +225,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 animation: _cartBarController,
                 builder: (context, child) {
                   final t = Curves.easeOutCubic.transform(_cartBarController.value);
-                  final baseBottom = bottomPadding + 95.0;
-                  final interpolatedBottom = (baseBottom - 80.0) + (80.0 * t);
+                  final baseBottom = bottomPadding + 95.h;
+                  final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
                   final scaleX = 0.2 + 0.8 * t;
                   final opacity = t.clamp(0.0, 1.0);
 
@@ -233,8 +234,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
                   return Positioned(
                     bottom: interpolatedBottom,
-                    left: 24,
-                    right: 24,
+                    left: 24.w,
+                    right: 24.w,
                     child: Transform.scale(
                       scaleX: scaleX,
                       scaleY: 1.0,
@@ -252,14 +253,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                bottom: bottomPadding + 10.0,
-                left: _isScrolledDown ? MediaQuery.of(context).size.width - 24.0 - 75.0 : 24.0,
-                right: 24.0,
+                bottom: bottomPadding + 10.h,
+                left: _isScrolledDown ? MediaQuery.of(context).size.width - 24.w - 75.w : 24.w,
+                right: 24.w,
                 child: AnimatedBuilder(
                   animation: _cartBarController,
                   builder: (context, child) {
                     final t = _cartBarController.value;
-                    final bounceAmount = math.sin(t * math.pi) * 8.0;
+                    final bounceAmount = math.sin(t * math.pi) * 8.h;
                     
                     final isReversing = _cartBarController.status == AnimationStatus.reverse;
                     final offsetY = isReversing ? bounceAmount : -bounceAmount;
@@ -285,15 +286,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         Center(
           child: Text(
             'tela $index',
-            style: const TextStyle(color: Color(0xFF5D201C), fontSize: 24),
+            style: TextStyle(color: const Color(0xFF5D201C), fontSize: 24.sp),
           ),
         ),
-        const Positioned(
-          top: 257.0,
-          left: 70.0,
-          width: 232.0,
-          height: 200.0,
-          child: Image(
+        Positioned(
+          top: 257.h,
+          left: 70.w,
+          width: 232.w,
+          height: 200.h,
+          child: const Image(
             image: AssetImage('assets/construction.gif'),
             fit: BoxFit.fitHeight,
           ),
@@ -312,20 +313,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
-        height: 75.0,
+        height: 75.h,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(50.0),
+          borderRadius: BorderRadius.circular(50.r),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF5D201C).withValues(alpha: 0.1),
-              blurRadius: 15.0,
-              offset: const Offset(0, 9),
+              blurRadius: 15.r,
+              offset: Offset(0, 9.h),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(50.0),
+          borderRadius: BorderRadius.circular(50.r),
           child: AnimatedCrossFade(
             duration: const Duration(milliseconds: 300),
             crossFadeState: _isScrolledDown ? CrossFadeState.showSecond : CrossFadeState.showFirst,
@@ -348,14 +349,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               );
             },
             firstChild: SizedBox(
-              width: MediaQuery.of(context).size.width - 48.0,
-              height: 75.0,
+              width: MediaQuery.of(context).size.width - 48.w,
+              height: 75.h,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 physics: const NeverScrollableScrollPhysics(),
                 child: SizedBox(
-                  width: MediaQuery.of(context).size.width - 48.0,
-                  height: 75.0,
+                  width: MediaQuery.of(context).size.width - 48.w,
+                  height: 75.h,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -369,12 +370,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
             secondChild: SizedBox(
-              width: 75.0,
-              height: 75.0,
+              width: 75.w,
+              height: 75.h,
               child: Center(
                 child: Icon(
                   _getIconForIndex(_selectedIndex),
-                  size: 28.0,
+                  size: 28.sp,
                   color: const Color(0xFFFF6961),
                 ),
               ),
@@ -413,12 +414,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 400),
         curve: Curves.fastOutSlowIn,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 20.0 : 12.0,
-          vertical: 12.0,
+          horizontal: isSelected ? 20.w : 12.w,
+          vertical: 12.h,
         ),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFFFEBD9) : Colors.transparent,
-          borderRadius: BorderRadius.circular(50.0),
+          borderRadius: BorderRadius.circular(50.r),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -433,7 +434,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       backgroundColor: const Color(0xFFFF6961),
                       child: Icon(
                         icon,
-                        size: 28.0,
+                        size: 28.sp,
                         color: isSelected
                             ? const Color(0xFFFF6961)
                             : const Color(0xFFA0A0A0),
@@ -443,7 +444,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 )
               : Icon(
                   icon,
-                  size: 28.0,
+                  size: 28.sp,
                   color: isSelected
                       ? const Color(0xFFFF6961)
                       : const Color(0xFFA0A0A0),
@@ -455,15 +456,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 width: isSelected ? null : 0,
                 child: isSelected
                     ? Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
+                        padding: EdgeInsets.only(left: 8.w),
                         child: Text(
                           label,
                           maxLines: 1,
                           overflow: TextOverflow.clip,
-                          style: const TextStyle(
-                            color: Color(0xFFFF6961),
+                          style: TextStyle(
+                            color: const Color(0xFFFF6961),
                             fontWeight: FontWeight.w600,
-                            fontSize: 15.0,
+                            fontSize: 15.sp,
                           ),
                         ),
                       )
@@ -475,17 +476,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
     );
   }
+  
   Widget _buildCartTotalBar(double total) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(50.r),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF5D201C).withValues(alpha: 0.1),
-            blurRadius: 15.0,
-            offset: const Offset(0, 9),
+            blurRadius: 15.r,
+            offset: Offset(0, 9.h),
           ),
         ],
       ),
@@ -496,9 +498,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Total com frete',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: Colors.grey, fontSize: 12.sp),
                 ),
                 _AnimatedTotalText(
                   total: total,
@@ -510,7 +512,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           BotaoNhac(
             label: 'Continuar',
             onPressed: () {},
-            fontSize: 15,
+            fontSize: 15.sp,
           ),
         ],
       ),
@@ -584,9 +586,9 @@ class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTicke
           offset: Offset(0, _bounceAnimation.value),
           child: Text(
             widget.currencyFormat.format(widget.total),
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold, 
-              fontSize: 16, 
+              fontSize: 16.sp, 
               color: Colors.black,
             ),
           ),

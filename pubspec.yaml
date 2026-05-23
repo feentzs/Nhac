@@ -39,6 +39,7 @@ dependencies:
   sentry: ^9.20.0
   firebase_messaging: ^16.2.2
   flutter_local_notifications: ^21.0.0
+  flutter_screenutil: ^5.9.3
 dev_dependencies:
   sentry_dart_plugin: ^3.3.0
   flutter_test:
