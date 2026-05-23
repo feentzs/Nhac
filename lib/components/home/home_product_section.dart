@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart'; // 🟢 NOVO IMPORT
 import 'package:nhac/components/product_card.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/produto_detalhes_page.dart';
@@ -41,35 +42,30 @@ class HomeProductSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-           Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20.0,
-                  color: Color(0xFF5D201C),
-                ),
-                maxLines: 1, 
-                overflow: TextOverflow.ellipsis, 
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20.sp,
+                color: const Color(0xFF5D201C),
               ),
             ),
-            const SizedBox(width: 8.0), 
             GestureDetector(
               onTap: onSeeAll,
-              child: const Text(
+              child: Text(
                 'Ver tudo',
                 style: TextStyle(
-                  color: Color(0xFFFF6961),
+                  color: const Color(0xFFFF6961),
                   fontWeight: FontWeight.w600,
-                  fontSize: 16.0,
+                  fontSize: 16.sp,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16.0),
+        SizedBox(height: 16.h),
         SizedBox(
-          height: 220.0,
+          height: 220.h,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -121,23 +117,23 @@ class HomeProductSection extends StatelessWidget {
                   ),
                   if (item.discountPercent != null)
                     Positioned(
-                      top: 8.0,
-                      left: 8.0,
+                      top: 8.h,
+                      left: 8.w,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 3.0,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 3.h,
                         ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFF6961),
-                          borderRadius: BorderRadius.circular(50.0),
+                          borderRadius: BorderRadius.circular(50.r),
                         ),
                         child: Text(
                           '${item.discountPercent}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 10.0,
+                            fontSize: 10.sp,
                           ),
                         ),
                       ),

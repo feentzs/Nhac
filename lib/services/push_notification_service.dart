@@ -25,7 +25,7 @@ class PushNotificationService {
       
       String? token = await _fcm.getToken();
       if (token != null) {
-        print('MEU FCM TOKEN: $token');
+        debugPrint('MEU FCM TOKEN: $token');
         await _guardarTokenNoBancoDeDados(token); 
       }
 
