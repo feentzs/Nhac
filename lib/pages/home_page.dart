@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; 
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:nhac/components/botoes/floating_cart_button.dart'; 
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/components/botoes/botao_nhac.dart';
@@ -273,6 +274,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: _buildDynamicNavBar(),
                 ),
               ),
+              const FloatingCartButton(),
             ],
           ),
         ),
