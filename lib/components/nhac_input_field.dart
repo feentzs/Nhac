@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 
 class NhacInputField extends StatelessWidget {
@@ -50,7 +51,7 @@ class NhacInputField extends StatelessWidget {
     const Color cursorColor = Color(0xFFFF6961);
 
     final borderStyle = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50.0),
+      borderRadius: BorderRadius.circular(50.r),
       borderSide: const BorderSide(
         color: primaryColor,
         width: 1.0,
@@ -58,7 +59,7 @@ class NhacInputField extends StatelessWidget {
     );
 
     final focusedBorderStyle = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50.0),
+      borderRadius: BorderRadius.circular(50.r),
       borderSide: const BorderSide(
         color: primaryColor,
         width: 2.0,
@@ -81,7 +82,7 @@ class NhacInputField extends StatelessWidget {
       enabled: enabled,
       cursorColor: cursorColor,
       style: style ??
-          const TextStyle(
+          TextStyle(
             color: primaryColor,
             fontFamily: 'Roboto',
             fontWeight: FontWeight.w600,
@@ -95,9 +96,9 @@ class NhacInputField extends StatelessWidget {
         errorText: errorText,
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 24.0,
-          vertical: 16.0,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 24.w,
+          vertical: 16.h,
         ),
         filled: false,
         border: borderStyle,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // 🟢 NOVO IMPORT
+import 'package:flutter_screenutil/flutter_screenutil.dart'; 
 import 'package:nhac/components/product_card.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/produto_detalhes_page.dart';

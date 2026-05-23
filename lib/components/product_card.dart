@@ -36,7 +36,7 @@ class ProductCard extends StatelessWidget {
           BoxShadow(
             color: const Color(0xFF5D201C).withValues(alpha: 0.05),
             blurRadius: 10.r,
-            offset: const Offset(0.0, 4.0),
+            offset: Offset(0, 4.h),
           ),
         ],
       ),
@@ -45,9 +45,7 @@ class ProductCard extends StatelessWidget {
         children: [
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(16.r),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
               child: CachedNetworkImage(
                 imageUrl: imageUrl,
                 fit: BoxFit.cover,
@@ -112,7 +110,6 @@ class ProductCard extends StatelessWidget {
                           preco: price,
                           imagemUrl: imageUrl,
                         );
-
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('$name adicionado ao carrinho!'),

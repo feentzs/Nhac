@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AddressPickerSheet extends StatefulWidget {
   const AddressPickerSheet({super.key});
 
@@ -53,7 +55,6 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
     });
 
     _debounce = Timer(const Duration(milliseconds: 500), () async {
-
       if (_googleApiKey.isEmpty) {
         debugPrint('🚨 ERRO CRÍTICO: A chave do Google (API Key) está vazia!');
         debugPrint('Verifique se o arquivo .env existe e se está declarado no pubspec.yaml.');
@@ -106,6 +107,7 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
       }
     });
   }
+
   Future<void> _obterDetalhes(String placeId) async {
     setState(() {
       _isLoadingSearch = true;
@@ -194,40 +196,40 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
       expand: false,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
           ),
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                padding: EdgeInsets.symmetric(vertical: 16.h),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle)),
-                    const SizedBox(width: 8),
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle)),
+                    Container(width: 8.w, height: 8.h, decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle)),
+                    SizedBox(width: 8.w),
+                    Container(width: 8.w, height: 8.h, decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle)),
                   ],
                 ),
               ),
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
                   children: [
-                    const Text(
+                    Text(
                       'Onde você quer receber o seu pedido?',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF5D201C)),
+                      style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
                     ),
-                    const SizedBox(height: 8),
-                    const Text('Busque pelo nome da rua e pelo número do seu endereço.', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 8.h),
+                    Text('Busque pelo nome da rua e pelo número do seu endereço.', style: TextStyle(fontSize: 14.sp, color: Colors.grey)),
+                    SizedBox(height: 24.h),
                     TextField(
                       controller: _searchController,
                       focusNode: _focusNode,
                       onChanged: _filtrarEnderecos,
-                      style: const TextStyle(color: Color(0xFF5D201C), fontWeight: FontWeight.w600),
+                      style: TextStyle(color: const Color(0xFF5D201C), fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
                         hintText: 'Nome da rua e número',
                         hintStyle: const TextStyle(color: Color(0xFFC9BCBC)),
@@ -235,7 +237,7 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
                         focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFC9BCBC), width: 2.0)),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear, size: 20),
+                                icon: Icon(Icons.clear, size: 20.r),
                                 onPressed: () {
                                   _searchController.clear();
                                   _filtrarEnderecos('');
@@ -244,17 +246,17 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
                             : null,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     if (_isLoadingSearch)
-                      Center(child: Lottie.asset('assets/animations/loading_nhac.json', width: 150, height: 150))
+                      Center(child: Lottie.asset('assets/animations/loading_nhac.json', width: 150.w, height: 150.h))
                     else if (_sugestoes.isEmpty && _estaDigitando)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        padding: EdgeInsets.symmetric(vertical: 40.h),
                         child: Center(
                           child: Column(
                             children: [
-                              Icon(Icons.search_off_outlined, size: 48, color: Colors.grey.shade200),
-                              const SizedBox(height: 16),
+                              Icon(Icons.search_off_outlined, size: 48.r, color: Colors.grey.shade200),
+                              SizedBox(height: 16.h),
                               const Text('Nenhum endereço encontrado', style: TextStyle(color: Colors.grey)),
                             ],
                           ),
@@ -266,15 +268,15 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-                          child: const Icon(Icons.location_on_outlined, size: 20, color: Colors.grey),
+                          child: Icon(Icons.location_on_outlined, size: 20.r, color: Colors.grey),
                         ),
-                        title: Text(item['main_text'].toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        title: Text(item['main_text'].toString(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp)),
                         subtitle: Text(item['secondary_text'].toString()),
                         onTap: () {
                            _obterDetalhes(item['place_id']);
                         },
                       )),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                   ],
                 ),
               ),

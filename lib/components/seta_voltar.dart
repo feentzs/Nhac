@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class SetaVoltar extends StatelessWidget {
@@ -14,12 +15,11 @@ class SetaVoltar extends StatelessWidget {
           GoRouter.of(context).go('/home-page');
         }
       },
-        child: const SizedBox(
-          width: 21.0,
-          height: 21.0,
-          child: Icon(Icons.arrow_back_ios_new, color: Color(0xFF5D201C), size: 20),
-        ),
-      
+      child: SizedBox(
+        width: 21.w,
+        height: 21.h,
+        child: Icon(Icons.arrow_back_ios_new, color: const Color(0xFF5D201C), size: 20.r),
+      ),
     );
   }
 }

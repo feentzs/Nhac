@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class NhacMenuTile extends StatelessWidget {
   final String titulo;
@@ -18,7 +19,7 @@ class NhacMenuTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         color: Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 18.0),
+        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 18.h),
         child: Row(
           children: [
             Column(
@@ -26,18 +27,18 @@ class NhacMenuTile extends StatelessWidget {
               children: [
                 Text(
                   titulo,
-                  style: const TextStyle(
-                    fontSize: 16.0,
-                    color: Color(0xFF5D201C),
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    color: const Color(0xFF5D201C),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (subtitulo != null) ...[
-                  const SizedBox(height: 4.0),
+                  SizedBox(height: 4.h),
                   Text(
                     subtitulo!,
                     style: TextStyle(
-                      fontSize: 14.0,
+                      fontSize: 14.sp,
                       color: Colors.grey.shade600,
                     ),
                   ),
@@ -45,10 +46,10 @@ class NhacMenuTile extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios_rounded,
-              size: 16,
-              color: Color(0xFF5D201C),
+              size: 16.r,
+              color: const Color(0xFF5D201C),
             ),
           ],
         ),
