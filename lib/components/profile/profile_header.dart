@@ -88,13 +88,13 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                         if (pickedFile != null && mounted) {
                           setState(() => _isUploading = true);
                           try {
-                            if (mounted) {
+                            if (context.mounted) {
                               await context
                                   .read<UserProvider>()
                                   .atualizarFotoPerfil(File(pickedFile.path));
                             }
                           } catch (e) {
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                     content:
