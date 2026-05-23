@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // 🟢 NOVO IMPORT
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 class HomeSkeleton extends StatelessWidget {
@@ -15,10 +15,9 @@ class HomeSkeleton extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 16.h),
-
             Row(
               children: [
-                _buildCircleSkeleton(40.w),
+                _buildCircleSkeleton(40.r),
                 SizedBox(width: 12.w),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,13 +30,12 @@ class HomeSkeleton extends StatelessWidget {
               ],
             ),
             SizedBox(height: 24.h),
-
-            _buildBoxSkeleton(width: double.infinity, height: 50.h, borderRadius: 50.r),
+            _buildBoxSkeleton(
+                width: double.infinity, height: 50.h, borderRadius: 50.r),
             SizedBox(height: 24.h),
-
-            _buildBoxSkeleton(width: double.infinity, height: 180.h, borderRadius: 20.r),
+            _buildBoxSkeleton(
+                width: double.infinity, height: 180.h, borderRadius: 20.r),
             SizedBox(height: 32.h),
-  
             _buildBoxSkeleton(width: 200.w, height: 20.h),
             SizedBox(height: 16.h),
             Row(
@@ -48,7 +46,6 @@ class HomeSkeleton extends StatelessWidget {
               ],
             ),
             SizedBox(height: 32.h),
-
             _buildBoxSkeleton(width: 180.w, height: 20.h),
             SizedBox(height: 16.h),
             Row(
@@ -64,7 +61,8 @@ class HomeSkeleton extends StatelessWidget {
     );
   }
 
-  Widget _buildBoxSkeleton({double? width, double? height, double borderRadius = 8}) {
+  Widget _buildBoxSkeleton(
+      {double? width, double? height, double borderRadius = 8}) {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
@@ -95,9 +93,8 @@ class HomeSkeleton extends StatelessWidget {
   }
 
   Widget _buildProductCardSkeleton() {
-    return Container(
+    return SizedBox(
       width: 160.w,
-      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -111,7 +108,7 @@ class HomeSkeleton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildBoxSkeleton(width: 50.w, height: 16.h),
-              _buildCircleSkeleton(24.w),
+              _buildCircleSkeleton(24.r),
             ],
           )
         ],

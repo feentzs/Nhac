@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; 
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
@@ -39,7 +39,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20.sp),
+                      icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20.r),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -53,7 +53,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.share_outlined, color: Colors.black, size: 20.sp),
+                        icon: Icon(Icons.share_outlined, color: Colors.black, size: 20.r),
                         onPressed: () {
                           final link = 'https://nhac.app/produto/${produto.uid}';
                           Share.share(
@@ -75,7 +75,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.more_horiz, color: Colors.black, size: 20.sp),
+                        icon: Icon(Icons.more_horiz, color: Colors.black, size: 20.r),
                         onPressed: () {},
                       ),
                     ),
@@ -98,12 +98,12 @@ class ProdutoDetalhesPage extends StatelessWidget {
                             ),
                             errorWidget: (context, url, error) => Container(
                               color: const Color(0xFFF5F5F5),
-                              child: Icon(Icons.fastfood, size: 80.sp, color: Colors.grey),
+                              child: Icon(Icons.fastfood, size: 80.r, color: Colors.grey),
                             ),
                           )
                         : Container(
                             color: const Color(0xFFF5F5F5),
-                            child: Icon(Icons.fastfood, size: 80.sp, color: Colors.grey),
+                            child: Icon(Icons.fastfood, size: 80.r, color: Colors.grey),
                           ),
                   ),
                 ),
@@ -146,12 +146,12 @@ class ProdutoDetalhesPage extends StatelessWidget {
                                 fontSize: 42.sp,
                                 fontWeight: FontWeight.w900,
                                 color: const Color(0xFFFF6961),
-                                letterSpacing: -1.5.sp,
-                                shadows: [
-                                  Shadow(offset: Offset(-0.8.w, -0.8.h), color: const Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8.w, -0.8.h), color: const Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8.w, 0.8.h), color: const Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(-0.8.w, 0.8.h), color: const Color(0xFFFF6961)),
+                                letterSpacing: -1.5,
+                                shadows: const [
+                                  Shadow(offset: Offset(-0.8, -0.8), color: Color(0xFFFF6961)),
+                                  Shadow(offset: Offset(0.8, -0.8), color: Color(0xFFFF6961)),
+                                  Shadow(offset: Offset(0.8, 0.8), color: Color(0xFFFF6961)),
+                                  Shadow(offset: Offset(-0.8, 0.8), color: Color(0xFFFF6961)),
                                 ],
                               ),
                             ),
@@ -166,7 +166,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.star, color: Colors.amber, size: 14.sp),
+                                    Icon(Icons.star, color: Colors.amber, size: 14.r),
                                     SizedBox(width: 4.w),
                                     Text(
                                       produto.mediaAvaliacao.toStringAsFixed(1),
@@ -197,12 +197,12 @@ class ProdutoDetalhesPage extends StatelessWidget {
                               _buildServiceRow(Icons.bolt, 'Envio imediato após a compra'),
                               Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8.h),
-                                child: Divider(height: 1.h, color: const Color(0xFFEEEEEE)),
+                                child: const Divider(height: 1, color: Color(0xFFEEEEEE)),
                               ),
                               _buildServiceRow(Icons.check_circle_outline, 'Garantia de reembolso em caso de problemas'),
                               Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8.h),
-                                child: Divider(height: 1.h, color: const Color(0xFFEEEEEE)),
+                                child: const Divider(height: 1, color: Color(0xFFEEEEEE)),
                               ),
                               FutureBuilder<DocumentSnapshot?>(
                                 future: produto.lojaId.isNotEmpty
@@ -210,7 +210,9 @@ class ProdutoDetalhesPage extends StatelessWidget {
                                     : Future.value(null),
                                 builder: (context, snapshot) {
                                   String nomeLoja = 'Loja Parceira';
-                                  if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data!.exists) {
+                                  if (snapshot.connectionState == ConnectionState.done &&
+                                      snapshot.hasData &&
+                                      snapshot.data!.exists) {
                                     final data = snapshot.data!.data() as Map<String, dynamic>?;
                                     if (data != null && data['nome'] != null) {
                                       nomeLoja = data['nome'];
@@ -228,12 +230,15 @@ class ProdutoDetalhesPage extends StatelessWidget {
 
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: Text(
-                          'Detalhes do Produto',
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Detalhes do Produto',
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                       ),
@@ -241,8 +246,8 @@ class ProdutoDetalhesPage extends StatelessWidget {
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Text(
-                          produto.descricao.isNotEmpty 
-                              ? produto.descricao 
+                          produto.descricao.isNotEmpty
+                              ? produto.descricao
                               : 'Este produto é preparado com ingredientes frescos e selecionados. Perfeito para qualquer momento do dia.',
                           style: TextStyle(
                             fontSize: 15.sp,
@@ -262,16 +267,21 @@ class ProdutoDetalhesPage extends StatelessWidget {
                               .limit(5)
                               .snapshots(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            if (snapshot.connectionState == ConnectionState.waiting ||
+                                !snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
                               return const SizedBox.shrink();
                             }
 
                             final produtosRelacionados = snapshot.data!.docs
-                                .map((doc) => ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+                                .map((doc) => ProdutosModel.fromMap(
+                                    doc.data() as Map<String, dynamic>, doc.id))
                                 .where((p) => p.uid != produto.uid)
                                 .map((prod) => ProductSectionItem(
                                       idProduto: prod.uid,
-                                      imageUrl: prod.imagemUrl.isNotEmpty ? prod.imagemUrl : 'https://via.placeholder.com/150',
+                                      imageUrl: prod.imagemUrl.isNotEmpty
+                                          ? prod.imagemUrl
+                                          : 'https://via.placeholder.com/150',
                                       name: prod.nome,
                                       weight: '',
                                       price: prod.preco,
@@ -290,7 +300,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         ),
                       ),
 
-                      SizedBox(height: (100 + bottomPadding).h),
+                      SizedBox(height: 100.h + bottomPadding),
                     ],
                   ),
                 ),
@@ -315,7 +325,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10.r,
-                    offset: Offset(0, -5.h),
+                    offset: const Offset(0, -5),
                   ),
                 ],
               ),
@@ -358,7 +368,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
   Widget _buildServiceRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 20.sp, color: const Color(0xFF888888)),
+        Icon(icon, size: 20.r, color: const Color(0xFF888888)),
         SizedBox(width: 12.w),
         Expanded(
           child: Text(
@@ -369,7 +379,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
             ),
           ),
         ),
-        Icon(Icons.chevron_right, size: 20.sp, color: const Color(0xFFCCCCCC)),
+        Icon(Icons.chevron_right, size: 20.r, color: const Color(0xFFCCCCCC)),
       ],
     );
   }
@@ -378,7 +388,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 24.sp, color: const Color(0xFF666666)),
+        Icon(icon, size: 24.r, color: const Color(0xFF666666)),
         SizedBox(height: 4.h),
         Text(
           count.isNotEmpty ? count : label,

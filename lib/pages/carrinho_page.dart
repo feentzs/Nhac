@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/carrinho_model.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
-import 'package:nhac/pages/formas_pagamento_page.dart'; // 👈 IMPORTANTE: Novo import
+import 'package:nhac/pages/formas_pagamento_page.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
@@ -17,10 +18,10 @@ class CarrinhoPage extends StatefulWidget {
 }
 
 class _CarrinhoPageState extends State<CarrinhoPage> {
-
   final Color primaryColor = const Color(0xFFFF6961);
   final Color lightAccentColor = const Color(0xFFFFEBD9);
-  final NumberFormat currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  final NumberFormat currencyFormat =
+      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
   final TextEditingController _observacaoController = TextEditingController();
   String _formaPagamentoSelecionada = 'Selecionar forma de pagamento';
@@ -39,9 +40,12 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFE7E5),
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Carrinho',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 18.sp),
         ),
         centerTitle: true,
       ),
@@ -51,18 +55,19 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             return _buildEmptyCart();
           }
 
-          final defaultAddress = enderecoProvider.enderecos.isEmpty 
-              ? null 
+          final defaultAddress = enderecoProvider.enderecos.isEmpty
+              ? null
               : enderecoProvider.enderecos.firstWhere(
-                  (e) => e.padrao, 
-                  orElse: () => enderecoProvider.enderecos.first
+                  (e) => e.padrao,
+                  orElse: () => enderecoProvider.enderecos.first,
                 );
 
           return Stack(
             children: [
               ListView(
-                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 200),
+                physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 200.h),
                 children: [
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 600),
@@ -79,10 +84,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     },
                     child: _buildAddressSection(defaultAddress),
                   ),
-                  
                   const Divider(height: 1),
-                  const SizedBox(height: 16),
-                  
+                  SizedBox(height: 16.h),
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 700),
                     tween: Tween(begin: 0.0, end: 1.0),
@@ -97,12 +100,12 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                       );
                     },
                     child: Column(
-                      children: cartProvider.itens.values.map((item) => _buildCartItem(item, cartProvider)).toList(),
+                      children: cartProvider.itens.values
+                          .map((item) => _buildCartItem(item, cartProvider))
+                          .toList(),
                     ),
                   ),
-                  
-                  const SizedBox(height: 16),
-
+                  SizedBox(height: 16.h),
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 750),
                     tween: Tween(begin: 0.0, end: 1.0),
@@ -110,14 +113,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     builder: (context, value, child) {
                       return Opacity(
                         opacity: value,
-                        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+                        child: Transform.translate(
+                            offset: Offset(0, 20 * (1 - value)), child: child),
                       );
                     },
                     child: _buildObservacaoField(),
                   ),
-
-                  const SizedBox(height: 24),
-
+                  SizedBox(height: 24.h),
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 800),
                     tween: Tween(begin: 0.0, end: 1.0),
@@ -125,14 +127,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     builder: (context, value, child) {
                       return Opacity(
                         opacity: value,
-                        child: Transform.translate(offset: Offset(0, 20 * (1 - value)), child: child),
+                        child: Transform.translate(
+                            offset: Offset(0, 20 * (1 - value)), child: child),
                       );
                     },
                     child: _buildPaymentSection(context),
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
+                  SizedBox(height: 24.h),
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 850),
                     tween: Tween(begin: 0.0, end: 1.0),
@@ -148,9 +149,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     },
                     child: _buildCashbackBanner(cartProvider.valorTotal * 0.02),
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
+                  SizedBox(height: 24.h),
                   TweenAnimationBuilder<double>(
                     duration: const Duration(milliseconds: 900),
                     tween: Tween(begin: 0.0, end: 1.0),
@@ -166,13 +165,11 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     },
                     child: _buildOrderSummary(cartProvider),
                   ),
-                  
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                 ],
               ),
             ],
           );
-
         },
       ),
     );
@@ -182,32 +179,36 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Observações para o restaurante',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF5D201C)),
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15.sp,
+              color: const Color(0xFF5D201C)),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         TextField(
           controller: _observacaoController,
           maxLines: 2,
-          maxLength: 140, 
+          maxLength: 140,
           decoration: InputDecoration(
             hintText: 'Ex: Tirar cebola, maionese à parte, troco para R\$ 50...',
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14.sp),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.all(16),
+            contentPadding: EdgeInsets.all(16.w),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.white),
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide: const BorderSide(color: Colors.white),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide:
+                  BorderSide(color: primaryColor.withValues(alpha: 0.5)),
             ),
           ),
         ),
@@ -217,47 +218,53 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
 
   Widget _buildPaymentSection(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10.r,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10.w),
             decoration: BoxDecoration(
               color: lightAccentColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: Icon(_iconePagamentoSelecionado, color: primaryColor),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Pagamento na entrega',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(color: Colors.grey, fontSize: 12.sp),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
                   _formaPagamentoSelecionada,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF5D201C)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.sp,
+                      color: const Color(0xFF5D201C)),
                 ),
               ],
             ),
           ),
           TextButton(
             onPressed: () async {
-
               final resultado = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const FormasPagamentoPage()),
+                MaterialPageRoute(
+                    builder: (context) => const FormasPagamentoPage()),
               );
 
               if (resultado != null && resultado is String) {
@@ -275,12 +282,16 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             },
             style: TextButton.styleFrom(
               backgroundColor: Colors.grey[100],
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.r)),
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
             ),
-            child: const Text(
+            child: Text(
               'Alterar',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.sp),
             ),
           ),
         ],
@@ -293,11 +304,14 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(Icons.shopping_cart_outlined, size: 80.r, color: Colors.grey[300]),
+          SizedBox(height: 16.h),
+          Text(
             'Seu carrinho está vazio',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey),
+            style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey),
           ),
         ],
       ),
@@ -306,7 +320,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
 
   Widget _buildAddressSection(EnderecoModel? address) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(vertical: 16.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -314,16 +328,17 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Endereço de entrega',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
                 Text(
-                  address != null 
-                      ? '${address.bairro} (${address.rua}, ${address.numero})' 
+                  'Endereço de entrega',
+                  style: TextStyle(color: Colors.grey, fontSize: 12.sp),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  address != null
+                      ? '${address.bairro} (${address.rua}, ${address.numero})'
                       : 'Nenhum endereço selecionado',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14.sp),
                 ),
               ],
             ),
@@ -332,12 +347,16 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             onPressed: () {},
             style: TextButton.styleFrom(
               backgroundColor: Colors.grey[100],
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.r)),
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
             ),
-            child: const Text(
+            child: Text(
               'Alterar',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.sp),
             ),
           ),
         ],
@@ -353,295 +372,411 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     return StatefulBuilder(
       builder: (context, setState) {
         return TweenAnimationBuilder<double>(
-              duration: Duration(milliseconds: isProgrammaticDeleting ? 500 : 0),
-              curve: Curves.easeOutQuart,
-              tween: Tween(begin: 0.0, end: isProgrammaticDeleting ? 1.0 : 0.0),
-              onEnd: () {
-                if (isProgrammaticDeleting) {
-                  cartProvider.excluirItemDoCarrinho(item.idProduto);
-                }
-              },
-              builder: (context, t, child) {
-                double slideValue = (t / 0.6).clamp(0.0, 1.0);
-                double heightValue = 1.0 - ((t - 0.15) / 0.85).clamp(0.0, 1.0);
-                double opacityValue = (1.0 - (t / 0.4)).clamp(0.0, 1.0);
-                
-                return ClipRect(
-                  child: Align(
-                    heightFactor: isProgrammaticDeleting ? heightValue : 1.0,
-                    alignment: Alignment.topCenter,
-                    child: Stack(
-                      children: [
-                        if (isProgrammaticDeleting)
-                          Positioned.fill(
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.4 + (0.6 * t)),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              alignment: Alignment.centerRight,
-                              child: Transform.scale(
-                                scale: 0.8 + (0.6 * t),
-                                child: Opacity(
-                                  opacity: (t * 2).clamp(0.0, 1.0),
-                                  child: const Icon(
-                                    Icons.delete_sweep_rounded,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
-                                ),
-                              ),
-                            ),
+          duration:
+              Duration(milliseconds: isProgrammaticDeleting ? 500 : 0),
+          curve: Curves.easeOutQuart,
+          tween: Tween(
+              begin: 0.0, end: isProgrammaticDeleting ? 1.0 : 0.0),
+          onEnd: () {
+            if (isProgrammaticDeleting) {
+              cartProvider.excluirItemDoCarrinho(item.idProduto);
+            }
+          },
+          builder: (context, t, child) {
+            double slideValue = (t / 0.6).clamp(0.0, 1.0);
+            double heightValue =
+                1.0 - ((t - 0.15) / 0.85).clamp(0.0, 1.0);
+            double opacityValue = (1.0 - (t / 0.4)).clamp(0.0, 1.0);
+
+            return ClipRect(
+              child: Align(
+                heightFactor:
+                    isProgrammaticDeleting ? heightValue : 1.0,
+                alignment: Alignment.topCenter,
+                child: Stack(
+                  children: [
+                    if (isProgrammaticDeleting)
+                      Positioned.fill(
+                        child: Container(
+                          margin: EdgeInsets.only(bottom: 16.h),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 24.w),
+                          decoration: BoxDecoration(
+                            color: primaryColor
+                                .withValues(alpha: 0.4 + (0.6 * t)),
+                            borderRadius: BorderRadius.circular(16.r),
                           ),
-                        
-                        Transform.translate(
-                          offset: Offset(-slideValue * MediaQuery.of(context).size.width, 0),
-                          child: Dismissible(
-                            key: Key(item.idProduto),
-                            direction: isProgrammaticDeleting ? DismissDirection.none : DismissDirection.endToStart,
-                            resizeDuration: const Duration(milliseconds: 350),
-                            movementDuration: const Duration(milliseconds: 350),
-                            onUpdate: (details) {
-                              setState(() {
-                                swipeProgress = details.progress;
-                              });
-                              
-                              if (details.reached && !hasVibrated) {
-                                HapticFeedback.mediumImpact();
-                                hasVibrated = true;
-                              } else if (!details.reached) {
-                                hasVibrated = false;
-                              }
-                            },
-                            onDismissed: (direction) {
-                              if (!isProgrammaticDeleting) {
-                                cartProvider.excluirItemDoCarrinho(item.idProduto);
-                              }
-                            },
-                            background: Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.4 + (0.6 * swipeProgress)),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              alignment: Alignment.centerRight,
-                              child: Transform.scale(
-                                scale: 0.8 + (0.6 * swipeProgress),
-                                child: Opacity(
-                                  opacity: (swipeProgress * 2).clamp(0.0, 1.0),
-                                  child: const Icon(
-                                    Icons.delete_sweep_rounded,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            child: Transform.scale(
-                              scale: isProgrammaticDeleting 
-                                  ? (1.0 - (slideValue * 0.12)).clamp(0.88, 1.0) 
-                                  : (1.0 - (swipeProgress * 0.1)).clamp(0.9, 1.0),
-                              child: Opacity(
-                                opacity: isProgrammaticDeleting 
-                                    ? opacityValue
-                                    : (1.0 - (swipeProgress * 1.8)).clamp(0.0, 1.0),
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 80,
-                                        height: 80,
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[100],
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(12),
-                                          child: Image.network(
-                                            item.imagemUrl,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image, color: Colors.grey),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        item.nome,
-                                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      const Text(
-                                                        'Modelo: ÚNICO',
-                                                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      Row(
-                                                        children: [
-                                                          Container(
-                                                            height: 32,
-                                                            decoration: BoxDecoration(
-                                                              border: Border.all(color: Colors.grey[300]!),
-                                                              borderRadius: BorderRadius.circular(16),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                IconButton(
-                                                                  padding: EdgeInsets.zero,
-                                                                  constraints: const BoxConstraints(minWidth: 32),
-                                                                  icon: const Icon(Icons.remove, size: 16),
-                                                                  onPressed: () => cartProvider.removerItem(item.idProduto),
-                                                                ),
-                                                                Text(
-                                                                  item.quantidade.toString(),
-                                                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                                                ),
-                                                                IconButton(
-                                                                  padding: EdgeInsets.zero,
-                                                                  constraints: const BoxConstraints(minWidth: 32),
-                                                                  icon: const Icon(Icons.add, size: 16),
-                                                                  onPressed: () => cartProvider.adicionarItem(
-                                                                    idProduto: item.idProduto,
-                                                                    nome: item.nome,
-                                                                    preco: item.preco,
-                                                                    imagemUrl: item.imagemUrl,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          const SizedBox(width: 16),
-                                                          GestureDetector(
-                                                            onTap: () {
-                                                              HapticFeedback.lightImpact();
-                                                              setState(() {
-                                                                isProgrammaticDeleting = true;
-                                                              });
-                                                            },
-                                                            child: Text(
-                                                              'Excluir',
-                                                              style: TextStyle(
-                                                                color: primaryColor, 
-                                                                fontWeight: FontWeight.bold, 
-                                                                fontSize: 13,
-                                                                decoration: TextDecoration.underline,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                                  children: [
-                                                    Text(
-                                                      currencyFormat.format(item.preco),
-                                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                                    ),
-                                                    Text(
-                                                      currencyFormat.format(item.preco * 1.1),
-                                                      style: const TextStyle(
-                                                        color: Colors.grey, 
-                                                        fontSize: 12, 
-                                                        decoration: TextDecoration.lineThrough
-                                                      ),
-                                                    ),
-                                                    Container(
-                                                      margin: const EdgeInsets.only(top: 4),
-                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                      decoration: BoxDecoration(
-                                                        color: lightAccentColor,
-                                                        borderRadius: BorderRadius.circular(4),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          Icon(Icons.loop, size: 12, color: primaryColor),
-                                                          const SizedBox(width: 4),
-                                                          Text(
-                                                            currencyFormat.format(item.preco * 0.02),
-                                                            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 10),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 16),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                          alignment: Alignment.centerRight,
+                          child: Transform.scale(
+                            scale: 0.8 + (0.6 * t),
+                            child: Opacity(
+                              opacity: (t * 2).clamp(0.0, 1.0),
+                              child: Icon(
+                                Icons.delete_sweep_rounded,
+                                color: Colors.white,
+                                size: 28.r,
                               ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
+
+                    Transform.translate(
+                      offset: Offset(
+                          -slideValue *
+                              MediaQuery.of(context).size.width,
+                          0),
+                      child: Dismissible(
+                        key: Key(item.idProduto),
+                        direction: isProgrammaticDeleting
+                            ? DismissDirection.none
+                            : DismissDirection.endToStart,
+                        resizeDuration:
+                            const Duration(milliseconds: 350),
+                        movementDuration:
+                            const Duration(milliseconds: 350),
+                        onUpdate: (details) {
+                          setState(() {
+                            swipeProgress = details.progress;
+                          });
+
+                          if (details.reached && !hasVibrated) {
+                            HapticFeedback.mediumImpact();
+                            hasVibrated = true;
+                          } else if (!details.reached) {
+                            hasVibrated = false;
+                          }
+                        },
+                        onDismissed: (direction) {
+                          if (!isProgrammaticDeleting) {
+                            cartProvider
+                                .excluirItemDoCarrinho(item.idProduto);
+                          }
+                        },
+                        background: Container(
+                          margin: EdgeInsets.only(bottom: 16.h),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 24.w),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(
+                                alpha: 0.4 + (0.6 * swipeProgress)),
+                            borderRadius: BorderRadius.circular(16.r),
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: Transform.scale(
+                            scale: 0.8 + (0.6 * swipeProgress),
+                            child: Opacity(
+                              opacity:
+                                  (swipeProgress * 2).clamp(0.0, 1.0),
+                              child: Icon(
+                                Icons.delete_sweep_rounded,
+                                color: Colors.white,
+                                size: 28.r,
+                              ),
+                            ),
+                          ),
+                        ),
+                        child: Transform.scale(
+                          scale: isProgrammaticDeleting
+                              ? (1.0 - (slideValue * 0.12))
+                                  .clamp(0.88, 1.0)
+                              : (1.0 - (swipeProgress * 0.1))
+                                  .clamp(0.9, 1.0),
+                          child: Opacity(
+                            opacity: isProgrammaticDeleting
+                                ? opacityValue
+                                : (1.0 - (swipeProgress * 1.8))
+                                    .clamp(0.0, 1.0),
+                            child: Container(
+                              margin: EdgeInsets.only(bottom: 16.h),
+                              padding: EdgeInsets.all(12.w),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius:
+                                    BorderRadius.circular(16.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black
+                                        .withValues(alpha: 0.05),
+                                    blurRadius: 10.r,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 80.w,
+                                    height: 80.w,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[100],
+                                      borderRadius:
+                                          BorderRadius.circular(12.r),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius:
+                                          BorderRadius.circular(12.r),
+                                      child: Image.network(
+                                        item.imagemUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error,
+                                                stackTrace) =>
+                                            Icon(Icons.image,
+                                                color: Colors.grey,
+                                                size: 24.r),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 16.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment
+                                                        .start,
+                                                children: [
+                                                  Text(
+                                                    item.nome,
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight
+                                                                .bold,
+                                                        fontSize:
+                                                            14.sp),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow
+                                                        .ellipsis,
+                                                  ),
+                                                  SizedBox(height: 2.h),
+                                                  Text(
+                                                    'Modelo: ÚNICO',
+                                                    style: TextStyle(
+                                                        color:
+                                                            Colors.grey,
+                                                        fontSize:
+                                                            12.sp),
+                                                  ),
+                                                  SizedBox(height: 8.h),
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        height: 32.h,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          border: Border.all(
+                                                              color: Colors
+                                                                  .grey[300]!),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                      16.r),
+                                                        ),
+                                                        child: Row(
+                                                          children: [
+                                                            IconButton(
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  BoxConstraints(
+                                                                      minWidth:
+                                                                          32.w),
+                                                              icon: Icon(
+                                                                  Icons
+                                                                      .remove,
+                                                                  size:
+                                                                      16.r),
+                                                              onPressed: () =>
+                                                                  cartProvider
+                                                                      .removerItem(
+                                                                          item.idProduto),
+                                                            ),
+                                                            Text(
+                                                              item.quantidade
+                                                                  .toString(),
+                                                              style: TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize:
+                                                                      14.sp),
+                                                            ),
+                                                            IconButton(
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  BoxConstraints(
+                                                                      minWidth:
+                                                                          32.w),
+                                                              icon: Icon(
+                                                                  Icons.add,
+                                                                  size:
+                                                                      16.r),
+                                                              onPressed:
+                                                                  () => cartProvider
+                                                                      .adicionarItem(
+                                                                        idProduto:
+                                                                            item.idProduto,
+                                                                        nome:
+                                                                            item.nome,
+                                                                        preco:
+                                                                            item.preco,
+                                                                        imagemUrl:
+                                                                            item.imagemUrl,
+                                                                      ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 16.w),
+                                                      GestureDetector(
+                                                        onTap: () {
+                                                          HapticFeedback
+                                                              .lightImpact();
+                                                          setState(() {
+                                                            isProgrammaticDeleting =
+                                                                true;
+                                                          });
+                                                        },
+                                                        child: Text(
+                                                          'Excluir',
+                                                          style: TextStyle(
+                                                            color:
+                                                                primaryColor,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold,
+                                                            fontSize: 13.sp,
+                                                            decoration:
+                                                                TextDecoration
+                                                                    .underline,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(width: 8.w),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  currencyFormat
+                                                      .format(item.preco),
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 14.sp),
+                                                ),
+                                                Text(
+                                                  currencyFormat.format(
+                                                      item.preco * 1.1),
+                                                  style: TextStyle(
+                                                    color: Colors.grey,
+                                                    fontSize: 12.sp,
+                                                    decoration:
+                                                        TextDecoration
+                                                            .lineThrough,
+                                                  ),
+                                                ),
+                                                Container(
+                                                  margin: EdgeInsets.only(
+                                                      top: 4.h),
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal: 6.w,
+                                                      vertical: 2.h),
+                                                  decoration: BoxDecoration(
+                                                    color: lightAccentColor,
+                                                    borderRadius:
+                                                        BorderRadius
+                                                            .circular(4.r),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.loop,
+                                                          size: 12.r,
+                                                          color: primaryColor),
+                                                      SizedBox(width: 4.w),
+                                                      Text(
+                                                        currencyFormat.format(
+                                                            item.preco *
+                                                                0.02),
+                                                        style: TextStyle(
+                                                            color:
+                                                                primaryColor,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold,
+                                                            fontSize: 10.sp),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 16.h),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                );
-              },
+                  ],
+                ),
+              ),
             );
+          },
+        );
       },
     );
   }
 
   Widget _buildCashbackBanner(double cashbackValue) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: lightAccentColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Row(
         children: [
           Icon(Icons.loop, color: primaryColor),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(color: Colors.black, fontSize: 13),
+                style: TextStyle(color: Colors.black, fontSize: 13.sp),
                 children: [
                   TextSpan(
-                    text: '${currencyFormat.format(cashbackValue)} de cashback em 90 dias ',
-                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                    text:
+                        '${currencyFormat.format(cashbackValue)} de cashback em 90 dias ',
+                    style: TextStyle(
+                        color: primaryColor, fontWeight: FontWeight.bold),
                   ),
                   const TextSpan(text: 'após o pagamento'),
                 ],
@@ -655,35 +790,41 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
 
   Widget _buildOrderSummary(CartProvider cartProvider) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Resumo do pedido',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Itens (${cartProvider.totalDeUnidades})', style: const TextStyle(color: Colors.grey)),
-              Text(currencyFormat.format(cartProvider.valorTotal)),
+              Text('Itens (${cartProvider.totalDeUnidades})',
+                  style: TextStyle(color: Colors.grey, fontSize: 14.sp)),
+              Text(currencyFormat.format(cartProvider.valorTotal),
+                  style: TextStyle(fontSize: 14.sp)),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text('Frete', style: TextStyle(color: Colors.grey)),
+            children: [
+              Text('Frete',
+                  style: TextStyle(color: Colors.grey, fontSize: 14.sp)),
               Text(
                 'Grátis',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.sp),
               ),
             ],
           ),
