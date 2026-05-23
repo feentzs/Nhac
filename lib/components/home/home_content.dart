@@ -146,7 +146,6 @@ class _HomeContentState extends State<HomeContent> {
                         ),
                         SizedBox(width: 16.w),
 
-                        // Informações do Restaurante
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

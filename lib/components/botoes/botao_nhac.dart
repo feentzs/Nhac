@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,25 +20,17 @@ class BotaoNhac extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: onPressed ?? () {
-        context.push('/email-cliente');
-      },
+      onPressed: onPressed ?? () => context.push('/email-cliente'),
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFFFE645C),
         foregroundColor: const Color(0xFFFEE3E1),
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50.0),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
+        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
+        style: TextStyle(fontSize: fontSize.sp, fontWeight: FontWeight.w600, letterSpacing: 0.1),
       ),
     );
   }
