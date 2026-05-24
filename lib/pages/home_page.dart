@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:nhac/components/botoes/floating_cart_button.dart'; 
+import 'package:nhac/components/botoes/floating_cart_button.dart';
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/components/botoes/botao_nhac.dart';
@@ -25,7 +25,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledDown = false;
   late final AnimationController _cartBarController;
-  final NumberFormat currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  final NumberFormat currencyFormat =
+      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
   @override
   void initState() {
@@ -48,23 +49,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       userProvider.iniciarEscutaUsuario();
       cartProvider.iniciarEscutaCarrinho();
       enderecoProvider.iniciarEscutaEnderecos();
-      
+
       cartProvider.addListener(_onCartChanged);
     });
   }
 
   void _onCartChanged() {
     if (!mounted) return;
-    
+
     if (_selectedIndex == 1) {
       final cart = context.read<CartProvider>();
       if (cart.itens.isNotEmpty) {
-        if (_cartBarController.status != AnimationStatus.forward && _cartBarController.value != 1.0) {
+        if (_cartBarController.status != AnimationStatus.forward &&
+            _cartBarController.value != 1.0) {
           _cartBarController.forward();
         }
       } else {
-        if (_cartBarController.status != AnimationStatus.reverse && _cartBarController.value != 0.0) {
-          _cartBarController.animateBack(0, duration: const Duration(milliseconds: 150));
+        if (_cartBarController.status != AnimationStatus.reverse &&
+            _cartBarController.value != 0.0) {
+          _cartBarController.animateBack(0,
+              duration: const Duration(milliseconds: 150));
         }
       }
     }
@@ -107,13 +111,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     return Scaffold(
       extendBody: true,
       backgroundColor: const Color(0xFFFFE7E5),
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
-          if (notification is ScrollUpdateNotification && notification.metrics.axis == Axis.vertical) {
+          if (notification is ScrollUpdateNotification &&
+              notification.metrics.axis == Axis.vertical) {
             if (notification.metrics.pixels > 150 && !_isScrolledDown) {
               setState(() {
                 _isScrolledDown = true;
@@ -145,12 +150,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   const ProfileContent(),
                 ],
               ),
-
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 40.h, 
+                height: 40.h,
                 child: IgnorePointer(
                   child: Container(
                     decoration: BoxDecoration(
@@ -167,7 +171,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -189,11 +192,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                bottom: _isScrolledDown 
+                bottom: _isScrolledDown
                     ? (bottomPadding + 10.h + 75.h + 16.h)
                     : (bottomPadding + 10.h + 12.5.h),
                 right: 24.w + (75.w / 2) - 25.w,
@@ -201,7 +203,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   onTap: _isScrolledDown ? _scrollToTop : null,
                   child: Container(
                     width: 50.w,
-                    height: 50.w, // Mantenho .w na altura para ser um círculo perfeito
+                    height: 50
+                        .w, // Mantenho .w na altura para ser um círculo perfeito
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF6961),
                       shape: BoxShape.circle,
@@ -221,51 +224,56 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
+              if (_selectedIndex != 1)
+                AnimatedBuilder(
+                  animation: _cartBarController,
+                  builder: (context, child) {
+                    final t =
+                        Curves.easeOutCubic.transform(_cartBarController.value);
+                    final baseBottom = bottomPadding + 95.h;
+                    final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
+                    final scaleX = 0.2 + 0.8 * t;
+                    final opacity = t.clamp(0.0, 1.0);
 
-              AnimatedBuilder(
-                animation: _cartBarController,
-                builder: (context, child) {
-                  final t = Curves.easeOutCubic.transform(_cartBarController.value);
-                  final baseBottom = bottomPadding + 95.h;
-                  final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
-                  final scaleX = 0.2 + 0.8 * t;
-                  final opacity = t.clamp(0.0, 1.0);
+                    if (t == 0) return const SizedBox.shrink();
 
-                  if (t == 0) return const SizedBox.shrink();
-
-                  return Positioned(
-                    bottom: interpolatedBottom,
-                    left: 24.w,
-                    right: 24.w,
-                    child: Transform.scale(
-                      scaleX: scaleX,
-                      scaleY: 1.0,
-                      child: Opacity(
-                        opacity: opacity,
-                        child: Consumer<CartProvider>(
-                          builder: (context, cart, _) => _buildCartTotalBar(cart.valorTotal),
+                    return Positioned(
+                      bottom: interpolatedBottom,
+                      left: 24.w,
+                      right: 24.w,
+                      child: Transform.scale(
+                        scaleX: scaleX,
+                        scaleY: 1.0,
+                        child: Opacity(
+                          opacity: opacity,
+                          child: Consumer<CartProvider>(
+                            builder: (context, cart, _) =>
+                                _buildCartTotalBar(cart.valorTotal),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-
+                    );
+                  },
+                ),
+              if (_selectedIndex != 1) const FloatingCartButton(),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 bottom: bottomPadding + 10.h,
-                left: _isScrolledDown ? MediaQuery.of(context).size.width - 24.w - 75.w : 24.w,
+                left: _isScrolledDown
+                    ? MediaQuery.of(context).size.width - 24.w - 75.w
+                    : 24.w,
                 right: 24.w,
                 child: AnimatedBuilder(
                   animation: _cartBarController,
                   builder: (context, child) {
                     final t = _cartBarController.value;
                     final bounceAmount = math.sin(t * math.pi) * 8.h;
-                    
-                    final isReversing = _cartBarController.status == AnimationStatus.reverse;
+
+                    final isReversing =
+                        _cartBarController.status == AnimationStatus.reverse;
                     final offsetY = isReversing ? bounceAmount : -bounceAmount;
-                    
+
                     return Transform.translate(
                       offset: Offset(0, offsetY),
                       child: child,
@@ -274,7 +282,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: _buildDynamicNavBar(),
                 ),
               ),
-              const FloatingCartButton(),
             ],
           ),
         ),
@@ -331,9 +338,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(50.r),
           child: AnimatedCrossFade(
             duration: const Duration(milliseconds: 300),
-            crossFadeState: _isScrolledDown ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _isScrolledDown
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             alignment: Alignment.center,
-            layoutBuilder: (topChild, topChildKey, bottomChild, bottomChildKey) {
+            layoutBuilder:
+                (topChild, topChildKey, bottomChild, bottomChildKey) {
               return Stack(
                 alignment: Alignment.center,
                 children: [
@@ -362,10 +372,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildNavItem(icon: Icons.house_outlined, label: 'Home', index: 0),
-                      _buildNavItem(icon: Icons.shopping_cart_outlined, label: 'Carrinho', index: 1),
-                      _buildNavItem(icon: Icons.shopping_bag_outlined, label: 'N sei', index: 2),
-                      _buildNavItem(icon: Icons.person_outline, label: 'Perfil', index: 3),
+                      _buildNavItem(
+                          icon: Icons.house_outlined, label: 'Home', index: 0),
+                      _buildNavItem(
+                          icon: Icons.shopping_cart_outlined,
+                          label: 'Carrinho',
+                          index: 1),
+                      _buildNavItem(
+                          icon: Icons.shopping_bag_outlined,
+                          label: 'N sei',
+                          index: 2),
+                      _buildNavItem(
+                          icon: Icons.person_outline,
+                          label: 'Perfil',
+                          index: 3),
                     ],
                   ),
                 ),
@@ -388,7 +408,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildNavItem({required IconData icon, required String label, required int index}) {
+  Widget _buildNavItem(
+      {required IconData icon, required String label, required int index}) {
     final isSelected = _selectedIndex == index;
 
     return GestureDetector(
@@ -409,7 +430,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _cartBarController.forward();
           }
         } else if (oldIndex == 1) {
-          _cartBarController.animateBack(0, duration: const Duration(milliseconds: 150));
+          _cartBarController.animateBack(0,
+              duration: const Duration(milliseconds: 150));
         }
       },
       child: AnimatedContainer(
@@ -426,31 +448,31 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            index == 1 
-              ? Selector<CartProvider, int>(
-                  selector: (context, provider) => provider.totalDeUnidades,
-                  builder: (context, count, child) {
-                    return Badge(
-                      label: count > 0 ? Text(count.toString()) : null,
-                      isLabelVisible: count > 0,
-                      backgroundColor: const Color(0xFFFF6961),
-                      child: Icon(
-                        icon,
-                        size: 28.sp,
-                        color: isSelected
-                            ? const Color(0xFFFF6961)
-                            : const Color(0xFFA0A0A0),
-                      ),
-                    );
-                  },
-                )
-              : Icon(
-                  icon,
-                  size: 28.sp,
-                  color: isSelected
-                      ? const Color(0xFFFF6961)
-                      : const Color(0xFFA0A0A0),
-                ),
+            index == 1
+                ? Selector<CartProvider, int>(
+                    selector: (context, provider) => provider.totalDeUnidades,
+                    builder: (context, count, child) {
+                      return Badge(
+                        label: count > 0 ? Text(count.toString()) : null,
+                        isLabelVisible: count > 0,
+                        backgroundColor: const Color(0xFFFF6961),
+                        child: Icon(
+                          icon,
+                          size: 28.sp,
+                          color: isSelected
+                              ? const Color(0xFFFF6961)
+                              : const Color(0xFFA0A0A0),
+                        ),
+                      );
+                    },
+                  )
+                : Icon(
+                    icon,
+                    size: 28.sp,
+                    color: isSelected
+                        ? const Color(0xFFFF6961)
+                        : const Color(0xFFA0A0A0),
+                  ),
             AnimatedSize(
               duration: const Duration(milliseconds: 400),
               curve: Curves.fastOutSlowIn,
@@ -478,7 +500,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
     );
   }
-  
+
   Widget _buildCartTotalBar(double total) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
@@ -535,7 +557,8 @@ class _AnimatedTotalText extends StatefulWidget {
   State<_AnimatedTotalText> createState() => _AnimatedTotalTextState();
 }
 
-class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTickerProviderStateMixin {
+class _AnimatedTotalTextState extends State<_AnimatedTotalText>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _bounceAnimation;
 
@@ -546,7 +569,7 @@ class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTicke
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    
+
     _bounceAnimation = Tween<double>(begin: 0.0, end: 0.0).animate(_controller);
   }
 
@@ -555,16 +578,18 @@ class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTicke
     super.didUpdateWidget(oldWidget);
     if (widget.total != oldWidget.total) {
       final isIncreasing = widget.total > oldWidget.total;
-      
+
       final double bounceDist = isIncreasing ? -4.0 : 4.0;
 
       _bounceAnimation = TweenSequence<double>([
         TweenSequenceItem(
-          tween: Tween(begin: 0.0, end: bounceDist).chain(CurveTween(curve: Curves.easeOutCubic)),
+          tween: Tween(begin: 0.0, end: bounceDist)
+              .chain(CurveTween(curve: Curves.easeOutCubic)),
           weight: 30,
         ),
         TweenSequenceItem(
-          tween: Tween(begin: bounceDist, end: 0.0).chain(CurveTween(curve: Curves.elasticOut)),
+          tween: Tween(begin: bounceDist, end: 0.0)
+              .chain(CurveTween(curve: Curves.elasticOut)),
           weight: 70,
         ),
       ]).animate(_controller);
@@ -589,8 +614,8 @@ class _AnimatedTotalTextState extends State<_AnimatedTotalText> with SingleTicke
           child: Text(
             widget.currencyFormat.format(widget.total),
             style: TextStyle(
-              fontWeight: FontWeight.bold, 
-              fontSize: 16.sp, 
+              fontWeight: FontWeight.bold,
+              fontSize: 16.sp,
               color: Colors.black,
             ),
           ),
