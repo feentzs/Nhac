@@ -19,7 +19,21 @@ class CarrinhoPage extends StatefulWidget {
 
 class _CarrinhoPageState extends State<CarrinhoPage> {
   final Color primaryColor = const Color(0xFFFF6961);
-  final NumberFormat currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  final NumberFormat currencyFormat =
+      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  late final TextEditingController _observacaoController;
+
+  @override
+  void initState() {
+    super.initState();
+    _observacaoController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _observacaoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +57,11 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             return _buildEmptyCart();
           }
 
+          // Sincroniza o controlador com o provider
+          if (_observacaoController.text != cartProvider.observacao) {
+            _observacaoController.text = cartProvider.observacao;
+          }
+
           final defaultAddress = enderecoProvider.enderecos.isEmpty
               ? null
               : enderecoProvider.enderecos.firstWhere(
@@ -62,8 +81,9 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     _buildAddressSection(context, defaultAddress),
                     SizedBox(height: 24.h),
                     ...cartProvider.itens.values
-                        .map((item) => _buildCartItem(item, cartProvider))
-                        ,
+                        .map((item) => _buildCartItem(item, cartProvider)),
+                    _buildObservacaoField(cartProvider),
+                    SizedBox(height: 24.h),
                   ],
                 ),
               ),
@@ -75,13 +95,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-
   Widget _buildEmptyCart() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_cart_outlined, size: 80.r, color: Colors.grey[300]),
+          Icon(Icons.shopping_cart_outlined,
+              size: 80.r, color: Colors.grey[300]),
           SizedBox(height: 16.h),
           Text(
             'Seu carrinho está vazio',
@@ -118,17 +138,16 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
               color: const Color(0xFFFF6961).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.location_on_outlined, color: primaryColor, size: 20.r),
+            child: Icon(Icons.location_on_outlined,
+                color: primaryColor, size: 20.r),
           ),
           SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Endereço de entrega',
-                  style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-                ),
+                Text('Endereço de entrega',
+                    style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
                 SizedBox(height: 4.h),
                 Text(
                   address != null
@@ -150,13 +169,11 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   borderRadius: BorderRadius.circular(20.r)),
               padding: EdgeInsets.symmetric(horizontal: 16.w),
             ),
-            child: Text(
-              'Alterar',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13.sp),
-            ),
+            child: Text('Alterar',
+                style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.sp)),
           ),
         ],
       ),
@@ -166,26 +183,27 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   Future<void> _mostrarSelecaoEndereco(BuildContext context) async {
     final enderecoProvider = context.read<EnderecoProvider>();
     final enderecos = enderecoProvider.enderecos;
-
     if (enderecos.isEmpty) {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
           title: const Text('Nenhum endereço salvo'),
           content: const Text(
               'Você ainda não possui endereços cadastrados. Deseja adicionar um agora?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar')),
             ElevatedButton(
               onPressed: () {
-context.push('/enderecos-salvos');              },
+                context.push('/enderecos-salvos');
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFE645C),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r)),
               ),
               child: const Text('Adicionar'),
             ),
@@ -194,7 +212,6 @@ context.push('/enderecos-salvos');              },
       );
       return;
     }
-
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -205,60 +222,106 @@ context.push('/enderecos-salvos');              },
     setState(() {});
   }
 
-  Widget _buildBottomButton(CartProvider cartProvider) {
-  return Padding(
-    padding: EdgeInsets.only(bottom: 80.h),
-    child: Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10.r,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Total', style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
-                Text(
-                  currencyFormat.format(cartProvider.valorTotal),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20.sp,
-                    color: const Color(0xFF5D201C),
-                  ),
-                ),
-              ],
+  Widget _buildObservacaoField(CartProvider cartProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 16.h),
+        Text(
+          'Observações para o restaurante',
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15.sp,
+              color: const Color(0xFF5D201C)),
+        ),
+        SizedBox(height: 12.h),
+        TextField(
+          controller: _observacaoController,
+          maxLines: 3,
+          maxLength: 200,
+          decoration: InputDecoration(
+            hintText:
+                'Ex: Tirar cebola, maionese à parte, troco para R\$ 50...',
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14.sp),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.all(16.w),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16.r),
+                borderSide: BorderSide.none),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16.r),
+                borderSide: BorderSide(color: Colors.white)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide:
+                  BorderSide(color: primaryColor.withValues(alpha: 0.5)),
             ),
           ),
-          SizedBox(
-            width: 140.w,
-            height: 49.h,
-            child: ElevatedButton(
-              onPressed: () => context.push('/checkout'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFE645C),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
-              ),
-              child: Text('Continuar', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+          onChanged: (value) => cartProvider.setObservacao(value),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildBottomButton(CartProvider cartProvider) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 80.h),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10.r,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Total',
+                      style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
+                  Text(
+                    currencyFormat.format(cartProvider.valorTotal),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20.sp,
+                        color: const Color(0xFF5D201C)),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 140.w,
+              height: 49.h,
+              child: ElevatedButton(
+                onPressed: () => context.push('/checkout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFE645C),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50.r)),
+                ),
+                child: Text('Continuar',
+                    style: TextStyle(
+                        fontSize: 16.sp, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🆕 Item do carrinho com ícone de lixeira
   Widget _buildCartItem(CarrinhoModel item, CartProvider cartProvider) {
     double swipeProgress = 0.0;
     bool hasVibrated = false;
@@ -292,7 +355,8 @@ context.push('/enderecos-salvos');              },
                           margin: EdgeInsets.only(bottom: 16.h),
                           padding: EdgeInsets.symmetric(horizontal: 24.w),
                           decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.4 + (0.6 * t)),
+                            color:
+                                primaryColor.withValues(alpha: 0.4 + (0.6 * t)),
                             borderRadius: BorderRadius.circular(16.r),
                           ),
                           alignment: Alignment.centerRight,
@@ -300,17 +364,15 @@ context.push('/enderecos-salvos');              },
                             scale: 0.8 + (0.6 * t),
                             child: Opacity(
                               opacity: (t * 2).clamp(0.0, 1.0),
-                              child: Icon(
-                                Icons.delete_sweep_rounded,
-                                color: Colors.white,
-                                size: 28.r,
-                              ),
+                              child: Icon(Icons.delete_sweep_rounded,
+                                  color: Colors.white, size: 28.r),
                             ),
                           ),
                         ),
                       ),
                     Transform.translate(
-                      offset: Offset(-slideValue * MediaQuery.of(context).size.width, 0),
+                      offset: Offset(
+                          -slideValue * MediaQuery.of(context).size.width, 0),
                       child: Dismissible(
                         key: Key(item.idProduto),
                         direction: isProgrammaticDeleting
@@ -319,15 +381,12 @@ context.push('/enderecos-salvos');              },
                         resizeDuration: const Duration(milliseconds: 350),
                         movementDuration: const Duration(milliseconds: 350),
                         onUpdate: (details) {
-                          setState(() {
-                            swipeProgress = details.progress;
-                          });
+                          setState(() => swipeProgress = details.progress);
                           if (details.reached && !hasVibrated) {
                             HapticFeedback.mediumImpact();
                             hasVibrated = true;
-                          } else if (!details.reached) {
-                            hasVibrated = false;
-                          }
+                          // ignore: curly_braces_in_flow_control_structures
+                          } else if (!details.reached) hasVibrated = false;
                         },
                         onDismissed: (direction) {
                           if (!isProgrammaticDeleting) {
@@ -338,7 +397,8 @@ context.push('/enderecos-salvos');              },
                           margin: EdgeInsets.only(bottom: 16.h),
                           padding: EdgeInsets.symmetric(horizontal: 24.w),
                           decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.4 + (0.6 * swipeProgress)),
+                            color: primaryColor.withValues(
+                                alpha: 0.4 + (0.6 * swipeProgress)),
                             borderRadius: BorderRadius.circular(16.r),
                           ),
                           alignment: Alignment.centerRight,
@@ -346,11 +406,8 @@ context.push('/enderecos-salvos');              },
                             scale: 0.8 + (0.6 * swipeProgress),
                             child: Opacity(
                               opacity: (swipeProgress * 2).clamp(0.0, 1.0),
-                              child: Icon(
-                                Icons.delete_sweep_rounded,
-                                color: Colors.white,
-                                size: 28.r,
-                              ),
+                              child: Icon(Icons.delete_sweep_rounded,
+                                  color: Colors.white, size: 28.r),
                             ),
                           ),
                         ),
@@ -391,88 +448,125 @@ context.push('/enderecos-salvos');              },
                                       child: Image.network(
                                         item.imagemUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Icon(Icons.image, color: Colors.grey, size: 24.r),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(Icons.image,
+                                                    color: Colors.grey,
+                                                    size: 24.r),
                                       ),
                                     ),
                                   ),
                                   SizedBox(width: 16.w),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             Expanded(
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     item.nome,
                                                     style: TextStyle(
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         fontSize: 14.sp),
                                                     maxLines: 2,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                   SizedBox(height: 8.h),
                                                   Row(
                                                     children: [
                                                       Container(
                                                         height: 32.h,
-                                                        decoration: BoxDecoration(
-                                                          border: Border.all(color: Colors.grey[300]!),
-                                                          borderRadius: BorderRadius.circular(16.r),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          border: Border.all(
+                                                              color: Colors
+                                                                  .grey[300]!),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                      16.r),
                                                         ),
                                                         child: Row(
                                                           children: [
                                                             IconButton(
-                                                              padding: EdgeInsets.zero,
-                                                              constraints: const BoxConstraints(minWidth: 32),
-                                                              icon: Icon(Icons.remove, size: 16.r),
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(
+                                                                      minWidth:
+                                                                          32),
+                                                              icon: Icon(
+                                                                  Icons.remove,
+                                                                  size: 16.r),
                                                               onPressed: () =>
-                                                                  cartProvider.removerItem(item.idProduto),
+                                                                  cartProvider
+                                                                      .removerItem(
+                                                                          item.idProduto),
                                                             ),
                                                             Text(
-                                                              item.quantidade.toString(),
+                                                              item.quantidade
+                                                                  .toString(),
                                                               style: TextStyle(
-                                                                  fontWeight: FontWeight.bold,
-                                                                  fontSize: 14.sp),
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize:
+                                                                      14.sp),
                                                             ),
                                                             IconButton(
-                                                              padding: EdgeInsets.zero,
-                                                              constraints: const BoxConstraints(minWidth: 32),
-                                                              icon: Icon(Icons.add, size: 16.r),
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(
+                                                                      minWidth:
+                                                                          32),
+                                                              icon: Icon(
+                                                                  Icons.add,
+                                                                  size: 16.r),
                                                               onPressed: () =>
-                                                                  cartProvider.adicionarItem(
-                                                                    idProduto: item.idProduto,
-                                                                    nome: item.nome,
-                                                                    preco: item.preco,
-                                                                    imagemUrl: item.imagemUrl,
-                                                                  ),
+                                                                  cartProvider
+                                                                      .adicionarItem(
+                                                                idProduto: item
+                                                                    .idProduto,
+                                                                nome: item.nome,
+                                                                preco:
+                                                                    item.preco,
+                                                                imagemUrl: item
+                                                                    .imagemUrl,
+                                                              ),
                                                             ),
                                                           ],
                                                         ),
                                                       ),
                                                       SizedBox(width: 16.w),
+                                                      // 🗑️ Ícone de lixeira
                                                       GestureDetector(
                                                         onTap: () {
-                                                          HapticFeedback.lightImpact();
-                                                          setState(() {
-                                                            isProgrammaticDeleting = true;
-                                                          });
+                                                          HapticFeedback
+                                                              .lightImpact();
+                                                          setState(() =>
+                                                              isProgrammaticDeleting =
+                                                                  true);
                                                         },
-                                                        child: Text(
-                                                          'Excluir',
-                                                          style: TextStyle(
+                                                        child: Icon(
+                                                            Icons
+                                                                .delete_outline,
                                                             color: primaryColor,
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 13.sp,
-                                                            decoration: TextDecoration.underline,
-                                                          ),
-                                                        ),
+                                                            size: 22.r),
                                                       ),
                                                     ],
                                                   ),
@@ -480,12 +574,15 @@ context.push('/enderecos-salvos');              },
                                               ),
                                             ),
                                             Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
                                               children: [
                                                 Text(
-                                                  currencyFormat.format(item.preco),
+                                                  currencyFormat
+                                                      .format(item.preco),
                                                   style: TextStyle(
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       fontSize: 14.sp),
                                                 ),
                                                 SizedBox(height: 4.h),
@@ -521,10 +618,9 @@ context.push('/enderecos-salvos');              },
   }
 }
 
-
+// -------------------- BOTTOM SHEET DE ENDEREÇOS --------------------
 class _AddressSelectionSheet extends StatelessWidget {
   final List<EnderecoModel> enderecos;
-
   const _AddressSelectionSheet({required this.enderecos});
 
   @override
@@ -542,9 +638,8 @@ class _AddressSelectionSheet extends StatelessWidget {
             width: 40.w,
             height: 4.h,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2.r),
-            ),
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2.r)),
           ),
           SizedBox(height: 24.h),
           Padding(
@@ -554,18 +649,16 @@ class _AddressSelectionSheet extends StatelessWidget {
               child: Text(
                 'Selecione o endereço de entrega',
                 style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF5D201C),
-                ),
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF5D201C)),
               ),
             ),
           ),
           SizedBox(height: 16.h),
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.5,
-            ),
+                maxHeight: MediaQuery.of(context).size.height * 0.5),
             child: ListView.separated(
               shrinkWrap: true,
               padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -589,17 +682,18 @@ class _AddressSelectionSheet extends StatelessWidget {
                     ),
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
-                              endereco.complemento.toLowerCase().contains('trabalho')
+                              endereco.complemento
+                                  .toLowerCase()
+                                  .contains('trabalho')
                           ? Icons.work_outline
                           : Icons.home_outlined,
                       color: const Color(0xFFFF6961),
                       size: 20.r,
                     ),
                   ),
-                  title: Text(
-                    '${endereco.rua}, ${endereco.numero}',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
-                  ),
+                  title: Text('${endereco.rua}, ${endereco.numero}',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15.sp)),
                   subtitle: Text(
                     '${endereco.bairro}${endereco.complemento.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
@@ -607,7 +701,8 @@ class _AddressSelectionSheet extends StatelessWidget {
                     style: TextStyle(fontSize: 13.sp),
                   ),
                   trailing: endereco.padrao
-                      ? Icon(Icons.check_circle, color: const Color(0xFFFF6961), size: 22.r)
+                      ? Icon(Icons.check_circle,
+                          color: const Color(0xFFFF6961), size: 22.r)
                       : null,
                 );
               },
@@ -620,8 +715,7 @@ class _AddressSelectionSheet extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: InkWell(
-              onTap: () {
-context.push('/enderecos-salvos');              },
+              onTap: () => context.push('/enderecos-salvos'),
               borderRadius: BorderRadius.circular(12.r),
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -630,20 +724,15 @@ context.push('/enderecos-salvos');              },
                     Container(
                       padding: EdgeInsets.all(8.w),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        shape: BoxShape.circle,
-                      ),
+                          color: Colors.grey.shade100, shape: BoxShape.circle),
                       child: Icon(Icons.add, color: Colors.grey, size: 20.r),
                     ),
                     SizedBox(width: 16.w),
-                    Text(
-                      'Adicionar novo endereço',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15.sp,
-                        color: Colors.grey,
-                      ),
-                    ),
+                    Text('Adicionar novo endereço',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15.sp,
+                            color: Colors.grey)),
                   ],
                 ),
               ),
