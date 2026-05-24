@@ -13,9 +13,7 @@ class FloatingCartButton extends StatelessWidget {
     final cartProvider = Provider.of<CartProvider>(context);
     final isCartEmpty = cartProvider.itens.isEmpty;
 
-    final router = GoRouter.of(context);
-    final currentLocation = router.state.matchedLocation;
-    if (currentLocation == '/carrinho' || isCartEmpty) {
+    if (isCartEmpty) {
       return const SizedBox.shrink();
     }
 
