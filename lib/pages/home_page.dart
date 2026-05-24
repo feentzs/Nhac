@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nhac/components/botoes/floating_cart_button.dart';
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
@@ -224,38 +225,44 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              if (_selectedIndex != 1)
                 AnimatedBuilder(
-                  animation: _cartBarController,
-                  builder: (context, child) {
-                    final t =
-                        Curves.easeOutCubic.transform(_cartBarController.value);
-                    final baseBottom = bottomPadding + 95.h;
-                    final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
-                    final scaleX = 0.2 + 0.8 * t;
-                    final opacity = t.clamp(0.0, 1.0);
+  animation: _cartBarController,
+  builder: (context, child) {
+    final t = Curves.easeOutCubic.transform(_cartBarController.value);
+    final baseBottom = bottomPadding + 95.h;
+    final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
+    final scaleX = 0.2 + 0.8 * t;
+    final opacity = t.clamp(0.0, 1.0);
 
-                    if (t == 0) return const SizedBox.shrink();
+    if (t == 0) return const SizedBox.shrink();
 
-                    return Positioned(
-                      bottom: interpolatedBottom,
-                      left: 24.w,
-                      right: 24.w,
-                      child: Transform.scale(
-                        scaleX: scaleX,
-                        scaleY: 1.0,
-                        child: Opacity(
-                          opacity: opacity,
-                          child: Consumer<CartProvider>(
-                            builder: (context, cart, _) =>
-                                _buildCartTotalBar(cart.valorTotal),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              if (_selectedIndex != 1) const FloatingCartButton(),
+    return Positioned(
+      bottom: interpolatedBottom,
+      left: 24.w,
+      right: 24.w,
+      child: Transform.scale(
+        scaleX: scaleX,
+        scaleY: 1.0,
+        child: Opacity(
+          opacity: opacity,
+          child: Consumer<CartProvider>(
+            builder: (context, cart, _) => _buildCartTotalBar(
+              cart.valorTotal,
+              onPressed: () {
+                if (_selectedIndex == 1) {
+                  context.push('/checkout');
+                } else {
+                  context.push('/carrinho');
+                }
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  },
+),
+if (_selectedIndex != 1) const FloatingCartButton(),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
@@ -501,48 +508,41 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCartTotalBar(double total) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(50.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF5D201C).withValues(alpha: 0.1),
-            blurRadius: 15.r,
-            offset: Offset(0, 9.h),
+ Widget _buildCartTotalBar(double total, {required VoidCallback onPressed}) {
+  return Container(
+    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(50.r),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF5D201C).withValues(alpha: 0.1),
+          blurRadius: 15.r,
+          offset: Offset(0, 9.h),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total com frete', style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
+              _AnimatedTotalText(total: total, currencyFormat: currencyFormat),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Total com frete',
-                  style: TextStyle(color: Colors.grey, fontSize: 12.sp),
-                ),
-                _AnimatedTotalText(
-                  total: total,
-                  currencyFormat: currencyFormat,
-                ),
-              ],
-            ),
-          ),
-          BotaoNhac(
-            label: 'Continuar',
-            onPressed: () {},
-            fontSize: 15.sp,
-          ),
-        ],
-      ),
-    );
-  }
-}
+        ),
+        BotaoNhac(
+          label: 'Continuar',
+          onPressed: onPressed,
+          fontSize: 15.sp,
+        ),
+      ],
+    ),
+  );
+}}
 
 class _AnimatedTotalText extends StatefulWidget {
   final double total;
