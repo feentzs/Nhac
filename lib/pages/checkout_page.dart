@@ -21,6 +21,117 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool _mostrarCampoTroco = false;
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarNumeroEndereco();
+  }
+
+  Future<void> _verificarNumeroEndereco() async {
+    await Future.delayed(Duration.zero); // garante que o provider já carregou
+    if (!mounted) return;
+    final enderecoProvider = context.read<EnderecoProvider>();
+    final enderecoPadrao = enderecoProvider.enderecos.firstWhere(
+      (e) => e.padrao,
+      orElse: () => EnderecoModel(
+        idDocumento: '',
+        bairro: '',
+        cep: '',
+        cidade: '',
+        estado: '',
+        numero: '',
+        rua: '',
+      ),
+    );
+    if (enderecoPadrao.idDocumento.isNotEmpty &&
+        enderecoPadrao.numero.isEmpty) {
+      await _pedirNumeroEndereco(enderecoPadrao);
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _pedirNumeroEndereco(EnderecoModel endereco) async {
+    final TextEditingController numeroController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Icon(Icons.home, color: const Color(0xFFFF6961), size: 28.r),
+            SizedBox(width: 12.w),
+            Text(
+              'Número da casa',
+              style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF5D201C)),
+            ),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Para completar seu endereço, informe o número da casa.',
+                style:
+                    TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
+              ),
+              SizedBox(height: 16.h),
+              TextFormField(
+                controller: numeroController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Número (ex: 123, S/N)',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r)),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                ),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Campo obrigatório'
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final numero = numeroController.text.trim();
+                final enderecoAtualizado = endereco.copyWith(numero: numero);
+                await context
+                    .read<EnderecoProvider>()
+                    .atualizarEndereco(enderecoAtualizado);
+                if (!mounted) return;
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFE645C),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50.r)),
+            ),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -33,6 +144,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final cartProvider = Provider.of<CartProvider>(context);
     final enderecoProvider = Provider.of<EnderecoProvider>(context);
 
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFE7E5),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final EnderecoModel? enderecoPadrao = enderecoProvider.enderecos.isEmpty
         ? null
         : enderecoProvider.enderecos.firstWhere(
@@ -44,8 +162,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final frete = 0.0;
     final total = subtotal + frete;
     final tempoEntrega = '30 - 50 min';
-
-    final bool podeFinalizar = enderecoPadrao != null;
+    final podeFinalizar =
+        enderecoPadrao != null && enderecoPadrao.numero.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFE7E5),
@@ -127,9 +245,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ],
               ),
             ),
-
             SizedBox(height: 24.h),
-
             _buildSectionTitle('Forma de pagamento'),
             SizedBox(height: 8.h),
             Container(
@@ -143,7 +259,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ],
               ),
             ),
-
             if (_mostrarCampoTroco) ...[
               SizedBox(height: 16.h),
               Container(
@@ -181,9 +296,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
               ),
             ],
-
             SizedBox(height: 24.h),
-
             _buildSectionTitle('Resumo do pedido'),
             SizedBox(height: 8.h),
             Container(
@@ -289,9 +402,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ],
               ),
             ),
-
             SizedBox(height: 24.h),
-
             _buildSectionTitle('Previsão de entrega'),
             SizedBox(height: 8.h),
             Container(
@@ -312,16 +423,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ],
               ),
             ),
-
             SizedBox(height: 40.h),
-
             BotaoLargoNhac(
               texto: 'Confirmar pedido',
               onPressed: podeFinalizar
                   ? () => _confirmarPedido(context, total, cartProvider)
                   : null,
             ),
-
             SizedBox(height: 32.h),
           ],
         ),
@@ -495,7 +603,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             onPressed: () {
               cartProvider.esvaziarCarrinho();
               cartProvider.setObservacao('');
-              Navigator.pop(context); 
+              Navigator.pop(context);
               context.go('/home-page');
             },
             style: ElevatedButton.styleFrom(
@@ -511,7 +619,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 }
-
 
 class _AddressSelectionSheet extends StatelessWidget {
   final List<EnderecoModel> enderecos;
