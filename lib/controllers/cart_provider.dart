@@ -21,7 +21,6 @@ class CartProvider extends ChangeNotifier {
   int get totalDeUnidades => _totalDeUnidades;
 
 
-  // Adicione dentro da classe CartProvider:
 
   String _observacao = '';
 
@@ -143,11 +142,13 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> esvaziarCarrinho() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-    
-    await _cartRepository.esvaziarCarrinho(user.uid);
-  }
+  final user = _auth.currentUser;
+  if (user == null) return;
+  
+  await _cartRepository.esvaziarCarrinho(user.uid);
+  _observacao = '';
+  notifyListeners();
+}
 
   @override
   void dispose() {
