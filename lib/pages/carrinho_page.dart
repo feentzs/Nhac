@@ -87,7 +87,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   ],
                 ),
               ),
-              _buildBottomButton(cartProvider),
             ],
           );
         },
@@ -264,64 +263,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-  Widget _buildBottomButton(CartProvider cartProvider) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 80.h),
-      child: Container(
-        padding: EdgeInsets.all(16.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10.r,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Total',
-                      style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
-                  Text(
-                    currencyFormat.format(cartProvider.valorTotal),
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20.sp,
-                        color: const Color(0xFF5D201C)),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 140.w,
-              height: 49.h,
-              child: ElevatedButton(
-                onPressed: () => context.push('/checkout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFE645C),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(50.r)),
-                ),
-                child: Text('Continuar',
-                    style: TextStyle(
-                        fontSize: 16.sp, fontWeight: FontWeight.w600)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  // 🆕 Item do carrinho com ícone de lixeira
   Widget _buildCartItem(CarrinhoModel item, CartProvider cartProvider) {
     double swipeProgress = 0.0;
     bool hasVibrated = false;
