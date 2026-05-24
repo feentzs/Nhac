@@ -43,7 +43,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final subtotal = cartProvider.valorTotal;
     final frete = 0.0;
     final total = subtotal + frete;
-
     final tempoEntrega = '30 - 50 min';
 
     return Scaffold(
@@ -204,6 +203,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ],
                     ),
                   )),
+
+                  // Exibe a observação se houver conteúdo
+                  if (cartProvider.observacao.isNotEmpty) ...[
+                    Divider(height: 24.h, color: Colors.grey.shade200),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.note_outlined, size: 18.r, color: Colors.grey.shade600),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            'Observações: ${cartProvider.observacao}',
+                            style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
                   Divider(height: 24.h, color: Colors.grey.shade200),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -266,10 +284,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
             SizedBox(height: 40.h),
 
-            // ==================== BOTÃO FINALIZAR ====================
             BotaoLargoNhac(
               texto: 'Confirmar pedido',
-              onPressed: () => _confirmarPedido(context, total),
+              onPressed: () => _confirmarPedido(context, total, cartProvider),
             ),
 
             SizedBox(height: 32.h),
@@ -359,8 +376,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     setState(() {});
   }
 
-  void _confirmarPedido(BuildContext context, double total) {
-    // Aqui você enviará o pedido para o Firebase, limpará o carrinho e navegará para a tela de sucesso
+  void _confirmarPedido(BuildContext context, double total, CartProvider cartProvider) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -374,11 +390,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
         actions: [
           TextButton(
             onPressed: () {
-              // Limpar carrinho
-              context.read<CartProvider>().esvaziarCarrinho();
-              Navigator.pop(context); 
-              Navigator.pop(context); 
-              Navigator.pop(context);
+              // Limpa carrinho e observação
+              cartProvider.esvaziarCarrinho();
+              cartProvider.setObservacao('');
+              Navigator.pop(context); // fecha dialog
+              Navigator.pop(context); // volta para carrinho
+              context.go('/home-page'); // opcional: vai para home
             },
             child: const Text('OK'),
           ),
