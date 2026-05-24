@@ -57,7 +57,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
             return _buildEmptyCart();
           }
 
-          // Sincroniza o controlador com o provider
           if (_observacaoController.text != cartProvider.observacao) {
             _observacaoController.text = cartProvider.observacao;
           }
@@ -495,7 +494,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                         ),
                                                       ),
                                                       SizedBox(width: 16.w),
-                                                      // 🗑️ Ícone de lixeira
                                                       GestureDetector(
                                                         onTap: () {
                                                           HapticFeedback
@@ -560,7 +558,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   }
 }
 
-// -------------------- BOTTOM SHEET DE ENDEREÇOS --------------------
 class _AddressSelectionSheet extends StatelessWidget {
   final List<EnderecoModel> enderecos;
   const _AddressSelectionSheet({required this.enderecos});

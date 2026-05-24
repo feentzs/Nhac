@@ -308,7 +308,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
                       SizedBox(height: 24.h),
 
-                      // Seletor de quantidade
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Row(
