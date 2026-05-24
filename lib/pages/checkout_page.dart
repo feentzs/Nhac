@@ -30,7 +30,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Future<void> _verificarNumeroEndereco() async {
-    await Future.delayed(Duration.zero); // garante que o provider já carregou
+    await Future.delayed(Duration.zero); 
     if (!mounted) return;
     final enderecoProvider = context.read<EnderecoProvider>();
     final enderecoPadrao = enderecoProvider.enderecos.firstWhere(
@@ -437,7 +437,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // -------------------- MÉTODOS AUXILIARES --------------------
 
   Widget _buildSectionTitle(String title) {
     return Text(
@@ -522,7 +521,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     setState(() {});
   }
 
-  // 🆕 Diálogo estilizado para quando não há endereço
   void _mostrarDialogEnderecoVazio(BuildContext context) {
     showDialog(
       context: context,
@@ -561,7 +559,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context); // fecha o diálogo
+              Navigator.pop(context); 
               context.push('/enderecos-salvos');
             },
             style: ElevatedButton.styleFrom(
