@@ -47,7 +47,9 @@ class _HomeContentState extends State<HomeContent> {
                 (index) => Padding(
                       padding: EdgeInsets.only(bottom: 16.h),
                       child: _buildBoxSkeleton(
-                          width: double.infinity, height: 90.h, borderRadius: 12.r),
+                          width: double.infinity,
+                          height: 90.h,
+                          borderRadius: 12.r),
                     )),
           );
         }
@@ -140,12 +142,12 @@ class _HomeContentState extends State<HomeContent> {
                               width: 70.w,
                               height: 70.w,
                               color: Colors.grey.shade100,
-                              child: Icon(Icons.store, color: Colors.grey, size: 24.r),
+                              child: Icon(Icons.store,
+                                  color: Colors.grey, size: 24.r),
                             ),
                           ),
                         ),
                         SizedBox(width: 16.w),
-
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +189,8 @@ class _HomeContentState extends State<HomeContent> {
                               Text(
                                 loja.categoria,
                                 style: TextStyle(
-                                    color: Colors.grey.shade600, fontSize: 13.sp),
+                                    color: Colors.grey.shade600,
+                                    fontSize: 13.sp),
                               ),
                               SizedBox(height: 8.h),
                               Text(
@@ -412,6 +415,23 @@ class _HomeContentState extends State<HomeContent> {
           setState(() => _currentAddress = endereco);
           LocalCacheService.salvarLocalizacaoGps(endereco);
         }
+
+        if (!mounted) return ;
+        final enderecoProvider = context.read<EnderecoProvider>();
+        if (enderecoProvider.enderecos.isEmpty) {
+          final novoEndereco = EnderecoModel(
+            idDocumento: '',
+            rua: place.street ?? '',
+            numero: '',
+            bairro: place.subLocality ?? '',
+            cidade: place.locality ?? '',
+            estado: place.administrativeArea ?? '',
+            cep: place.postalCode ?? '',
+            complemento: '',
+            padrao: true,
+          );
+          await enderecoProvider.adicionarEndereco(novoEndereco);
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _currentAddress = 'Erro ao buscar endereço');
@@ -625,7 +645,8 @@ class _HomeContentState extends State<HomeContent> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.search, color: Colors.grey, size: 22.r),
+                                Icon(Icons.search,
+                                    color: Colors.grey, size: 22.r),
                                 SizedBox(width: 8.w),
                                 Expanded(
                                   child: Text(
@@ -635,7 +656,8 @@ class _HomeContentState extends State<HomeContent> {
                                         fontSize: 16.sp),
                                   ),
                                 ),
-                                Icon(Icons.tune, color: Colors.grey, size: 22.r),
+                                Icon(Icons.tune,
+                                    color: Colors.grey, size: 22.r),
                               ],
                             ),
                           ),
