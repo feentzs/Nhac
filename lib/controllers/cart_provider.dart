@@ -20,6 +20,29 @@ class CartProvider extends ChangeNotifier {
   double get valorTotal => _valorTotal;
   int get totalDeUnidades => _totalDeUnidades;
 
+
+  // Adicione dentro da classe CartProvider:
+
+  String _observacao = '';
+
+  String get observacao => _observacao;
+
+  void setObservacao(String texto) {
+    if (_observacao != texto) {
+      _observacao = texto;
+      notifyListeners();
+    }
+  }
+
+  void limparCarrinhoLocal() {
+    _itens.clear();
+    _valorTotal = 0.0;
+    _totalDeUnidades = 0;
+    _observacao = '';          
+    _carrinhoSubscription?.cancel();
+    notifyListeners();
+  }
+
   void iniciarEscutaCarrinho() {
     final user = _auth.currentUser;
     
@@ -42,13 +65,7 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  void limparCarrinhoLocal() {
-    _itens.clear();
-    _valorTotal = 0.0;
-    _totalDeUnidades = 0;
-    _carrinhoSubscription?.cancel();
-    notifyListeners();
-  }
+  
 
   
   Future<void> adicionarItem({
