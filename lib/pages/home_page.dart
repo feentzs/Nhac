@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nhac/components/botoes/floating_cart_button.dart';
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/components/botoes/botao_nhac.dart';
@@ -110,191 +109,245 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+Widget build(BuildContext context) {
+  final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
-      extendBody: true,
+  return Scaffold(
+    extendBody: true,
+    backgroundColor: const Color(0xFFFFE7E5),
+    appBar: AppBar(
       backgroundColor: const Color(0xFFFFE7E5),
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification is ScrollUpdateNotification &&
-              notification.metrics.axis == Axis.vertical) {
-            if (notification.metrics.pixels > 150 && !_isScrolledDown) {
-              setState(() {
-                _isScrolledDown = true;
-              });
-            } else if (notification.metrics.pixels <= 150 && _isScrolledDown) {
-              setState(() {
-                _isScrolledDown = false;
-              });
-            }
-          }
-          return false;
-        },
-        child: PrimaryScrollController(
-          controller: _scrollController,
-          child: Stack(
-            children: [
-              PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
-                children: [
-                  const HomeContent(),
-                  CarrinhoPage(isActive: _selectedIndex == 1),
-                  _buildPlaceholderContent(2),
-                  const ProfileContent(),
-                ],
-              ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 40.h,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          const Color(0xFFFFE7E5).withValues(alpha: 0.7),
-                          const Color(0xFFFFE7E5).withValues(alpha: 0.6),
-                          const Color(0xFFFFE7E5).withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
+      elevation: 0,
+      actions: [
+        Consumer<CartProvider>(
+          builder: (context, cartProvider, child) {
+            final totalItens = cartProvider.totalDeUnidades;
+            if (totalItens == 0) return const SizedBox.shrink();
+            return Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.shopping_cart_outlined,
+                      color: Color(0xFF5D201C)),
+                  onPressed: () {
+                    setState(() {
+                      _selectedIndex = 1;
+                    });
+                    _pageController.animateToPage(
+                      1,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.fastOutSlowIn,
+                    );
+                    final cart = context.read<CartProvider>();
+                    if (cart.itens.isNotEmpty) {
+                      _cartBarController.forward();
+                    }
+                  },
                 ),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 50.h + bottomPadding,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          const Color(0xFFFFE7E5).withValues(alpha: 0.0),
-                          const Color(0xFFFFE7E5).withValues(alpha: 0.6),
-                          const Color(0xFFFFE7E5),
-                        ],
+                if (totalItens > 0)
+                  Positioned(
+                    right: 6.w,
+                    top: 6.h,
+                    child: Container(
+                      padding: EdgeInsets.all(2.w),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF6961),
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                  ),
-                ),
-              ),
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                bottom: _isScrolledDown
-                    ? (bottomPadding + 10.h + 75.h + 16.h)
-                    : (bottomPadding + 10.h + 12.5.h),
-                right: 24.w + (75.w / 2) - 25.w,
-                child: GestureDetector(
-                  onTap: _isScrolledDown ? _scrollToTop : null,
-                  child: Container(
-                    width: 50.w,
-                    height: 50
-                        .w, // Mantenho .w na altura para ser um círculo perfeito
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6961),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF6961).withValues(alpha: 0.3),
-                          blurRadius: 10.r,
-                          offset: Offset(0, 4.h),
+                      constraints: BoxConstraints(
+                        minWidth: 16.w,
+                        minHeight: 16.h,
+                      ),
+                      child: Text(
+                        '$totalItens',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+    body: NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollUpdateNotification &&
+            notification.metrics.axis == Axis.vertical) {
+          if (notification.metrics.pixels > 150 && !_isScrolledDown) {
+            setState(() {
+              _isScrolledDown = true;
+            });
+          } else if (notification.metrics.pixels <= 150 && _isScrolledDown) {
+            setState(() {
+              _isScrolledDown = false;
+            });
+          }
+        }
+        return false;
+      },
+      child: PrimaryScrollController(
+        controller: _scrollController,
+        child: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              children: [
+                const HomeContent(),
+                CarrinhoPage(isActive: _selectedIndex == 1),
+                _buildPlaceholderContent(2),
+                const ProfileContent(),
+              ],
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 40.h,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFFFFE7E5).withValues(alpha: 0.7),
+                        const Color(0xFFFFE7E5).withValues(alpha: 0.6),
+                        const Color(0xFFFFE7E5).withValues(alpha: 0.0),
                       ],
                     ),
-                    child: Icon(
-                      Icons.arrow_upward_rounded,
-                      color: Colors.white,
-                      size: 24.sp,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 50.h + bottomPadding,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFFFFE7E5).withValues(alpha: 0.0),
+                        const Color(0xFFFFE7E5).withValues(alpha: 0.6),
+                        const Color(0xFFFFE7E5),
+                      ],
                     ),
                   ),
                 ),
               ),
-                AnimatedBuilder(
-  animation: _cartBarController,
-  builder: (context, child) {
-    final t = Curves.easeOutCubic.transform(_cartBarController.value);
-    final baseBottom = bottomPadding + 95.h;
-    final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
-    final scaleX = 0.2 + 0.8 * t;
-    final opacity = t.clamp(0.0, 1.0);
-
-    if (t == 0) return const SizedBox.shrink();
-
-    return Positioned(
-      bottom: interpolatedBottom,
-      left: 24.w,
-      right: 24.w,
-      child: Transform.scale(
-        scaleX: scaleX,
-        scaleY: 1.0,
-        child: Opacity(
-          opacity: opacity,
-          child: Consumer<CartProvider>(
-            builder: (context, cart, _) => _buildCartTotalBar(
-              cart.valorTotal,
-              onPressed: () {
-                if (_selectedIndex == 1) {
-                  context.push('/checkout');
-                } else {
-                  context.push('/carrinho');
-                }
-              },
             ),
-          ),
-        ),
-      ),
-    );
-  },
-),
-if (_selectedIndex != 1) const FloatingCartButton(),
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                bottom: bottomPadding + 10.h,
-                left: _isScrolledDown
-                    ? MediaQuery.of(context).size.width - 24.w - 75.w
-                    : 24.w,
-                right: 24.w,
-                child: AnimatedBuilder(
-                  animation: _cartBarController,
-                  builder: (context, child) {
-                    final t = _cartBarController.value;
-                    final bounceAmount = math.sin(t * math.pi) * 8.h;
-
-                    final isReversing =
-                        _cartBarController.status == AnimationStatus.reverse;
-                    final offsetY = isReversing ? bounceAmount : -bounceAmount;
-
-                    return Transform.translate(
-                      offset: Offset(0, offsetY),
-                      child: child,
-                    );
-                  },
-                  child: _buildDynamicNavBar(),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              bottom: _isScrolledDown
+                  ? (bottomPadding + 10.h + 75.h + 16.h)
+                  : (bottomPadding + 10.h + 12.5.h),
+              right: 24.w + (75.w / 2) - 25.w,
+              child: GestureDetector(
+                onTap: _isScrolledDown ? _scrollToTop : null,
+                child: Container(
+                  width: 50.w,
+                  height: 50.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6961),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF6961).withValues(alpha: 0.3),
+                        blurRadius: 10.r,
+                        offset: Offset(0, 4.h),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.arrow_upward_rounded,
+                    color: Colors.white,
+                    size: 24.sp,
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+            AnimatedBuilder(
+              animation: _cartBarController,
+              builder: (context, child) {
+                final t = Curves.easeOutCubic.transform(_cartBarController.value);
+                final baseBottom = bottomPadding + 95.h;
+                final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
+                final scaleX = 0.2 + 0.8 * t;
+                final opacity = t.clamp(0.0, 1.0);
+
+                if (t == 0) return const SizedBox.shrink();
+
+                return Positioned(
+                  bottom: interpolatedBottom,
+                  left: 24.w,
+                  right: 24.w,
+                  child: Transform.scale(
+                    scaleX: scaleX,
+                    scaleY: 1.0,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: Consumer<CartProvider>(
+                        builder: (context, cart, _) => _buildCartTotalBar(
+                          cart.valorTotal,
+                          onPressed: () {
+                            if (_selectedIndex == 1) {
+                              context.push('/checkout');
+                            } else {
+                              context.push('/carrinho');
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              bottom: bottomPadding + 10.h,
+              left: _isScrolledDown
+                  ? MediaQuery.of(context).size.width - 24.w - 75.w
+                  : 24.w,
+              right: 24.w,
+              child: AnimatedBuilder(
+                animation: _cartBarController,
+                builder: (context, child) {
+                  final t = _cartBarController.value;
+                  final bounceAmount = math.sin(t * math.pi) * 8.h;
+                  final isReversing = _cartBarController.status == AnimationStatus.reverse;
+                  final offsetY = isReversing ? bounceAmount : -bounceAmount;
+                  return Transform.translate(
+                    offset: Offset(0, offsetY),
+                    child: child,
+                  );
+                },
+                child: _buildDynamicNavBar(),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildPlaceholderContent(int index) {
     return Stack(
@@ -508,41 +561,44 @@ if (_selectedIndex != 1) const FloatingCartButton(),
     );
   }
 
- Widget _buildCartTotalBar(double total, {required VoidCallback onPressed}) {
-  return Container(
-    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(50.r),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xFF5D201C).withValues(alpha: 0.1),
-          blurRadius: 15.r,
-          offset: Offset(0, 9.h),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Total com frete', style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
-              _AnimatedTotalText(total: total, currencyFormat: currencyFormat),
-            ],
+  Widget _buildCartTotalBar(double total, {required VoidCallback onPressed}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(50.r),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5D201C).withValues(alpha: 0.1),
+            blurRadius: 15.r,
+            offset: Offset(0, 9.h),
           ),
-        ),
-        BotaoNhac(
-          label: 'Continuar',
-          onPressed: onPressed,
-          fontSize: 15.sp,
-        ),
-      ],
-    ),
-  );
-}}
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Total com frete',
+                    style: TextStyle(color: Colors.grey, fontSize: 12.sp)),
+                _AnimatedTotalText(
+                    total: total, currencyFormat: currencyFormat),
+              ],
+            ),
+          ),
+          BotaoNhac(
+            label: 'Continuar',
+            onPressed: onPressed,
+            fontSize: 15.sp,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _AnimatedTotalText extends StatefulWidget {
   final double total;
