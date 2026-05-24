@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nhac/components/floating_cart_icon.dart';
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/components/botoes/botao_nhac.dart';
@@ -115,66 +116,7 @@ Widget build(BuildContext context) {
   return Scaffold(
     extendBody: true,
     backgroundColor: const Color(0xFFFFE7E5),
-    appBar: AppBar(
-      backgroundColor: const Color(0xFFFFE7E5),
-      elevation: 0,
-      actions: [
-        Consumer<CartProvider>(
-          builder: (context, cartProvider, child) {
-            final totalItens = cartProvider.totalDeUnidades;
-            if (totalItens == 0) return const SizedBox.shrink();
-            return Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.shopping_cart_outlined,
-                      color: Color(0xFF5D201C)),
-                  onPressed: () {
-                    setState(() {
-                      _selectedIndex = 1;
-                    });
-                    _pageController.animateToPage(
-                      1,
-                      duration: const Duration(milliseconds: 400),
-                      curve: Curves.fastOutSlowIn,
-                    );
-                    final cart = context.read<CartProvider>();
-                    if (cart.itens.isNotEmpty) {
-                      _cartBarController.forward();
-                    }
-                  },
-                ),
-                if (totalItens > 0)
-                  Positioned(
-                    right: 6.w,
-                    top: 6.h,
-                    child: Container(
-                      padding: EdgeInsets.all(2.w),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF6961),
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: BoxConstraints(
-                        minWidth: 16.w,
-                        minHeight: 16.h,
-                      ),
-                      child: Text(
-                        '$totalItens',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-      ],
-    ),
-    body: NotificationListener<ScrollNotification>(
+   body: NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollUpdateNotification &&
             notification.metrics.axis == Axis.vertical) {
@@ -319,7 +261,7 @@ Widget build(BuildContext context) {
                 );
               },
             ),
-            AnimatedPositioned(
+        AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutCubic,
               bottom: bottomPadding + 10.h,
@@ -342,7 +284,25 @@ Widget build(BuildContext context) {
                 child: _buildDynamicNavBar(),
               ),
             ),
+                FloatingCartIcon(
+  onPressed: () {
+    setState(() {
+      _selectedIndex = 1;
+    });
+    _pageController.animateToPage(
+      1,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.fastOutSlowIn,
+    );
+    final cart = context.read<CartProvider>();
+    if (cart.itens.isNotEmpty) {
+      _cartBarController.forward();
+    }
+  },
+),
+            
           ],
+          
         ),
       ),
     ),
