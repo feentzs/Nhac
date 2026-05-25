@@ -5,6 +5,7 @@ class CarrinhoModel {
   final String nome;
   final double preco;
   final int quantidade;
+  final String lojaId; 
 
   CarrinhoModel({
     required this.idDocumento,
@@ -13,8 +14,8 @@ class CarrinhoModel {
     required this.nome,
     required this.preco,
     required this.quantidade,
+    required this.lojaId, 
   });
-
 
   factory CarrinhoModel.fromMap(Map<String, dynamic> map, String docId){
     return CarrinhoModel(
@@ -24,6 +25,7 @@ class CarrinhoModel {
       nome: map['nome'] ?? '',
       preco: map['preco']?.toDouble() ?? 0.0,
       quantidade: map['quantidade'] ?? 0,
+      lojaId: map['loja_id'] ?? '', 
     );
   }
 
@@ -34,6 +36,7 @@ class CarrinhoModel {
     String? nome,
     double? preco,
     int? quantidade,
+    String? lojaId, 
   }) =>
       CarrinhoModel(
         idDocumento: idDocumento ?? this.idDocumento,
@@ -42,6 +45,7 @@ class CarrinhoModel {
         nome: nome ?? this.nome,
         preco: preco ?? this.preco,
         quantidade: quantidade ?? this.quantidade,
+        lojaId: lojaId ?? this.lojaId,
       );
 
   Map<String, dynamic> toMap(){
@@ -51,6 +55,7 @@ class CarrinhoModel {
       'nome': nome,
       'preco': preco,
       'quantidade': quantidade,
+      'loja_id': lojaId, 
     };
   }
 }

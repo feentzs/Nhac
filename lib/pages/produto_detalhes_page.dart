@@ -37,7 +37,8 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final currencyFormat =
+        NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -138,7 +139,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   ),
                 ),
               ),
-
               SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
@@ -152,8 +152,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Padding(
-                        padding:
-                            EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 10.h),
+                        padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 10.h),
                         child: Text(
                           widget.produto.nome,
                           textAlign: TextAlign.center,
@@ -179,13 +178,17 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                 color: const Color(0xFFFF6961),
                                 letterSpacing: -1.5,
                                 shadows: const [
-                                  Shadow(offset: Offset(-0.8, -0.8),
+                                  Shadow(
+                                      offset: Offset(-0.8, -0.8),
                                       color: Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8, -0.8),
+                                  Shadow(
+                                      offset: Offset(0.8, -0.8),
                                       color: Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8, 0.8),
+                                  Shadow(
+                                      offset: Offset(0.8, 0.8),
                                       color: Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(-0.8, 0.8),
+                                  Shadow(
+                                      offset: Offset(-0.8, 0.8),
                                       color: Color(0xFFFF6961)),
                                 ],
                               ),
@@ -221,7 +224,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         ),
                       ),
                       SizedBox(height: 20.h),
-
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Container(
@@ -274,9 +276,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                           ),
                         ),
                       ),
-
                       SizedBox(height: 24.h),
-
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Align(
@@ -305,9 +305,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                           ),
                         ),
                       ),
-
                       SizedBox(height: 24.h),
-
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Row(
@@ -323,8 +321,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                             ),
                             Container(
                               decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: Colors.grey.shade300),
+                                border: Border.all(color: Colors.grey.shade300),
                                 borderRadius: BorderRadius.circular(30.r),
                               ),
                               child: Row(
@@ -356,9 +353,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                           ],
                         ),
                       ),
-
                       SizedBox(height: 32.h),
-
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: StreamBuilder<QuerySnapshot>(
@@ -376,8 +371,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
                             final produtosRelacionados = snapshot.data!.docs
                                 .map((doc) => ProdutosModel.fromMap(
-                                    doc.data() as Map<String, dynamic>,
-                                    doc.id))
+                                    doc.data() as Map<String, dynamic>, doc.id))
                                 .where((p) => p.uid != widget.produto.uid)
                                 .map((prod) => ProductSectionItem(
                                       idProduto: prod.uid,
@@ -387,6 +381,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                       name: prod.nome,
                                       weight: '',
                                       price: prod.preco,
+                                      lojaId: prod.lojaId,
                                       discountPercent: null,
                                     ))
                                 .toList();
@@ -403,7 +398,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                           },
                         ),
                       ),
-
                       SizedBox(height: 100.h + bottomPadding),
                     ],
                   ),
@@ -411,7 +405,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
               ),
             ],
           ),
-
           Positioned(
             bottom: 0,
             left: 0,
@@ -441,23 +434,97 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   SizedBox(width: 24.w),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-  final cartProvider = Provider.of<CartProvider>(context, listen: false);
-  cartProvider.adicionarItemComQuantidade(
-    idProduto: widget.produto.uid,
-    nome: widget.produto.nome,
-    preco: widget.produto.preco,
-    imagemUrl: widget.produto.imagemUrl,
-    quantidade: _quantidade,
-  );
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-      duration: const Duration(seconds: 2),
-      backgroundColor: Colors.green,
-    ),
-  );
-},style: ElevatedButton.styleFrom(
+                      onPressed: () async {
+
+                        final cartProvider =
+                            Provider.of<CartProvider>(context, listen: false);
+
+                        bool sucesso =
+                            await cartProvider.adicionarItemComQuantidade(
+                          idProduto: widget.produto.uid,
+                          nome: widget.produto.nome,
+                          preco: widget.produto.preco,
+                          imagemUrl: widget.produto.imagemUrl,
+                          quantidade: _quantidade,
+                          lojaId: widget.produto
+                              .lojaId, 
+                        );
+
+                      
+                        if (!context.mounted) return;
+
+                        if (sucesso) {
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  '$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text(
+                                'Esvaziar carrinho atual?',
+                                style: TextStyle(
+                                    color: Color(0xFF5D201C),
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              content: const Text(
+                                  'Você já tem itens de outro restaurante no carrinho. Deseja limpá-lo para adicionar este produto?'),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16.r)),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('Cancelar',
+                                      style: TextStyle(color: Colors.grey)),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFF6961),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(50.r)),
+                                  ),
+                                  onPressed: () async {
+                                    await cartProvider.esvaziarCarrinho();
+
+                                    await cartProvider
+                                        .adicionarItemComQuantidade(
+                                      idProduto: widget.produto.uid,
+                                      nome: widget.produto.nome,
+                                      preco: widget.produto.preco,
+                                      imagemUrl: widget.produto.imagemUrl,
+                                      quantidade: _quantidade,
+                                      lojaId: widget.produto.lojaId,
+                                    );
+
+                                    if (!ctx.mounted) return;
+                                    Navigator.pop(ctx); 
+
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Carrinho atualizado com $_quantidade x ${widget.produto.nome}!'),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Esvaziar e Adicionar',
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6961),
                         foregroundColor: Colors.white,
                         elevation: 0,

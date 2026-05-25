@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; 
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/components/product_card.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/produto_detalhes_page.dart';
@@ -11,6 +11,7 @@ class ProductSectionItem {
     required this.name,
     required this.weight,
     required this.price,
+    required this.lojaId,
     this.discountPercent,
   });
 
@@ -19,6 +20,7 @@ class ProductSectionItem {
   final String name;
   final String weight;
   final double price;
+  final String lojaId;
   final int? discountPercent;
 }
 
@@ -80,7 +82,9 @@ class HomeProductSection extends StatelessWidget {
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => ProdutoDetalhesPage(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  ProdutoDetalhesPage(
                             produto: ProdutosModel(
                               uid: item.idProduto,
                               categoria: 'Geral',
@@ -91,12 +95,14 @@ class HomeProductSection extends StatelessWidget {
                               preco: item.price,
                             ),
                           ),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
                             const begin = Offset(0.0, 1.0);
                             const end = Offset.zero;
                             const curve = Curves.easeOutCubic;
 
-                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                            var tween = Tween(begin: begin, end: end)
+                                .chain(CurveTween(curve: curve));
 
                             return SlideTransition(
                               position: animation.drive(tween),
@@ -113,6 +119,7 @@ class HomeProductSection extends StatelessWidget {
                       name: item.name,
                       weight: item.weight,
                       price: item.price,
+                      lojaId: item.lojaId,
                     ),
                   ),
                   if (item.discountPercent != null)

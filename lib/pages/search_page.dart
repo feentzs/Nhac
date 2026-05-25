@@ -291,7 +291,9 @@ class _SearchPageState extends State<SearchPage>
                         : 'https://via.placeholder.com/150',
                     name: produtos[index].nome,
                     weight: '1 un',
-                    price: produtos[index].preco),
+                    price: produtos[index].preco,
+                    lojaId: produtos[index].lojaId),
+                    
               ),
               index,
             ),

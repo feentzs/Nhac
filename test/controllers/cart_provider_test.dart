@@ -12,6 +12,7 @@ void main() {
         nome: 'Super Nhac Bacon',
         preco: 35.90,
         imagemUrl: 'url_falsa.jpg',
+        lojaId: 'id22'
       );
 
       expect(carrinho.quantidadeItens, 1);
@@ -22,8 +23,8 @@ void main() {
     test('Deve somar a quantidade se o item já existir no carrinho', () {
       final carrinho = CartProvider();
 
-      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '');
-      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '');
+      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '', lojaId: 'id2');
+      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '', lojaId: 'id2');
 
       expect(carrinho.quantidadeItens, 1); 
       expect(carrinho.itens['p1']?.quantidade, 2); 
@@ -33,7 +34,7 @@ void main() {
     test('Deve esvaziar o carrinho se não existir itens', () {
       final carrinho = CartProvider();
 
-      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '');
+      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '', lojaId: 'id2');
 
       carrinho.removerItem('p1');
 
@@ -45,8 +46,8 @@ void main() {
     test('Deve esvaziar o carrinho quando função de esvaziar ser chamada', (){
         final carrinho = CartProvider();
 
-      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '');
-      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '');
+      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '', lojaId: 'id1');
+      carrinho.adicionarItem(idProduto: 'p1', nome: 'Batata', preco: 10.0, imagemUrl: '', lojaId: 'id1');
 
     carrinho.esvaziarCarrinho();
 

@@ -262,7 +262,6 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-
   Widget _buildCartItem(CarrinhoModel item, CartProvider cartProvider) {
     double swipeProgress = 0.0;
     bool hasVibrated = false;
@@ -326,7 +325,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                           if (details.reached && !hasVibrated) {
                             HapticFeedback.mediumImpact();
                             hasVibrated = true;
-                          // ignore: curly_braces_in_flow_control_structures
+                            // ignore: curly_braces_in_flow_control_structures
                           } else if (!details.reached) hasVibrated = false;
                         },
                         onDismissed: (direction) {
@@ -488,6 +487,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                                     item.preco,
                                                                 imagemUrl: item
                                                                     .imagemUrl,
+                                                                    lojaId: item.lojaId
                                                               ),
                                                             ),
                                                           ],

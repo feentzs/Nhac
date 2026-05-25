@@ -75,7 +75,7 @@ class LojaPage extends StatelessWidget {
                       final produto = produtos[index];
                       return GestureDetector(
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProdutoDetalhesPage(produto: produto))),
-                        child: ProductCard(idProduto: produto.uid, imageUrl: produto.imagemUrl.isNotEmpty ? produto.imagemUrl : 'https://via.placeholder.com/150', name: produto.nome, weight: '', price: produto.preco),
+                        child: ProductCard(idProduto: produto.uid, imageUrl: produto.imagemUrl.isNotEmpty ? produto.imagemUrl : 'https://via.placeholder.com/150', name: produto.nome, weight: '', price: produto.preco, lojaId: produto.lojaId),
                       );
                     },
                   );

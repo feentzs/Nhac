@@ -20,11 +20,13 @@ class CartProvider extends ChangeNotifier {
   double get valorTotal => _valorTotal;
   int get totalDeUnidades => _totalDeUnidades;
 
-
-
   String _observacao = '';
-
   String get observacao => _observacao;
+
+  String? get lojaIdAtual {
+    if (_itens.isEmpty) return null;
+    return _itens.values.first.lojaId;
+  }
 
   void setObservacao(String texto) {
     if (_observacao != texto) {
@@ -64,17 +66,19 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  
-
-  
-  Future<void> adicionarItem({
+  Future<bool> adicionarItem({
     required String idProduto,
     required String nome,
     required double preco,
     required String imagemUrl,
+    required String lojaId,
   }) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) return false;
+
+    if (_itens.isNotEmpty && lojaIdAtual != null && lojaIdAtual != lojaId) {
+      return false;
+    }
 
     int novaQuantidade = 1;
     if (_itens.containsKey(idProduto)) {
@@ -88,38 +92,48 @@ class CartProvider extends ChangeNotifier {
       preco: preco,
       quantidade: novaQuantidade,
       imagemUrl: imagemUrl,
+      lojaId: lojaId, 
     );
 
     await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
-  }
-  Future<void> adicionarItemComQuantidade({
-  required String idProduto,
-  required String nome,
-  required double preco,
-  required String imagemUrl,
-  required int quantidade,
-}) async {
-  final user = _auth.currentUser;
-  if (user == null) return;
-
-  final int novaQuantidade;
-  if (_itens.containsKey(idProduto)) {
-    novaQuantidade = _itens[idProduto]!.quantidade + quantidade;
-  } else {
-    novaQuantidade = quantidade;
+    return true; // ✅ Sucesso
   }
 
-  final novoItem = CarrinhoModel(
-    idDocumento: idProduto,
-    idProduto: idProduto,
-    nome: nome,
-    preco: preco,
-    quantidade: novaQuantidade,
-    imagemUrl: imagemUrl,
-  );
+  Future<bool> adicionarItemComQuantidade({
+    required String idProduto,
+    required String nome,
+    required double preco,
+    required String imagemUrl,
+    required int quantidade,
+    required String lojaId,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
 
-  await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
-}
+    if (_itens.isNotEmpty && lojaIdAtual != null && lojaIdAtual != lojaId) {
+      return false; 
+    }
+
+    final int novaQuantidade;
+    if (_itens.containsKey(idProduto)) {
+      novaQuantidade = _itens[idProduto]!.quantidade + quantidade;
+    } else {
+      novaQuantidade = quantidade;
+    }
+
+    final novoItem = CarrinhoModel(
+      idDocumento: idProduto,
+      idProduto: idProduto,
+      nome: nome,
+      preco: preco,
+      quantidade: novaQuantidade,
+      imagemUrl: imagemUrl,
+      lojaId: lojaId,
+    );
+
+    await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
+    return true;
+  }
 
   Future<void> removerItem(String idProduto) async {
     final user = _auth.currentUser;
@@ -142,13 +156,13 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> esvaziarCarrinho() async {
-  final user = _auth.currentUser;
-  if (user == null) return;
-  
-  await _cartRepository.esvaziarCarrinho(user.uid);
-  _observacao = '';
-  notifyListeners();
-}
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    await _cartRepository.esvaziarCarrinho(user.uid);
+    _observacao = '';
+    notifyListeners();
+  }
 
   @override
   void dispose() {

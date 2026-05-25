@@ -16,6 +16,7 @@ class ProductCard extends StatelessWidget {
     required this.name,
     required this.weight,
     required this.price,
+    required this.lojaId,
   });
 
   final String idProduto;
@@ -23,6 +24,7 @@ class ProductCard extends StatelessWidget {
   final String name;
   final String weight;
   final double price;
+  final String lojaId;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +90,8 @@ class ProductCard extends StatelessWidget {
                 SizedBox(height: 4.h),
                 Text(
                   weight,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
+                  style:
+                      TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
                 ),
                 SizedBox(height: 8.h),
                 Row(
@@ -103,22 +106,86 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                     InkWell(
-                      onTap: () {
-                        context.read<CartProvider>().adicionarItem(
+                      onTap: () async {
+                        final cartProvider = context.read<CartProvider>();
+
+                        bool sucesso = await cartProvider.adicionarItem(
                           idProduto: idProduto,
                           nome: name,
                           preco: price,
                           imagemUrl: imageUrl,
+                          lojaId: lojaId,
                         );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('$name adicionado ao carrinho!'),
-                            duration: const Duration(seconds: 1),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+
+                        if (!context.mounted) return;
+
+                        if (sucesso) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('$name adicionado ao carrinho!'),
+                              duration: const Duration(seconds: 1),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text(
+                                'Esvaziar carrinho atual?',
+                                style: TextStyle(
+                                    color: Color(0xFF5D201C),
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              content: const Text(
+                                  'Você só pode adicionar itens de um restaurante por vez. Deseja esvaziar o carrinho atual e adicionar este item?'),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16.r)),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('Cancelar',
+                                      style: TextStyle(color: Colors.grey)),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFF6961),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(50.r)),
+                                  ),
+                                  onPressed: () async {
+                                    await cartProvider.esvaziarCarrinho();
+
+                                    await cartProvider.adicionarItem(
+                                      idProduto: idProduto,
+                                      nome: name,
+                                      preco: price,
+                                      imagemUrl: imageUrl,
+                                      lojaId: lojaId,
+                                    );
+
+                                    if (!ctx.mounted) return;
+                                    Navigator.pop(ctx);
+
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            '$name adicionado ao carrinho!'),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 1),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Esvaziar e adicionar',
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
                       },
-                      borderRadius: BorderRadius.circular(50.r),
                       child: Container(
                         padding: EdgeInsets.all(4.w),
                         decoration: const BoxDecoration(

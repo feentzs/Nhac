@@ -37,6 +37,7 @@ void main() {
         nome: 'Super Nhac Bacon',
         preco: 35.90,
         quantidade: 3,
+        lojaId: 'id22'
       );
 
       final map = itemCarrinho.toMap();

@@ -21,6 +21,7 @@ void main() {
                 name: 'Hambúrguer Teste',
                 weight: '250g',
                 price: 29.90,
+                lojaId: 'id22',
               ),
             ),
           ),

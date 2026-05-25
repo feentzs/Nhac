@@ -254,6 +254,7 @@ class _HomeContentState extends State<HomeContent> {
             name: prod.nome,
             weight: '',
             price: prod.preco,
+            lojaId: prod.lojaId,
             discountPercent: null,
           );
         }).toList();
@@ -267,45 +268,7 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  final List<ProductSectionItem> _produtosNecessidades = [
-    const ProductSectionItem(
-      idProduto: 'prod_001',
-      imageUrl:
-          'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
-      name: 'Pãozinho',
-      weight: '50 g.',
-      price: 16.00,
-      discountPercent: null,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_002',
-      imageUrl:
-          'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
-      name: 'Carne',
-      weight: '68 g.',
-      price: 16.00,
-      discountPercent: 20,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_003',
-      imageUrl:
-          'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
-      name: 'Coxinha',
-      weight: '140 g.',
-      price: 1.90,
-      discountPercent: null,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_004',
-      imageUrl:
-          'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
-      name: 'Refrigerante Viver',
-      weight: '2L',
-      price: 03.99,
-      discountPercent: 10,
-    ),
-  ];
-
+ 
   final List<ProductSectionItem> _produtosPromocao = [
     const ProductSectionItem(
       idProduto: 'prod_005',
@@ -314,6 +277,7 @@ class _HomeContentState extends State<HomeContent> {
       name: 'Pãozinho',
       weight: '50 g.',
       price: 16.00,
+      lojaId: 'id1',
       discountPercent: null,
     ),
     const ProductSectionItem(
@@ -323,6 +287,7 @@ class _HomeContentState extends State<HomeContent> {
       name: 'Carne',
       weight: '68 g.',
       price: 16.00,
+      lojaId: 'id1',
       discountPercent: 20,
     ),
     const ProductSectionItem(
@@ -332,6 +297,7 @@ class _HomeContentState extends State<HomeContent> {
       name: 'Coxinha',
       weight: '140 g.',
       price: 1.90,
+      lojaId: 'id2',
       discountPercent: null,
     ),
     const ProductSectionItem(
@@ -341,6 +307,7 @@ class _HomeContentState extends State<HomeContent> {
       name: 'Refrigerante Viver',
       weight: '2L',
       price: 03.99,
+      lojaId: 'id2',
       discountPercent: 10,
     ),
   ];
@@ -350,7 +317,6 @@ class _HomeContentState extends State<HomeContent> {
     super.initState();
     _isLoading = !_jaCarregouUmaVez;
 
-    _produtosNecessidades.shuffle();
     _produtosPromocao.shuffle();
     _carregarGpsComCache();
 
