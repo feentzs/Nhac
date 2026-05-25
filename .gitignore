@@ -106,3 +106,5 @@ app.*.map.json
 avd.ini
 
 sentry.properties
+
+sentry.properties

@@ -79,8 +79,30 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                     SizedBox(height: 8.h),
                     _buildAddressSection(context, defaultAddress),
                     SizedBox(height: 24.h),
-                    ...cartProvider.itens.values
-                        .map((item) => _buildCartItem(item, cartProvider)),
+                    ...cartProvider.itens.values.toList().asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final item = entry.value;
+                      return TweenAnimationBuilder<double>(
+                        key: ValueKey('anim_${item.idProduto}'),
+                        duration: const Duration(milliseconds: 800),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        curve: Interval(
+                          (index * 0.1).clamp(0.0, 0.5),
+                          1.0,
+                          curve: Curves.easeOutCubic,
+                        ),
+                        builder: (context, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, -20 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _buildCartItem(item, cartProvider),
+                      );
+                    }),
                     _buildObservacaoField(cartProvider),
                     SizedBox(height: 24.h),
                   ],
