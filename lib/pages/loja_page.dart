@@ -8,84 +8,447 @@ import '../components/product_card.dart';
 import '../components/seta_voltar.dart';
 import '../pages/produto_detalhes_page.dart';
 
-class LojaPage extends StatelessWidget {
+class LojaPage extends StatefulWidget {
   final LojasModel loja;
   const LojaPage({super.key, required this.loja});
+
+  @override
+  State<LojaPage> createState() => _LojaPageState();
+}
+
+class _LojaPageState extends State<LojaPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFE7E5),
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200.h,
-            pinned: true,
-            backgroundColor: const Color(0xFFFFE7E5),
-            leading: const Padding(padding: EdgeInsets.all(8.0), child: SetaVoltar()),
-            flexibleSpace: FlexibleSpaceBar(
-              background: CachedNetworkImage(
-                imageUrl: loja.imagemUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: Colors.grey.shade100, child: Center(child: CircularProgressIndicator(color: const Color(0xFFFF6961)))),
-                errorWidget: (context, url, error) => Container(color: Colors.grey.shade300, child: Icon(Icons.store, size: 80.sp, color: Colors.grey)),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Container(
-              padding: EdgeInsets.all(24.w),
-              decoration: const BoxDecoration(color: Color(0xFFFFE7E5), borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: NestedScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverToBoxAdapter(
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Text(loja.nome, style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C))),
-                  SizedBox(height: 8.h),
-                  Row(
+                  _buildHeaderCover(),
+                  Positioned(
+                    top: 48.h,
+                    left: 16.w,
+                    child: const SetaVoltar(cor: Colors.white),
+                  ),
+                  Positioned(
+                    top: 48.h,
+                    right: 16.w,
+                    child: const Icon(Icons.more_horiz, color: Colors.white),
+                  ),
+                  Column(
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 20),
-                      SizedBox(width: 4.w),
-                      Text('${loja.mediaAvaliacao.toStringAsFixed(1)} (${loja.totalAvaliacoes} avaliações)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
-                      SizedBox(width: 16.w),
-                      Text('•  ${loja.categoria}', style: TextStyle(color: Colors.grey.shade600)),
+                      SizedBox(height: 85.h),
+                      _buildProfileInfo(),
+                      SizedBox(height: 16.h),
+                      _buildStatsCards(),
+                      SizedBox(height: 16.h),
                     ],
                   ),
-                  SizedBox(height: 32.h),
-                  Text('Cardápio', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C))),
-                  SizedBox(height: 16.h),
+                ],
+              ),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverAppBarDelegate(
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: Colors.black87,
+                    labelStyle:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                    unselectedLabelColor: Colors.grey.shade600,
+                    unselectedLabelStyle: TextStyle(
+                        fontWeight: FontWeight.normal, fontSize: 16.sp),
+                    indicatorColor: const Color(0xFFFF6961),
+                    indicatorSize: TabBarIndicatorSize.label,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    dividerColor: Colors.transparent,
+                    tabs: const [
+                      Tab(text: "Produtos"),
+                      Tab(text: "Espaço"),
+                      Tab(text: "Avaliações"),
+                      Tab(text: "Dinâmica"),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ];
+        },
+        body: Container(
+          color: Colors.white,
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildProdutosTab(),
+              const Center(child: Text("Espaço (Em Breve)")),
+              const Center(child: Text("Avaliações (Em Breve)")),
+              const Center(child: Text("Dinâmica (Em Breve)")),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCover() {
+    return Container(
+      height: 220.h,
+      width: double.infinity,
+      color: Colors.grey.shade300,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            // Future customizable cover image. Using a placeholder for now.
+            imageUrl: "https://picsum.photos/seed/picsum/800/400",
+            fit: BoxFit.cover,
+            errorWidget: (context, url, error) =>
+                Container(color: const Color(0xFF42567A)),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.2),
+                  Colors.black.withOpacity(0.7),
                 ],
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('produtos').where('loja_id', isEqualTo: loja.uid).where('disponivel', isEqualTo: true).snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) return Center(child: Padding(padding: EdgeInsets.all(32.w), child: CircularProgressIndicator(color: const Color(0xFFFF6961))));
-                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) return Center(child: Padding(padding: EdgeInsets.all(32.w), child: Text('Nenhum produto disponível no momento 😥', style: TextStyle(color: Colors.grey.shade600))));
-                  final produtos = snapshot.data!.docs.map((doc) => ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 16.w, mainAxisSpacing: 16.h, childAspectRatio: 0.75),
-                    itemCount: produtos.length,
-                    itemBuilder: (context, index) {
-                      final produto = produtos[index];
-                      return GestureDetector(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProdutoDetalhesPage(produto: produto))),
-                        child: ProductCard(idProduto: produto.uid, imageUrl: produto.imagemUrl.isNotEmpty ? produto.imagemUrl : 'https://via.placeholder.com/150', name: produto.nome, weight: '', price: produto.preco),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(child: SizedBox(height: 100.h)),
         ],
       ),
     );
+  }
+
+  Widget _buildProfileInfo() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                width: 80.w,
+                height: 80.h,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3.w),
+                  boxShadow: [BoxShadow(color: const Color(0xFF5D201C).withValues(alpha: 0.1), blurRadius: 10.r, offset: Offset(0, 4.h))],
+                ),
+                child: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  backgroundImage: widget.loja.imagemUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(widget.loja.imagemUrl)
+                      : null,
+                  child: widget.loja.imagemUrl.isEmpty
+                      ? Icon(Icons.store, size: 36.r, color: Colors.grey)
+                      : null,
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.loja.nome,
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: const [
+                          Shadow(color: Colors.black45, blurRadius: 4)
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4.h),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8.w,
+                      runSpacing: 4.h,
+                      children: [
+                        _buildBadge(widget.loja.categoria,
+                            const Color(0xFF5D201C)), // Dark Primary
+                        Text(
+                          "317 seguidores  452 seguindo", // Mocked data
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.sp,
+                              shadows: const [
+                                Shadow(color: Colors.black45, blurRadius: 4)
+                              ]),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF6961), // Primary Red
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                ),
+                child: Text("Seguir",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 12.sp)),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            widget.loja.descricao.isNotEmpty
+                ? widget.loja.descricao
+                : "Bem-vindo à nossa loja! Confira nossos produtos.",
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 11.sp,
+                shadows: const [Shadow(color: Colors.black45, blurRadius: 2)]),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 10.sp,
+              fontWeight: FontWeight.bold)),
+    );
+  }
+
+
+
+  Widget _buildStatsCards() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildStatItem(
+                "Avaliação",
+                "${widget.loja.mediaAvaliacao.toStringAsFixed(1)}",
+                "Excelente",
+                const Color(0xFF5D201C)), // Dark Primary
+            Container(width: 1, height: 40.h, color: Colors.grey.shade200),
+            _buildStatItem("Avaliações", "${widget.loja.totalAvaliacoes}",
+                "Total", const Color(0xFFFF6961)), // Primary Red
+            Container(width: 1, height: 40.h, color: Colors.grey.shade200),
+            _buildStatItem(
+                "Produtos", "100%", "Positivo", Colors.black87), // Mocked data
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+      String title, String value, String subtitle, Color valueColor) {
+    return Column(
+      children: [
+        Text(title,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12.sp)),
+        SizedBox(height: 4.h),
+        Text(value,
+            style: TextStyle(
+                color: valueColor,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold)),
+        SizedBox(height: 4.h),
+        Text(subtitle,
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 10.sp)),
+      ],
+    );
+  }
+
+  Widget _buildProdutosTab() {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Row(
+              children: [
+                _buildFilterChip("Todos", true),
+                SizedBox(width: 8.w),
+                _buildFilterChip("Em destaque", false),
+                SizedBox(width: 8.w),
+                _buildFilterChip("Vendidos", false),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          sliver: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('produtos')
+                .where('loja_id', isEqualTo: widget.loja.uid)
+                .where('disponivel', isEqualTo: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SliverToBoxAdapter(
+                    child: Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFFFF6961))));
+              }
+              if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  snapshot.data!.docs.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.w),
+                      child: Text('Nenhum produto disponível no momento 😥',
+                          style: TextStyle(color: Colors.grey.shade600)),
+                    ),
+                  ),
+                );
+              }
+              final produtos = snapshot.data!.docs
+                  .map((doc) => ProdutosModel.fromMap(
+                      doc.data() as Map<String, dynamic>, doc.id))
+                  .toList();
+              return SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12.w,
+                  mainAxisSpacing: 12.h,
+                  childAspectRatio: 0.70,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final produto = produtos[index];
+                    return GestureDetector(
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  ProdutoDetalhesPage(produto: produto))),
+                      child: ProductCard(
+                        idProduto: produto.uid,
+                        imageUrl: produto.imagemUrl.isNotEmpty
+                            ? produto.imagemUrl
+                            : 'https://via.placeholder.com/150',
+                        name: produto.nome,
+                        weight: '',
+                        price: produto.preco,
+                      ),
+                    );
+                  },
+                  childCount: produtos.length,
+                ),
+              );
+            },
+          ),
+        ),
+        SliverToBoxAdapter(child: SizedBox(height: 100.h)),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool isSelected) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFFFF6961)
+            : Colors.grey.shade100, // Primary Red
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Colors.white : Colors.grey.shade600,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 13.sp,
+        ),
+      ),
+    );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget _tabBar;
+
+  _SliverAppBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => 48.0;
+  @override
+  double get maxExtent => 48.0;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return _tabBar;
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }
