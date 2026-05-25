@@ -77,7 +77,21 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                   children: [
                     SizedBox(height: 8.h),
-                    _buildAddressSection(context, defaultAddress),
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 800),
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Transform.translate(
+                            offset: Offset(0, -20 * (1 - value)),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _buildAddressSection(context, defaultAddress),
+                    ),
                     SizedBox(height: 24.h),
                     ...cartProvider.itens.values.toList().asMap().entries.map((entry) {
                       final index = entry.key;
@@ -95,7 +109,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                           return Opacity(
                             opacity: value,
                             child: Transform.translate(
-                              offset: Offset(0, -20 * (1 - value)),
+                              offset: Offset(50 * (1 - value), 0),
                               child: child,
                             ),
                           );
