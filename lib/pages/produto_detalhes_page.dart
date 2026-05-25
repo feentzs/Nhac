@@ -6,8 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:nhac/components/home/home_product_section.dart';
 import 'package:nhac/models/produto/produtos.dart';
-import 'package:nhac/models/loja/lojas.dart'; 
-import 'package:nhac/pages/loja_page.dart'; 
+import 'package:nhac/models/loja/lojas.dart';
+import 'package:nhac/pages/loja_page.dart';
 import 'package:shimmer/shimmer.dart';
 
 class ProdutoDetalhesPage extends StatelessWidget {
@@ -17,7 +17,8 @@ class ProdutoDetalhesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+    final currencyFormat =
+        NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -42,7 +43,8 @@ class ProdutoDetalhesPage extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20.sp),
+                      icon: Icon(Icons.arrow_back_ios_new,
+                          color: Colors.black, size: 20.sp),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -56,9 +58,11 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.share_outlined, color: Colors.black, size: 20.sp),
+                        icon: Icon(Icons.share_outlined,
+                            color: Colors.black, size: 20.sp),
                         onPressed: () {
-                          final link = 'https://nhac.app/produto/${produto.uid}';
+                          final link =
+                              'https://nhac.app/produto/${produto.uid}';
                           Share.share(
                             'Confira este produto no Nhac!\n\n'
                             '${produto.nome}\n'
@@ -78,7 +82,8 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.more_horiz, color: Colors.black, size: 20.sp),
+                        icon: Icon(Icons.more_horiz,
+                            color: Colors.black, size: 20.sp),
                         onPressed: () {},
                       ),
                     ),
@@ -95,23 +100,25 @@ class ProdutoDetalhesPage extends StatelessWidget {
                               color: const Color(0xFFF5F5F5),
                               child: const Center(
                                 child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6961)),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFFFF6961)),
                                 ),
                               ),
                             ),
                             errorWidget: (context, url, error) => Container(
                               color: const Color(0xFFF5F5F5),
-                              child: Icon(Icons.fastfood, size: 80.sp, color: Colors.grey),
+                              child: Icon(Icons.fastfood,
+                                  size: 80.sp, color: Colors.grey),
                             ),
                           )
                         : Container(
                             color: const Color(0xFFF5F5F5),
-                            child: Icon(Icons.fastfood, size: 80.sp, color: Colors.grey),
+                            child: Icon(Icons.fastfood,
+                                size: 80.sp, color: Colors.grey),
                           ),
                   ),
                 ),
               ),
-
               SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
@@ -151,10 +158,18 @@ class ProdutoDetalhesPage extends StatelessWidget {
                                 color: const Color(0xFFFF6961),
                                 letterSpacing: -1.5.sp,
                                 shadows: [
-                                  Shadow(offset: Offset(-0.8.w, -0.8.h), color: const Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8.w, -0.8.h), color: const Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(0.8.w, 0.8.h), color: const Color(0xFFFF6961)),
-                                  Shadow(offset: Offset(-0.8.w, 0.8.h), color: const Color(0xFFFF6961)),
+                                  Shadow(
+                                      offset: Offset(-0.8.w, -0.8.h),
+                                      color: const Color(0xFFFF6961)),
+                                  Shadow(
+                                      offset: Offset(0.8.w, -0.8.h),
+                                      color: const Color(0xFFFF6961)),
+                                  Shadow(
+                                      offset: Offset(0.8.w, 0.8.h),
+                                      color: const Color(0xFFFF6961)),
+                                  Shadow(
+                                      offset: Offset(-0.8.w, 0.8.h),
+                                      color: const Color(0xFFFF6961)),
                                 ],
                               ),
                             ),
@@ -162,14 +177,16 @@ class ProdutoDetalhesPage extends StatelessWidget {
                             if (produto.totalAvaliacoes > 0)
                               Container(
                                 margin: EdgeInsets.only(bottom: 6.h),
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 8.w, vertical: 4.h),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFFF5E5),
                                   borderRadius: BorderRadius.circular(12.r),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.star, color: Colors.amber, size: 14.sp),
+                                    Icon(Icons.star,
+                                        color: Colors.amber, size: 14.sp),
                                     SizedBox(width: 4.w),
                                     Text(
                                       produto.mediaAvaliacao.toStringAsFixed(1),
@@ -185,111 +202,125 @@ class ProdutoDetalhesPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
                       SizedBox(height: 24.h),
+                      if (produto.lojaId.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          child: FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('lojas')
+                                .doc(produto.lojaId)
+                                .get(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return _buildLojaCardSkeleton();
+                              }
+                              if (!snapshot.hasData || !snapshot.data!.exists) {
+                                return const SizedBox.shrink();
+                              }
 
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: FutureBuilder<DocumentSnapshot>(
-                          future: FirebaseFirestore.instance.collection('lojas').doc(produto.lojaId).get(),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return _buildLojaCardSkeleton();
-                            }
-                            if (!snapshot.hasData || !snapshot.data!.exists) {
-                              return const SizedBox.shrink();
-                            }
+                              final loja = LojasModel.fromMap(
+                                snapshot.data!.data() as Map<String, dynamic>,
+                                snapshot.data!.id,
+                              );
 
-                            final loja = LojasModel.fromMap(
-                              snapshot.data!.data() as Map<String, dynamic>, 
-                              snapshot.data!.id,
-                            );
-
-                            return InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => LojaPage(loja: loja)),
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(16.r),
-                              child: Container(
-                                padding: EdgeInsets.all(12.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  border: Border.all(color: const Color(0xFFEEEEEE), width: 1.w),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.02),
-                                      blurRadius: 8.r,
-                                      offset: Offset(0, 4.h),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(12.r),
-                                      child: CachedNetworkImage(
-                                        imageUrl: loja.imagemUrl,
-                                        width: 50.w,
-                                        height: 50.w,
-                                        fit: BoxFit.cover,
-                                        errorWidget: (c, u, e) => Container(
-                                          color: const Color(0xFFFFF0EE),
-                                          child: Icon(Icons.store, color: const Color(0xFF5D201C), size: 24.sp),
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            LojaPage(loja: loja)),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(16.r),
+                                child: Container(
+                                  padding: EdgeInsets.all(12.w),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    border: Border.all(
+                                        color: const Color(0xFFEEEEEE),
+                                        width: 1.w),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.02),
+                                        blurRadius: 8.r,
+                                        offset: Offset(0, 4.h),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(12.r),
+                                        child: CachedNetworkImage(
+                                          imageUrl: loja.imagemUrl,
+                                          width: 50.w,
+                                          height: 50.w,
+                                          fit: BoxFit.cover,
+                                          errorWidget: (c, u, e) => Container(
+                                            color: const Color(0xFFFFF0EE),
+                                            child: Icon(Icons.store,
+                                                color: const Color(0xFF5D201C),
+                                                size: 24.sp),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(width: 14.w),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Feito e entregue por',
-                                            style: TextStyle(color: Colors.grey.shade500, fontSize: 11.sp),
-                                          ),
-                                          SizedBox(height: 2.h),
-                                          Text(
-                                            loja.nome,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15.sp,
-                                              color: const Color(0xFF5D201C),
+                                      SizedBox(width: 14.w),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Feito e entregue por',
+                                              style: TextStyle(
+                                                  color: Colors.grey.shade500,
+                                                  fontSize: 11.sp),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF0EE),
-                                        borderRadius: BorderRadius.circular(50.r),
-                                      ),
-                                      child: Text(
-                                        'Ver loja',
-                                        style: TextStyle(
-                                          color: const Color(0xFFFF6961),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12.sp,
+                                            SizedBox(height: 2.h),
+                                            Text(
+                                              loja.nome,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15.sp,
+                                                color: const Color(0xFF5D201C),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 12.w, vertical: 6.h),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFF0EE),
+                                          borderRadius:
+                                              BorderRadius.circular(50.r),
+                                        ),
+                                        child: Text(
+                                          'Ver loja',
+                                          style: TextStyle(
+                                            color: const Color(0xFFFF6961),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12.sp,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-
                       SizedBox(height: 20.h),
-
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Container(
@@ -300,19 +331,21 @@ class ProdutoDetalhesPage extends StatelessWidget {
                           ),
                           child: Column(
                             children: [
-                              _buildServiceRow(Icons.bolt, 'Envio imediato após a compra'),
+                              _buildServiceRow(
+                                  Icons.bolt, 'Envio imediato após a compra'),
                               Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8.h),
-                                child: Divider(height: 1.h, color: const Color(0xFFEEEEEE)),
+                                child: Divider(
+                                    height: 1.h,
+                                    color: const Color(0xFFEEEEEE)),
                               ),
-                              _buildServiceRow(Icons.check_circle_outline, 'Garantia de reembolso em caso de problemas'),
+                              _buildServiceRow(Icons.check_circle_outline,
+                                  'Garantia de reembolso em caso de problemas'),
                             ],
                           ),
                         ),
                       ),
-
                       SizedBox(height: 24.h),
-
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: Align(
@@ -333,8 +366,8 @@ class ProdutoDetalhesPage extends StatelessWidget {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            produto.descricao.isNotEmpty 
-                                ? produto.descricao 
+                            produto.descricao.isNotEmpty
+                                ? produto.descricao
                                 : 'Este produto é preparado com ingredientes frescos e selecionados. Perfeito para qualquer momento do dia.',
                             style: TextStyle(
                               fontSize: 15.sp,
@@ -344,9 +377,7 @@ class ProdutoDetalhesPage extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       SizedBox(height: 32.h),
-
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: StreamBuilder<QuerySnapshot>(
@@ -355,16 +386,22 @@ class ProdutoDetalhesPage extends StatelessWidget {
                               .limit(5)
                               .snapshots(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            if (snapshot.connectionState ==
+                                    ConnectionState.waiting ||
+                                !snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
                               return const SizedBox.shrink();
                             }
 
                             final produtosRelacionados = snapshot.data!.docs
-                                .map((doc) => ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+                                .map((doc) => ProdutosModel.fromMap(
+                                    doc.data() as Map<String, dynamic>, doc.id))
                                 .where((p) => p.uid != produto.uid)
                                 .map((prod) => ProductSectionItem(
                                       idProduto: prod.uid,
-                                      imageUrl: prod.imagemUrl.isNotEmpty ? prod.imagemUrl : 'https://via.placeholder.com/150',
+                                      imageUrl: prod.imagemUrl.isNotEmpty
+                                          ? prod.imagemUrl
+                                          : 'https://via.placeholder.com/150',
                                       name: prod.nome,
                                       weight: '',
                                       price: prod.preco,
@@ -373,7 +410,9 @@ class ProdutoDetalhesPage extends StatelessWidget {
                                     ))
                                 .toList();
 
-                            if (produtosRelacionados.isEmpty) return const SizedBox.shrink();
+                            if (produtosRelacionados.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
 
                             return HomeProductSection(
                               title: 'Produtos Relacionados',
@@ -383,7 +422,6 @@ class ProdutoDetalhesPage extends StatelessWidget {
                           },
                         ),
                       ),
-
                       SizedBox(height: (100 + bottomPadding).h),
                     ],
                   ),
@@ -391,7 +429,6 @@ class ProdutoDetalhesPage extends StatelessWidget {
               ),
             ],
           ),
-
           Positioned(
             bottom: 0,
             left: 0,
@@ -499,7 +536,12 @@ class ProdutoDetalhesPage extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(width: 50.w, height: 50.w, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12.r))),
+            Container(
+                width: 50.w,
+                height: 50.w,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.r))),
             SizedBox(width: 14.w),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
