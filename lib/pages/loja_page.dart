@@ -147,8 +147,8 @@ class _LojaPageState extends State<LojaPage>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.7),
+                  Colors.black.withValues(alpha: 0.2),
+                  Colors.black.withValues(alpha: 0.7),
                 ],
               ),
             ),
@@ -289,7 +289,7 @@ class _LojaPageState extends State<LojaPage>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4)),
           ],
@@ -299,7 +299,7 @@ class _LojaPageState extends State<LojaPage>
           children: [
             _buildStatItem(
                 "Avaliação",
-                "${widget.loja.mediaAvaliacao.toStringAsFixed(1)}",
+                widget.loja.mediaAvaliacao.toStringAsFixed(1),
                 "Excelente",
                 const Color(0xFF5D201C)),
             Container(width: 1, height: 40.h, color: Colors.grey.shade200),
