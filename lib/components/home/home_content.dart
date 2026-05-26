@@ -104,8 +104,43 @@ class _HomeContentState extends State<HomeContent> {
                   if (loja.aberta) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => LojaPage(loja: loja),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => LojaPage(loja: loja),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          var curvedAnimation = CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutQuart,
+                            reverseCurve: Curves.easeInQuart,
+                          );
+                          var curvedSecondaryAnimation = CurvedAnimation(
+                            parent: secondaryAnimation,
+                            curve: Curves.easeOutQuart,
+                            reverseCurve: Curves.easeInQuart,
+                          );
+
+                          var enterTween = Tween(begin: const Offset(1.0, 0.0), end: Offset.zero);
+                          var exitTween = Tween(begin: Offset.zero, end: const Offset(-0.3, 0.0));
+
+                          Widget page = SlideTransition(
+                            position: enterTween.animate(curvedAnimation),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF5D201C).withValues(alpha: 0.1),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: child,
+                            ),
+                          );
+
+                          return page;
+                        },
+                        transitionDuration: const Duration(milliseconds: 400),
+                        reverseTransitionDuration: const Duration(milliseconds: 400),
                       ),
                     );
                   } else {
