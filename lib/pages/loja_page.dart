@@ -19,11 +19,17 @@ class LojaPage extends StatefulWidget {
 class _LojaPageState extends State<LojaPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late Stream<QuerySnapshot> _produtosStream;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _produtosStream = FirebaseFirestore.instance
+        .collection('produtos')
+        .where('loja_id', isEqualTo: widget.loja.uid)
+        .where('disponivel', isEqualTo: true)
+        .snapshots();
   }
 
   @override
@@ -37,7 +43,8 @@ class _LojaPageState extends State<LojaPage>
     return Scaffold(
       backgroundColor: const Color(0xFFFFE7E5),
       body: NestedScrollView(
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics()),
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverToBoxAdapter(
@@ -99,6 +106,7 @@ class _LojaPageState extends State<LojaPage>
                     ],
                   ),
                 ),
+                MediaQuery.of(context).padding.top,
               ),
             ),
           ];
@@ -128,7 +136,6 @@ class _LojaPageState extends State<LojaPage>
         fit: StackFit.expand,
         children: [
           CachedNetworkImage(
-            // Future customizable cover image. Using a placeholder for now.
             imageUrl: "https://picsum.photos/seed/picsum/800/400",
             fit: BoxFit.cover,
             errorWidget: (context, url, error) =>
@@ -166,7 +173,12 @@ class _LojaPageState extends State<LojaPage>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3.w),
-                  boxShadow: [BoxShadow(color: const Color(0xFF5D201C).withValues(alpha: 0.1), blurRadius: 10.r, offset: Offset(0, 4.h))],
+                  boxShadow: [
+                    BoxShadow(
+                        color: const Color(0xFF5D201C).withValues(alpha: 0.1),
+                        blurRadius: 10.r,
+                        offset: Offset(0, 4.h))
+                  ],
                 ),
                 child: CircleAvatar(
                   backgroundColor: Colors.white,
@@ -202,10 +214,10 @@ class _LojaPageState extends State<LojaPage>
                       spacing: 8.w,
                       runSpacing: 4.h,
                       children: [
-                        _buildBadge(widget.loja.categoria,
-                            const Color(0xFF5D201C)), // Dark Primary
+                        _buildBadge(
+                            widget.loja.categoria, const Color(0xFF5D201C)),
                         Text(
-                          "317 seguidores  452 seguindo", // Mocked data
+                          "317 seguidores  452 seguindo",
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,
@@ -221,7 +233,7 @@ class _LojaPageState extends State<LojaPage>
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF6961), // Primary Red
+                  backgroundColor: const Color(0xFFFF6961),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -267,8 +279,6 @@ class _LojaPageState extends State<LojaPage>
     );
   }
 
-
-
   Widget _buildStatsCards() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -291,13 +301,12 @@ class _LojaPageState extends State<LojaPage>
                 "Avaliação",
                 "${widget.loja.mediaAvaliacao.toStringAsFixed(1)}",
                 "Excelente",
-                const Color(0xFF5D201C)), // Dark Primary
+                const Color(0xFF5D201C)),
             Container(width: 1, height: 40.h, color: Colors.grey.shade200),
             _buildStatItem("Avaliações", "${widget.loja.totalAvaliacoes}",
-                "Total", const Color(0xFFFF6961)), // Primary Red
+                "Total", const Color(0xFFFF6961)),
             Container(width: 1, height: 40.h, color: Colors.grey.shade200),
-            _buildStatItem(
-                "Produtos", "100%", "Positivo", Colors.black87), // Mocked data
+            _buildStatItem("Produtos", "100%", "Positivo", Colors.black87),
           ],
         ),
       ),
@@ -343,11 +352,7 @@ class _LojaPageState extends State<LojaPage>
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
           sliver: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('produtos')
-                .where('loja_id', isEqualTo: widget.loja.uid)
-                .where('disponivel', isEqualTo: true)
-                .snapshots(),
+            stream: _produtosStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const SliverToBoxAdapter(
@@ -414,9 +419,7 @@ class _LojaPageState extends State<LojaPage>
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: isSelected
-            ? const Color(0xFFFF6961)
-            : Colors.grey.shade100, // Primary Red
+        color: isSelected ? const Color(0xFFFF6961) : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -432,23 +435,28 @@ class _LojaPageState extends State<LojaPage>
 }
 
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget _tabBar;
+  final Widget tabBar;
+  final double safeAreaTop;
 
-  _SliverAppBarDelegate(this._tabBar);
+  _SliverAppBarDelegate(this.tabBar, this.safeAreaTop);
 
   @override
-  double get minExtent => 48.0;
+  double get minExtent => 48.0 + safeAreaTop;
   @override
-  double get maxExtent => 48.0;
+  double get maxExtent => 48.0 + safeAreaTop;
 
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return _tabBar;
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.only(top: safeAreaTop),
+      child: tabBar,
+    );
   }
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
+    return safeAreaTop != oldDelegate.safeAreaTop || tabBar != oldDelegate.tabBar;
   }
 }
