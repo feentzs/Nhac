@@ -389,10 +389,24 @@ class _LojaPageState extends State<LojaPage>
                     final produto = produtos[index];
                     return GestureDetector(
                       onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  ProdutoDetalhesPage(produto: produto))),
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) => ProdutoDetalhesPage(produto: produto),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(0.0, 1.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeOutCubic;
+
+                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                            return SlideTransition(
+                              position: animation.drive(tween),
+                              child: child,
+                            );
+                          },
+                          transitionDuration: const Duration(milliseconds: 300),
+                        ),
+                      ),
                       child: ProductCard(
                         idProduto: produto.uid,
                         imageUrl: produto.imagemUrl.isNotEmpty
