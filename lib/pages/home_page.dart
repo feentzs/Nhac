@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nhac/components/floating_cart_icon.dart';
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/components/botoes/botao_nhac.dart';
@@ -110,204 +109,188 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   @override
-Widget build(BuildContext context) {
-  final bottomPadding = MediaQuery.of(context).padding.bottom;
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-  return Scaffold(
-    extendBody: true,
-    backgroundColor: const Color(0xFFFFE7E5),
-   body: NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollUpdateNotification &&
-            notification.metrics.axis == Axis.vertical) {
-          if (notification.metrics.pixels > 150 && !_isScrolledDown) {
-            setState(() {
-              _isScrolledDown = true;
-            });
-          } else if (notification.metrics.pixels <= 150 && _isScrolledDown) {
-            setState(() {
-              _isScrolledDown = false;
-            });
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: const Color(0xFFFFE7E5),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification &&
+              notification.metrics.axis == Axis.vertical) {
+            if (notification.metrics.pixels > 150 && !_isScrolledDown) {
+              setState(() {
+                _isScrolledDown = true;
+              });
+            } else if (notification.metrics.pixels <= 150 && _isScrolledDown) {
+              setState(() {
+                _isScrolledDown = false;
+              });
+            }
           }
-        }
-        return false;
-      },
-      child: PrimaryScrollController(
-        controller: _scrollController,
-        child: Stack(
-          children: [
-            PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              children: [
-                const HomeContent(),
-                CarrinhoPage(isActive: _selectedIndex == 1),
-                _buildPlaceholderContent(2),
-                const ProfileContent(),
-              ],
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 40.h,
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFFFFE7E5).withValues(alpha: 0.7),
-                        const Color(0xFFFFE7E5).withValues(alpha: 0.6),
-                        const Color(0xFFFFE7E5).withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
+          return false;
+        },
+        child: PrimaryScrollController(
+          controller: _scrollController,
+          child: Stack(
+            children: [
+              PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+                children: [
+                  const HomeContent(),
+                  CarrinhoPage(isActive: _selectedIndex == 1),
+                  _buildPlaceholderContent(2),
+                  const ProfileContent(),
+                ],
               ),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 50.h + bottomPadding,
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFFFFE7E5).withValues(alpha: 0.0),
-                        const Color(0xFFFFE7E5).withValues(alpha: 0.6),
-                        const Color(0xFFFFE7E5),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              bottom: _isScrolledDown
-                  ? (bottomPadding + 10.h + 75.h + 16.h)
-                  : (bottomPadding + 10.h + 12.5.h),
-              right: 24.w + (75.w / 2) - 25.w,
-              child: GestureDetector(
-                onTap: _isScrolledDown ? _scrollToTop : null,
-                child: Container(
-                  width: 50.w,
-                  height: 50.w,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF6961),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF6961).withValues(alpha: 0.3),
-                        blurRadius: 10.r,
-                        offset: Offset(0, 4.h),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 40.h,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.7),
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.6),
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.0),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.arrow_upward_rounded,
-                    color: Colors.white,
-                    size: 24.sp,
+                    ),
                   ),
                 ),
               ),
-            ),
-            AnimatedBuilder(
-              animation: _cartBarController,
-              builder: (context, child) {
-                final t = Curves.easeOutCubic.transform(_cartBarController.value);
-                final baseBottom = bottomPadding + 95.h;
-                final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
-                final scaleX = 0.2 + 0.8 * t;
-                final opacity = t.clamp(0.0, 1.0);
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 50.h + bottomPadding,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.0),
+                          const Color(0xFFFFE7E5).withValues(alpha: 0.6),
+                          const Color(0xFFFFE7E5),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                bottom: _isScrolledDown
+                    ? (bottomPadding + 10.h + 75.h + 16.h)
+                    : (bottomPadding + 10.h + 12.5.h),
+                right: 24.w + (75.w / 2) - 25.w,
+                child: GestureDetector(
+                  onTap: _isScrolledDown ? _scrollToTop : null,
+                  child: Container(
+                    width: 50.w,
+                    height: 50.w,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6961),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6961).withValues(alpha: 0.3),
+                          blurRadius: 10.r,
+                          offset: Offset(0, 4.h),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                      size: 24.sp,
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedBuilder(
+                animation: _cartBarController,
+                builder: (context, child) {
+                  final t =
+                      Curves.easeOutCubic.transform(_cartBarController.value);
+                  final baseBottom = bottomPadding + 95.h;
+                  final interpolatedBottom = (baseBottom - 80.h) + (80.h * t);
+                  final scaleX = 0.2 + 0.8 * t;
+                  final opacity = t.clamp(0.0, 1.0);
 
-                if (t == 0) return const SizedBox.shrink();
+                  if (t == 0) return const SizedBox.shrink();
 
-                return Positioned(
-                  bottom: interpolatedBottom,
-                  left: 24.w,
-                  right: 24.w,
-                  child: Transform.scale(
-                    scaleX: scaleX,
-                    scaleY: 1.0,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: Consumer<CartProvider>(
-                        builder: (context, cart, _) => _buildCartTotalBar(
-                          cart.valorTotal,
-                          onPressed: () {
-                            if (_selectedIndex == 1) {
-                              context.push('/checkout');
-                            } else {
-                              context.push('/carrinho');
-                            }
-                          },
+                  return Positioned(
+                    bottom: interpolatedBottom,
+                    left: 24.w,
+                    right: 24.w,
+                    child: Transform.scale(
+                      scaleX: scaleX,
+                      scaleY: 1.0,
+                      child: Opacity(
+                        opacity: opacity,
+                        child: Consumer<CartProvider>(
+                          builder: (context, cart, _) => _buildCartTotalBar(
+                            cart.valorTotal,
+                            onPressed: () {
+                              if (_selectedIndex == 1) {
+                                context.push('/checkout');
+                              } else {
+                                context.push('/carrinho');
+                              }
+                            },
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-        AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              bottom: bottomPadding + 10.h,
-              left: _isScrolledDown
-                  ? MediaQuery.of(context).size.width - 24.w - 75.w
-                  : 24.w,
-              right: 24.w,
-              child: AnimatedBuilder(
-                animation: _cartBarController,
-                builder: (context, child) {
-                  final t = _cartBarController.value;
-                  final bounceAmount = math.sin(t * math.pi) * 8.h;
-                  final isReversing = _cartBarController.status == AnimationStatus.reverse;
-                  final offsetY = isReversing ? bounceAmount : -bounceAmount;
-                  return Transform.translate(
-                    offset: Offset(0, offsetY),
-                    child: child,
                   );
                 },
-                child: _buildDynamicNavBar(),
               ),
-            ),
-                FloatingCartIcon(
-  onPressed: () {
-    setState(() {
-      _selectedIndex = 1;
-    });
-    _pageController.animateToPage(
-      1,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.fastOutSlowIn,
-    );
-    final cart = context.read<CartProvider>();
-    if (cart.itens.isNotEmpty) {
-      _cartBarController.forward();
-    }
-  },
-),
-            
-          ],
-          
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                bottom: bottomPadding + 10.h,
+                left: _isScrolledDown
+                    ? MediaQuery.of(context).size.width - 24.w - 75.w
+                    : 24.w,
+                right: 24.w,
+                child: AnimatedBuilder(
+                  animation: _cartBarController,
+                  builder: (context, child) {
+                    final t = _cartBarController.value;
+                    final bounceAmount = math.sin(t * math.pi) * 8.h;
+                    final isReversing =
+                        _cartBarController.status == AnimationStatus.reverse;
+                    final offsetY = isReversing ? bounceAmount : -bounceAmount;
+                    return Transform.translate(
+                      offset: Offset(0, offsetY),
+                      child: child,
+                    );
+                  },
+                  child: _buildDynamicNavBar(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildPlaceholderContent(int index) {
     return Stack(
