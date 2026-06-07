@@ -8,8 +8,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nhac/models/produto/produtos.dart';
 
 class CartProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final CartRepository _cartRepository = CartRepository();
+  final FirebaseAuth _auth;
+  final CartRepository _cartRepository;
+  final FirebaseFirestore _firestore;
+
+  CartProvider({
+    FirebaseAuth? auth, 
+    CartRepository? repository,
+    FirebaseFirestore? firestore,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _cartRepository = repository ?? CartRepository(),
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   final Map<String, CarrinhoModel> _itens = {};
   StreamSubscription<List<CarrinhoModel>>? _carrinhoSubscription;
@@ -91,10 +100,12 @@ class CartProvider extends ChangeNotifier {
     if (user == null) return;
 
     // Verificação de integridade: a loja ainda está aberta?
+    String? lojaIdDoProduto;
     try {
-      final doc = await FirebaseFirestore.instance.collection('produtos').doc(idProduto).get();
+      final doc = await _firestore.collection('produtos').doc(idProduto).get();
       if (doc.exists) {
         final produto = ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        lojaIdDoProduto = produto.lojaId;
         if (!produto.lojaIsAberto) {
           throw Exception('A loja fechou enquanto você navegava. Não é possível adicionar este item.');
         }
@@ -102,8 +113,15 @@ class CartProvider extends ChangeNotifier {
     } catch (e) {
       if (e.toString().contains('loja fechou')) rethrow;
       debugPrint('Erro ao verificar integridade da loja: $e');
-      // Em caso de erro na rede, permitimos a adição por agora ou falhamos? 
-      // Por segurança, vamos apenas logar e continuar, a menos que tenhamos certeza que fechou.
+    }
+
+    // REGRA DE NEGÓCIO: Uma loja por vez
+    if (_itens.isNotEmpty && lojaIdDoProduto != null) {
+      final lojaAtual = _itens.values.first.lojaId;
+      if (lojaAtual != lojaIdDoProduto) {
+        throw Exception(
+            'Você não pode adicionar itens de restaurantes diferentes no mesmo pedido. Limpe o carrinho primeiro.');
+      }
     }
 
     final int novaQuantidade;
@@ -116,6 +134,7 @@ class CartProvider extends ChangeNotifier {
     final novoItem = CarrinhoModel(
       idDocumento: idProduto,
       idProduto: idProduto,
+      lojaId: lojaIdDoProduto ?? '',
       nome: nome,
       preco: preco,
       quantidade: novaQuantidade,

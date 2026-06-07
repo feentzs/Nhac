@@ -32,17 +32,17 @@ class ProdutosModel {
   factory ProdutosModel.fromMap(Map<String, dynamic> map, String id) {
     return ProdutosModel(
       uid: id,
-      lojaId: map['loja_id'] ?? '',
-      nome: map['nome'] ?? '',
-      descricao: map['descricao'] ?? '',
-      preco: (map['preco'] ?? 0.0).toDouble(),
-      categoriaMenu: map['categoria_menu'] ?? '',
-      imagemUrl: map['imagem_url'] ?? '',
-      isAtivo: map['is_ativo'] ?? true,
+      lojaId: map['loja_id']?.toString() ?? '',
+      nome: map['nome']?.toString() ?? '',
+      descricao: map['descricao']?.toString() ?? '',
+      preco: num.tryParse(map['preco']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      categoriaMenu: map['categoria_menu']?.toString() ?? '',
+      imagemUrl: map['imagem_url']?.toString() ?? '',
+      isAtivo: map['is_ativo'] == true,
       criadoEm: map['criado_em'] as Timestamp?,
-      peso: map['peso'],
-      percentualDesconto: map['percentual_desconto'],
-      lojaIsAberto: map['loja_is_aberto'] ?? true,
+      peso: map['peso']?.toString(),
+      percentualDesconto: int.tryParse(map['percentual_desconto']?.toString() ?? '0'),
+      lojaIsAberto: map['loja_is_aberto'] == true,
     );
   }
 

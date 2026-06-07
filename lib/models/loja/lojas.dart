@@ -32,11 +32,11 @@ class LojasModel {
   factory LojasModel.fromMap(Map<String, dynamic> map, String uid) {
     return LojasModel(
       uid: uid,
-      nome: map['nome'] ?? '',
-      categoria: map['categoria'] ?? '',
-      isAberto: map['is_aberto'] ?? false,
-      descricao: map['descricao'] ?? '',
-      imagemUrl: map['imagem_url'] ?? '',
+      nome: map['nome']?.toString() ?? '',
+      categoria: map['categoria']?.toString() ?? '',
+      isAberto: map['is_aberto'] == true,
+      descricao: map['descricao']?.toString() ?? '',
+      imagemUrl: map['imagem_url']?.toString() ?? '',
       horarios: Map<String, String>.from(map['horarios'] ?? {}),
       criadoEm: map['criado_em'] as Timestamp?,
       // Mapeando os blocos internos:
@@ -66,11 +66,11 @@ class DadosOperacionais {
 
   factory DadosOperacionais.fromMap(Map<String, dynamic> map) {
     return DadosOperacionais(
-      taxaEntregaBase: (map['taxa_entrega_base'] ?? 0.0).toDouble(),
-      tempoEntregaMin: (map['tempo_entrega_min'] ?? 0).toInt(),
-      tempoEntregaMax: (map['tempo_entrega_max'] ?? 0).toInt(),
-      avaliacaoMedia: (map['avaliacao_media'] ?? 0.0).toDouble(),
-      totalAvaliacoes: (map['total_avaliacoes'] ?? 0).toInt(),
+      taxaEntregaBase: num.tryParse(map['taxa_entrega_base']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      tempoEntregaMin: int.tryParse(map['tempo_entrega_min']?.toString() ?? '0') ?? 0,
+      tempoEntregaMax: int.tryParse(map['tempo_entrega_max']?.toString() ?? '0') ?? 0,
+      avaliacaoMedia: num.tryParse(map['avaliacao_media']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      totalAvaliacoes: int.tryParse(map['total_avaliacoes']?.toString() ?? '0') ?? 0,
     );
   }
 }
@@ -92,11 +92,11 @@ class EnderecoLoja {
 
   factory EnderecoLoja.fromMap(Map<String, dynamic> map) {
     return EnderecoLoja(
-      rua: map['rua'] ?? '',
-      numero: map['numero'] ?? '',
-      cidade: map['cidade'] ?? '',
-      estado: map['estado'] ?? '',
-      cep: map['cep'] ?? '',
+      rua: map['rua']?.toString() ?? '',
+      numero: map['numero']?.toString() ?? '',
+      cidade: map['cidade']?.toString() ?? '',
+      estado: map['estado']?.toString() ?? '',
+      cep: map['cep']?.toString() ?? '',
     );
   }
 }
@@ -114,9 +114,9 @@ class Geolocalizacao {
 
   factory Geolocalizacao.fromMap(Map<String, dynamic> map) {
     return Geolocalizacao(
-      lat: (map['lat'] ?? 0.0).toDouble(),
-      lng: (map['lng'] ?? 0.0).toDouble(),
-      geohash: map['geohash'] ?? '',
+      lat: num.tryParse(map['lat']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      lng: num.tryParse(map['lng']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      geohash: map['geohash']?.toString() ?? '',
     );
   }
 }

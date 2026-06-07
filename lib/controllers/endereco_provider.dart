@@ -6,8 +6,12 @@ import 'package:nhac/repository/endereco_repository.dart';
 import 'package:nhac/services/local_cache_service.dart';
 
 class EnderecoProvider with ChangeNotifier {
-  final EnderecoRepository _enderecoRepository = EnderecoRepository();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final EnderecoRepository _enderecoRepository;
+  final FirebaseAuth _auth;
+
+  EnderecoProvider({FirebaseAuth? auth, EnderecoRepository? repository})
+      : _auth = auth ?? FirebaseAuth.instance,
+        _enderecoRepository = repository ?? EnderecoRepository();
 
   List<EnderecoModel> _enderecos = [];
   StreamSubscription<List<EnderecoModel>>? _subscription;

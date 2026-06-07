@@ -8,14 +8,21 @@ import 'package:nhac/repository/user_repository.dart';
 import 'package:nhac/services/local_cache_service.dart';
 
 class UserProvider with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final UserRepository _userRepository = UserRepository();
+  final FirebaseAuth _auth;
+  final UserRepository _userRepository;
+
+  UserProvider({FirebaseAuth? auth, UserRepository? repository})
+      : _auth = auth ?? FirebaseAuth.instance,
+        _userRepository = repository ?? UserRepository();
   
   UsuarioModel? _usuario;
   
   StreamSubscription<UsuarioModel?>? _usuarioSubscription; 
 
   UsuarioModel? get usuario => _usuario;
+
+  bool get isGoogleUser => _auth.currentUser?.providerData.any((info) => info.providerId == 'google.com') ?? false;
+  bool get hasPassword => _auth.currentUser?.providerData.any((info) => info.providerId == 'password') ?? false;
 
   Future<void> iniciarEscutaUsuario() async {
     final user = _auth.currentUser;
