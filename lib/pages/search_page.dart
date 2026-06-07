@@ -237,8 +237,15 @@ class _SearchPageState extends State<SearchPage>
   }
 
   Widget _buildSearchResults() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('produtos').snapshots(),
+    if (_searchQuery.isEmpty) return const SizedBox.shrink();
+
+    return FutureBuilder<QuerySnapshot>(
+      // Firestore prefix search (case-sensitive)
+      future: FirebaseFirestore.instance
+          .collection('produtos')
+          .where('nome', isGreaterThanOrEqualTo: _searchQuery)
+          .where('nome', isLessThanOrEqualTo: '$_searchQuery\uf8ff')
+          .get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
@@ -246,9 +253,10 @@ class _SearchPageState extends State<SearchPage>
                   valueColor:
                       const AlwaysStoppedAnimation<Color>(Color(0xFFFF6961))));
         }
-        if (snapshot.hasError ||
-            !snapshot.hasData ||
-            snapshot.data!.docs.isEmpty) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Erro ao buscar produtos: ${snapshot.error}'));
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
               child: Text('Nenhum produto encontrado.',
                   style: TextStyle(color: Colors.grey)));
@@ -256,14 +264,8 @@ class _SearchPageState extends State<SearchPage>
         final produtos = snapshot.data!.docs
             .map((doc) => ProdutosModel.fromMap(
                 doc.data() as Map<String, dynamic>, doc.id))
-            .where((p) =>
-                p.nome.toLowerCase().contains(_searchQuery.toLowerCase()))
             .toList();
-        if (produtos.isEmpty) {
-          return const Center(
-              child: Text('Nenhum produto encontrado para sua pesquisa.',
-                  style: TextStyle(color: Colors.grey)));
-        }
+
         if (_hasSubmitted) {
           return GridView.builder(
             physics: const BouncingScrollPhysics(

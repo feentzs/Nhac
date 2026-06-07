@@ -35,6 +35,7 @@ class _HomeContentState extends State<HomeContent> {
   String _currentAddress = 'Buscando localização...';
   static bool _jaCarregouUmaVez = false;
   late bool _isLoading;
+  Timer? _loadingTimer;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -68,7 +69,7 @@ class _HomeContentState extends State<HomeContent> {
     });
 
     if (_isLoading) {
-      Timer(const Duration(seconds: 2), () {
+      _loadingTimer = Timer(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -81,6 +82,7 @@ class _HomeContentState extends State<HomeContent> {
 
   @override
   void dispose() {
+    _loadingTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }

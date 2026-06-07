@@ -191,7 +191,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                               ),
                             ),
                             SizedBox(width: 8.w),
-                            if (widget.produto.totalAvaliacoes > 0)
                               Container(
                                 margin: EdgeInsets.only(bottom: 6.h),
                                 padding: EdgeInsets.symmetric(
@@ -206,7 +205,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                         color: Colors.amber, size: 14.r),
                                     SizedBox(width: 4.w),
                                     Text(
-                                      widget.produto.mediaAvaliacao
+                                      3.1
                                           .toStringAsFixed(1),
                                       style: TextStyle(
                                         color: Colors.orange,
@@ -361,11 +360,13 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
+                        child: FutureBuilder<QuerySnapshot>(
+                          future: FirebaseFirestore.instance
                               .collection('produtos')
-                              .limit(5)
-                              .snapshots(),
+                              .where('categoria_menu', isEqualTo: widget.produto.categoriaMenu)
+                              .where('loja_is_aberto', isEqualTo: true)
+                              .limit(6) // Buscamos 6 para garantir 5 caso o atual seja filtrado
+                              .get(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                     ConnectionState.waiting ||
@@ -379,16 +380,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                     doc.data() as Map<String, dynamic>,
                                     doc.id))
                                 .where((p) => p.uid != widget.produto.uid)
-                                .map((prod) => ProductSectionItem(
-                                      idProduto: prod.uid,
-                                      imageUrl: prod.imagemUrl.isNotEmpty
-                                          ? prod.imagemUrl
-                                          : 'https://via.placeholder.com/150',
-                                      name: prod.nome,
-                                      weight: '',
-                                      price: prod.preco,
-                                      discountPercent: null,
-                                    ))
+                                .take(5)
                                 .toList();
 
                             if (produtosRelacionados.isEmpty) {
@@ -399,8 +391,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                               title: 'Produtos Relacionados',
                               products: produtosRelacionados,
                               onSeeAll: () {},
-                            );
-                          },
+                            );                          },
                         ),
                       ),
 
