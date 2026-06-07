@@ -20,6 +20,18 @@ class ProdutoDetalhesPage extends StatefulWidget {
 
 class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   int _quantidade = 1;
+  late Future<QuerySnapshot> _produtosRelacionadosFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _produtosRelacionadosFuture = FirebaseFirestore.instance
+        .collection('produtos')
+        .where('categoria_menu', isEqualTo: widget.produto.categoriaMenu)
+        .where('loja_is_aberto', isEqualTo: true)
+        .limit(6)
+        .get();
+  }
 
   void _incrementarQuantidade() {
     setState(() {
@@ -361,12 +373,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
                         child: FutureBuilder<QuerySnapshot>(
-                          future: FirebaseFirestore.instance
-                              .collection('produtos')
-                              .where('categoria_menu', isEqualTo: widget.produto.categoriaMenu)
-                              .where('loja_is_aberto', isEqualTo: true)
-                              .limit(6) // Buscamos 6 para garantir 5 caso o atual seja filtrado
-                              .get(),
+                          future: _produtosRelacionadosFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                     ConnectionState.waiting ||

@@ -22,6 +22,7 @@ class _SearchPageState extends State<SearchPage>
   String _searchQuery = '';
   bool _hasSubmitted = false;
   List<String> _historicoPesquisa = [];
+  Future<QuerySnapshot>? _searchFuture;
 
   @override
   void initState() {
@@ -31,6 +32,11 @@ class _SearchPageState extends State<SearchPage>
       _searchController.text = widget.initialCategory!;
       _searchQuery = widget.initialCategory!;
       _hasSubmitted = true;
+      _searchFuture = FirebaseFirestore.instance
+          .collection('produtos')
+          .where('nome', isGreaterThanOrEqualTo: _searchQuery)
+          .where('nome', isLessThanOrEqualTo: '$_searchQuery\uf8ff')
+          .get();
     }
 
     LocalCacheService.carregarHistoricoPesquisa().then((lista) {
@@ -139,7 +145,18 @@ class _SearchPageState extends State<SearchPage>
                                       textInputAction: TextInputAction.search,
                                       onSubmitted: (value) {
                                         _salvarPesquisa(value);
-                                        setState(() => _hasSubmitted = true);
+                                        setState(() {
+                                          _hasSubmitted = true;
+                                          _searchFuture = FirebaseFirestore
+                                              .instance
+                                              .collection('produtos')
+                                              .where('nome',
+                                                  isGreaterThanOrEqualTo: value)
+                                              .where('nome',
+                                                  isLessThanOrEqualTo:
+                                                      '$value\uf8ff')
+                                              .get();
+                                        });
                                         _animationController.forward(from: 0.0);
                                       },
                                       decoration: InputDecoration(
@@ -237,15 +254,11 @@ class _SearchPageState extends State<SearchPage>
   }
 
   Widget _buildSearchResults() {
-    if (_searchQuery.isEmpty) return const SizedBox.shrink();
+    if (!_hasSubmitted || _searchFuture == null) return const SizedBox.shrink();
 
     return FutureBuilder<QuerySnapshot>(
       // Firestore prefix search (case-sensitive)
-      future: FirebaseFirestore.instance
-          .collection('produtos')
-          .where('nome', isGreaterThanOrEqualTo: _searchQuery)
-          .where('nome', isLessThanOrEqualTo: '$_searchQuery\uf8ff')
-          .get(),
+      future: _searchFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
