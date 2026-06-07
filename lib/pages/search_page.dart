@@ -7,7 +7,9 @@ import 'package:nhac/components/product_card.dart';
 import 'package:nhac/services/local_cache_service.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({super.key, this.initialCategory});
+
+  final String? initialCategory;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -24,6 +26,13 @@ class _SearchPageState extends State<SearchPage>
   @override
   void initState() {
     super.initState();
+
+    if (widget.initialCategory != null) {
+      _searchController.text = widget.initialCategory!;
+      _searchQuery = widget.initialCategory!;
+      _hasSubmitted = true;
+    }
+
     LocalCacheService.carregarHistoricoPesquisa().then((lista) {
       if (mounted) setState(() => _historicoPesquisa = lista);
     });

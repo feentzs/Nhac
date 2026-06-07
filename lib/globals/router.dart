@@ -22,6 +22,7 @@ import 'package:nhac/pages/auth/cadastro/telefone_cadastro.dart';
 import 'package:nhac/pages/enderecos_page.dart';
 import 'package:nhac/pages/formas_pagamento_page.dart';
 import 'package:nhac/pages/cupons_page.dart';
+import 'package:nhac/pages/search_page.dart';
 
 class _SlideRightToLeftPageRoute<T> extends PageRoute<T>
     with MaterialRouteTransitionMixin<T> {
@@ -294,5 +295,15 @@ final GoRouter appRouter = GoRouter(
       child: const CheckoutPage(),
     ),
   ),
-],
-);
+  GoRoute(
+    path: '/search',
+    pageBuilder: (context, state) {
+      final categoria = state.uri.queryParameters['categoria'];
+      return _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: SearchPage(initialCategory: categoria),
+      );
+    },
+  ),
+  ],
+  );
