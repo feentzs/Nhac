@@ -2,109 +2,121 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LojasModel {
   final String uid;
-  final bool aberta;
-  final String categoria;
-  final String cep;
-  final String cidade;
-  final Timestamp? criadoEm;
-  final String descricao;
-  final String estado;
-  final Map<String, String> horarios;
-  final String imagemUrl;
-  final double mediaAvaliacao;
   final String nome;
-  final String numero;
-  final String rua;
-  final int totalAvaliacoes;
+  final String categoria;
+  final bool isAberto;
+  final String descricao;
+  final String imagemUrl;
+  final Map<String, String> horarios;
+  final Timestamp? criadoEm;
+
+  // Os nossos blocos agrupados!
+  final DadosOperacionais dadosOperacionais;
+  final EnderecoLoja endereco;
+  final Geolocalizacao geolocalizacao;
 
   LojasModel({
     required this.uid,
-    required this.aberta,
-    required this.categoria,
-    required this.cep,
-    required this.cidade,
-    this.criadoEm,
-    this.descricao = '',
-    required this.estado,
-    required this.horarios,
-    this.imagemUrl = '',
-    this.mediaAvaliacao = 0.0,
     required this.nome,
-    required this.numero,
-    required this.rua,
-    this.totalAvaliacoes = 0,
+    required this.categoria,
+    required this.isAberto,
+    this.descricao = '',
+    this.imagemUrl = '',
+    required this.horarios,
+    this.criadoEm,
+    required this.dadosOperacionais,
+    required this.endereco,
+    required this.geolocalizacao,
   });
-
-  LojasModel copyWith({
-    String? uid,
-    bool? aberta,
-    String? categoria,
-    String? cep,
-    String? cidade,
-    Timestamp? criadoEm,
-    String? descricao,
-    String? estado,
-    Map<String, String>? horarios,
-    String? imagemUrl,
-    double? mediaAvaliacao,
-    String? nome,
-    String? numero,
-    String? rua,
-    int? totalAvaliacoes,
-  }) =>
-      LojasModel(
-        uid: uid ?? this.uid,
-        aberta: aberta ?? this.aberta,
-        categoria: categoria ?? this.categoria,
-        cep: cep ?? this.cep,
-        cidade: cidade ?? this.cidade,
-        descricao: descricao ?? this.descricao,
-        estado: estado ?? this.estado,
-        horarios: horarios ?? this.horarios,
-        imagemUrl: imagemUrl ?? this.imagemUrl,
-        mediaAvaliacao: mediaAvaliacao ?? this.mediaAvaliacao,
-        nome: nome ?? this.nome,
-        numero: numero ?? this.numero,
-        rua: rua ?? this.rua,
-        totalAvaliacoes: totalAvaliacoes ?? this.totalAvaliacoes,
-      );
 
   factory LojasModel.fromMap(Map<String, dynamic> map, String uid) {
     return LojasModel(
       uid: uid,
-      aberta: map['aberta'] ?? false,
-      categoria: map['categoria'] ?? '',
-      cep: map['cep'] ?? '',
-      cidade: map['cidade'] ?? '',
-      criadoEm: map['criado_em'] as Timestamp?,
-      descricao: map['descricao'] ?? '',
-      estado: map['estado'] ?? '',
-      horarios: Map<String, String>.from(map['horarios'] ?? {}),
-      imagemUrl: map['imagem_url'] ?? '',
-      mediaAvaliacao: (map['media_avaliacao'] ?? 0).toDouble(),
       nome: map['nome'] ?? '',
-      numero: map['numero'] ?? '',
-      rua: map['rua'] ?? '',
+      categoria: map['categoria'] ?? '',
+      isAberto: map['is_aberto'] ?? false,
+      descricao: map['descricao'] ?? '',
+      imagemUrl: map['imagem_url'] ?? '',
+      horarios: Map<String, String>.from(map['horarios'] ?? {}),
+      criadoEm: map['criado_em'] as Timestamp?,
+      // Mapeando os blocos internos:
+      dadosOperacionais: DadosOperacionais.fromMap(map['dados_operacionais'] ?? {}),
+      endereco: EnderecoLoja.fromMap(map['endereco'] ?? {}),
+      geolocalizacao: Geolocalizacao.fromMap(map['geolocalizacao'] ?? {}),
+    );
+  }
+}
+
+// --- SUBCLASSES ---
+
+class DadosOperacionais {
+  final double taxaEntregaBase;
+  final int tempoEntregaMin;
+  final int tempoEntregaMax;
+  final double avaliacaoMedia;
+  final int totalAvaliacoes;
+
+  DadosOperacionais({
+    required this.taxaEntregaBase,
+    required this.tempoEntregaMin,
+    required this.tempoEntregaMax,
+    required this.avaliacaoMedia,
+    required this.totalAvaliacoes,
+  });
+
+  factory DadosOperacionais.fromMap(Map<String, dynamic> map) {
+    return DadosOperacionais(
+      taxaEntregaBase: (map['taxa_entrega_base'] ?? 0.0).toDouble(),
+      tempoEntregaMin: (map['tempo_entrega_min'] ?? 0).toInt(),
+      tempoEntregaMax: (map['tempo_entrega_max'] ?? 0).toInt(),
+      avaliacaoMedia: (map['avaliacao_media'] ?? 0.0).toDouble(),
       totalAvaliacoes: (map['total_avaliacoes'] ?? 0).toInt(),
     );
   }
+}
 
-  Map<String, dynamic> toMap() {
-    return {
-      'aberta': aberta,
-      'categoria': categoria,
-      'cep': cep,
-      'cidade': cidade,
-      'criado_em': criadoEm ?? FieldValue.serverTimestamp(),
-      'descricao': descricao,
-      'estado': estado,
-      'horarios': horarios,
-      'imagem_url': imagemUrl,
-      'media_avaliacao': mediaAvaliacao,
-      'nome': nome,
-      'numero': numero,
-      'rua': rua,
-      'total_avaliacoes': totalAvaliacoes,
-    };
+class EnderecoLoja {
+  final String rua;
+  final String numero;
+  final String cidade;
+  final String estado;
+  final String cep;
+
+  EnderecoLoja({
+    required this.rua,
+    required this.numero,
+    required this.cidade,
+    required this.estado,
+    required this.cep,
+  });
+
+  factory EnderecoLoja.fromMap(Map<String, dynamic> map) {
+    return EnderecoLoja(
+      rua: map['rua'] ?? '',
+      numero: map['numero'] ?? '',
+      cidade: map['cidade'] ?? '',
+      estado: map['estado'] ?? '',
+      cep: map['cep'] ?? '',
+    );
+  }
+}
+
+class Geolocalizacao {
+  final double lat;
+  final double lng;
+  final String geohash;
+
+  Geolocalizacao({
+    required this.lat,
+    required this.lng,
+    required this.geohash,
+  });
+
+  factory Geolocalizacao.fromMap(Map<String, dynamic> map) {
+    return Geolocalizacao(
+      lat: (map['lat'] ?? 0.0).toDouble(),
+      lng: (map['lng'] ?? 0.0).toDouble(),
+      geohash: map['geohash'] ?? '',
+    );
   }
 }

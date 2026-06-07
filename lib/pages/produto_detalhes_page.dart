@@ -376,8 +376,16 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                           future: _produtosRelacionadosFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
-                                    ConnectionState.waiting ||
-                                !snapshot.hasData ||
+                                    ConnectionState.waiting) {
+                              return const SizedBox.shrink();
+                            }
+
+                            if (snapshot.hasError) {
+                              debugPrint('Erro ao carregar produtos relacionados: ${snapshot.error}');
+                              return const SizedBox.shrink();
+                            }
+
+                            if (!snapshot.hasData ||
                                 snapshot.data!.docs.isEmpty) {
                               return const SizedBox.shrink();
                             }
@@ -439,22 +447,36 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   SizedBox(width: 24.w),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-  final cartProvider = Provider.of<CartProvider>(context, listen: false);
-  cartProvider.adicionarItemComQuantidade(
-    idProduto: widget.produto.uid,
-    nome: widget.produto.nome,
-    preco: widget.produto.preco,
-    imagemUrl: widget.produto.imagemUrl,
-    quantidade: _quantidade,
-  );
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-      duration: const Duration(seconds: 2),
-      backgroundColor: Colors.green,
-    ),
-  );
+                      onPressed: () async {
+  try {
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    await cartProvider.adicionarItemComQuantidade(
+      idProduto: widget.produto.uid,
+      nome: widget.produto.nome,
+      preco: widget.produto.preco,
+      imagemUrl: widget.produto.imagemUrl,
+      quantidade: _quantidade,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 },style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6961),
                         foregroundColor: Colors.white,

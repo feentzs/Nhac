@@ -299,11 +299,11 @@ class _LojaPageState extends State<LojaPage>
           children: [
             _buildStatItem(
                 "Avaliação",
-                widget.loja.mediaAvaliacao.toStringAsFixed(1),
+                widget.loja.dadosOperacionais.avaliacaoMedia.toStringAsFixed(1),
                 "Excelente",
                 const Color(0xFF5D201C)),
             Container(width: 1, height: 40.h, color: Colors.grey.shade200),
-            _buildStatItem("Avaliações", "${widget.loja.totalAvaliacoes}",
+            _buildStatItem("Avaliações", "${widget.loja.dadosOperacionais.totalAvaliacoes}",
                 "Total", const Color(0xFFFF6961)),
             Container(width: 1, height: 40.h, color: Colors.grey.shade200),
             _buildStatItem("Produtos", "100%", "Positivo", Colors.black87),
