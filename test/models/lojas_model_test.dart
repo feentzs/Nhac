@@ -57,20 +57,16 @@ void main() {
 
     test('fromMap com dados corrompidos deve lidar com erros de tipo graciosamente', () {
       final mockMap = {
-        'nome': 123, // Deveria ser String
-        'is_aberto': 'true', // Deveria ser bool
+        'nome': 123,
+        'is_aberto': 'true',
         'dados_operacionais': {
-          'taxa_entrega_base': 'grátis', // Deveria ser double
+          'taxa_entrega_base': 'grátis',
         },
       };
 
-      // Nota: O código atual usa map['nome'] ?? '' que para um int resultará em erro se não for verificado o tipo.
-      // Vamos ver como o modelo se comporta. 
-      // Se falhar, registraremos no QA Report.
-      
       expect(() => LojasModel.fromMap(mockMap, 'uid-corrompido'), returnsNormally);
       final loja = LojasModel.fromMap(mockMap, 'uid-corrompido');
-      expect(loja.nome, isNot(123)); // Provavelmente será cast exception se não tratado
+      expect(loja.nome, isNot(123));
     });
   });
 }

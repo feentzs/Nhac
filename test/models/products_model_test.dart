@@ -44,11 +44,10 @@ void main() {
 
     test('fromMap com dados corrompidos deve lidar com erros de tipo', () {
       final mockMap = {
-        'preco': '35.90', // String em vez de double
-        'is_ativo': 1, // int em vez de bool
+        'preco': '35.90',
+        'is_ativo': 1,
       };
 
-      // Verificando se o modelo quebra ou trata
       expect(() => ProdutosModel.fromMap(mockMap, 'id-corrompido'), returnsNormally);
     });
 

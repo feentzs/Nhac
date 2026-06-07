@@ -10,7 +10,6 @@ class LojasModel {
   final Map<String, String> horarios;
   final Timestamp? criadoEm;
 
-  // Os nossos blocos agrupados!
   final DadosOperacionais dadosOperacionais;
   final EnderecoLoja endereco;
   final Geolocalizacao geolocalizacao;
@@ -39,15 +38,12 @@ class LojasModel {
       imagemUrl: map['imagem_url']?.toString() ?? '',
       horarios: Map<String, String>.from(map['horarios'] ?? {}),
       criadoEm: map['criado_em'] as Timestamp?,
-      // Mapeando os blocos internos:
       dadosOperacionais: DadosOperacionais.fromMap(map['dados_operacionais'] ?? {}),
       endereco: EnderecoLoja.fromMap(map['endereco'] ?? {}),
       geolocalizacao: Geolocalizacao.fromMap(map['geolocalizacao'] ?? {}),
     );
   }
 }
-
-// --- SUBCLASSES ---
 
 class DadosOperacionais {
   final double taxaEntregaBase;

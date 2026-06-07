@@ -45,7 +45,6 @@ void main() {
     });
 
     test('Deve impedir itens de lojas diferentes (Regra de Negócio)', () {
-      // Mock para adicionarItemComQuantidade se necessário
     });
   });
 }

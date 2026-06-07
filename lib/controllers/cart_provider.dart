@@ -99,7 +99,6 @@ class CartProvider extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    // Verificação de integridade: a loja ainda está aberta?
     String? lojaIdDoProduto;
     try {
       final doc = await _firestore.collection('produtos').doc(idProduto).get();
@@ -115,7 +114,6 @@ class CartProvider extends ChangeNotifier {
       debugPrint('Erro ao verificar integridade da loja: $e');
     }
 
-    // REGRA DE NEGÓCIO: Uma loja por vez
     if (_itens.isNotEmpty && lojaIdDoProduto != null) {
       final lojaAtual = _itens.values.first.lojaId;
       if (lojaAtual != lojaIdDoProduto) {
