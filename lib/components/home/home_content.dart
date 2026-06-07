@@ -44,6 +44,7 @@ class _HomeContentState extends State<HomeContent> {
   DocumentSnapshot? _lastLojaDoc;
   bool _isLoadingLojas = false;
   bool _hasMoreLojas = true;
+  bool _errorLojas = false;
 
   // Paginação de Produtos (Seção 1 - Geral)
   final List<ProdutosModel> _produtosNecessidades = [];
@@ -146,7 +147,10 @@ class _HomeContentState extends State<HomeContent> {
   Future<void> _fetchLojas() async {
     if (_isLoadingLojas || !_hasMoreLojas) return;
 
-    setState(() => _isLoadingLojas = true);
+    setState(() {
+      _isLoadingLojas = true;
+      _errorLojas = false;
+    });
 
     try {
       Query query = FirebaseFirestore.instance
@@ -183,12 +187,57 @@ class _HomeContentState extends State<HomeContent> {
         });
       }
     } catch (e) {
-      debugPrint("Erro ao buscar lojas: $e");
-      if (mounted) setState(() => _isLoadingLojas = false);
+      if (e.toString().contains('failed-precondition')) {
+        debugPrint(
+            "ERRO DE ÍNDICE: Clique no link acima para criar o índice composto no Firebase: $e");
+      } else {
+        debugPrint("Erro ao buscar lojas: $e");
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoadingLojas = false;
+          _errorLojas = true;
+        });
+      }
     }
   }
 
   Widget _buildListaDeLojas() {
+    if (_errorLojas && _lojas.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(24.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, color: const Color(0xFFFF6961), size: 48.r),
+            SizedBox(height: 16.h),
+            Text(
+              'Ocorreu um erro ao carregar os restaurantes.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              onPressed: _fetchLojas,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF6961),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50.r),
+                ),
+              ),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_lojas.isEmpty && _isLoadingLojas) {
       return Column(
         children: List.generate(

@@ -34,6 +34,7 @@ class _SearchPageState extends State<SearchPage>
       _hasSubmitted = true;
       _searchFuture = FirebaseFirestore.instance
           .collection('produtos')
+          .where('loja_is_aberto', isEqualTo: true)
           .where('nome', isGreaterThanOrEqualTo: _searchQuery)
           .where('nome', isLessThanOrEqualTo: '$_searchQuery\uf8ff')
           .get();
@@ -150,6 +151,8 @@ class _SearchPageState extends State<SearchPage>
                                           _searchFuture = FirebaseFirestore
                                               .instance
                                               .collection('produtos')
+                                              .where('loja_is_aberto',
+                                                  isEqualTo: true)
                                               .where('nome',
                                                   isGreaterThanOrEqualTo: value)
                                               .where('nome',
