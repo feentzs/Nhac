@@ -196,9 +196,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 bottom: _isScrolledDown
-                    ? (bottomPadding + 10.h + 75.h + 16.h)
-                    : (bottomPadding + 10.h + 12.5.h),
-                right: 24.w + (75.w / 2) - 25.w,
+                    ? (bottomPadding + 101.h) // 10.h + 75.h + 16.h
+                    : (bottomPadding + 22.5.h), // 10.h + 12.5.h
+                right: 24.w + 12.5.w, // Centraliza o botão de 50.w em relação ao nav de 75.w (75-50)/2 = 12.5
                 child: GestureDetector(
                   onTap: _isScrolledDown ? _scrollToTop : null,
                   child: Container(

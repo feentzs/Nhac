@@ -943,7 +943,19 @@ class _HomeContentState extends State<HomeContent> {
         itemBuilder: (context, index) {
           final cat = categorias[index];
           return GestureDetector(
-            onTap: () => context.push('/search?categoria=${cat['nome']}'),
+           onTap: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      SearchPage(initialCategory: cat['nome'] as String),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  transitionDuration: const Duration(milliseconds: 300),
+                ),
+              );
+            },
             child: Container(
               width: 80.w,
               margin: EdgeInsets.only(right: 16.w),

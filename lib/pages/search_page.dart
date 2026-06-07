@@ -28,6 +28,9 @@ class _SearchPageState extends State<SearchPage>
   void initState() {
     super.initState();
 
+    _animationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+
     if (widget.initialCategory != null) {
       _searchController.text = widget.initialCategory!;
       _searchQuery = widget.initialCategory!;
@@ -38,8 +41,6 @@ class _SearchPageState extends State<SearchPage>
       if (mounted) setState(() => _historicoPesquisa = lista);
     });
 
-    _animationController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800));
     _animationController.forward();
   }
 
@@ -67,15 +68,13 @@ class _SearchPageState extends State<SearchPage>
   }
 
   Future<List<ProdutosModel>> _realizarBuscaLocal(String termo) async {
-    // Nota: A filtragem em memória é ideal para apps de escala média (TCCs).
-    // Caso o catálogo cresça para milhares de itens, recomenda-se usar Algolia ou Meilisearch.
+
     
     Query query = FirebaseFirestore.instance
         .collection('produtos')
         .where('loja_is_aberto', isEqualTo: true);
 
-    // Se houver uma categoria, filtramos no Firestore para reduzir o tráfego de rede.
-    // O termo de busca será aplicado localmente sobre estes resultados.
+    
     if (widget.initialCategory != null) {
       query = query.where('categoria_menu', isEqualTo: widget.initialCategory);
     }
@@ -86,11 +85,12 @@ class _SearchPageState extends State<SearchPage>
         .map((doc) => ProdutosModel.fromMap(
             doc.data() as Map<String, dynamic>, doc.id))
         .toList();
-
-    // Filtro Case-Insensitive Substring
-    return todosProdutos
-        .where((p) => p.nome.toLowerCase().contains(termo.toLowerCase()))
-        .toList();
+      return todosProdutos.where((p) {
+      if (widget.initialCategory != null && termo == widget.initialCategory) {
+        return true; 
+      }
+      return p.nome.toLowerCase().contains(termo.toLowerCase());
+    }).toList();
   }
 
   void _limparBusca() {

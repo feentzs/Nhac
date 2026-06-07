@@ -179,9 +179,11 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       ),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.end,
+                          alignment: WrapAlignment.center,
+                          spacing: 8.w,
+                          runSpacing: 4.h,
                           children: [
                             Text(
                               currencyFormat.format(widget.produto.preco),
@@ -202,32 +204,32 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                 ],
                               ),
                             ),
-                            SizedBox(width: 8.w),
-                              Container(
-                                margin: EdgeInsets.only(bottom: 6.h),
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 8.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF5E5),
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.star,
-                                        color: Colors.amber, size: 14.r),
-                                    SizedBox(width: 4.w),
-                                    Text(
-                                      3.1
-                                          .toStringAsFixed(1),
-                                      style: TextStyle(
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12.sp,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            Container(
+                              margin: EdgeInsets.only(bottom: 6.h),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8.w, vertical: 4.h),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF5E5),
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star,
+                                      color: Colors.amber, size: 14.r),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    3.1
+                                        .toStringAsFixed(1),
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.sp,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -410,7 +412,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         ),
                       ),
 
-                      SizedBox(height: 100.h + bottomPadding),
+                      SizedBox(height: 100.w + bottomPadding),
                     ],
                   ),
                 ),
@@ -435,7 +437,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10.r,
-                    offset: const Offset(0, -5),
+                    offset: Offset(0, -5.h),
                   ),
                 ],
               ),

@@ -94,14 +94,21 @@ class ProductCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'R\$ ${price.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                        color: const Color(0xFF5D201C),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'R\$ ${price.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                            color: const Color(0xFF5D201C),
+                          ),
+                        ),
                       ),
                     ),
+                    SizedBox(width: 8.w),
                     InkWell(
                       onTap: () {
                         context.read<CartProvider>().adicionarItem(

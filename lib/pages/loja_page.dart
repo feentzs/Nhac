@@ -28,7 +28,7 @@ class _LojaPageState extends State<LojaPage>
     _produtosStream = FirebaseFirestore.instance
         .collection('produtos')
         .where('loja_id', isEqualTo: widget.loja.uid)
-        .where('disponivel', isEqualTo: true)
+        .where('is_ativo', isEqualTo: true)
         .snapshots();
   }
 
