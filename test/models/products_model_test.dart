@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nhac/models/produto/produtos.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() {
   group('ProdutosModel Unit Tests', () {

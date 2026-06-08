@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -74,7 +75,6 @@ class UserProvider with ChangeNotifier {
     }
 
     try {
-      // Usando instanceFor para garantir a instância correta atrelada ao Firebase App
       final storage = FirebaseStorage.instanceFor(app: Firebase.app());
       final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
 

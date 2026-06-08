@@ -58,8 +58,12 @@ class UsuarioModel {
       fotoUrl: map['foto_url'] ?? '',
       telefone: map['telefone'] ?? '',
       cpf: map['cpf'] ?? '',
-      criadoEm: map['criado_em'] as Timestamp?,
-      ultimoLogin: map['ultimo_login'] as Timestamp?,
+      criadoEm: map['criado_em'] is Timestamp 
+          ? map['criado_em'] 
+          : (map['criado_em'] is int ? Timestamp.fromMillisecondsSinceEpoch(map['criado_em']) : null),
+      ultimoLogin: map['ultimo_login'] is Timestamp 
+          ? map['ultimo_login'] 
+          : (map['ultimo_login'] is int ? Timestamp.fromMillisecondsSinceEpoch(map['ultimo_login']) : null),
       ativo: map['ativo'] ?? true,
       fcmToken: map['fcmToken'] as String?,
     );

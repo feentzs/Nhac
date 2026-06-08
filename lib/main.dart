@@ -18,7 +18,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/services/push_notification_service.dart';
-
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -32,12 +32,16 @@ late final SharedPreferences sharedPrefs;
 @NowaGenerated()
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await dotenv.load(fileName: ".env");
-  
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await FirebaseAppCheck.instance
+      // ignore: deprecated_member_use
+      .activate(androidProvider: AndroidProvider.debug);
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -46,14 +50,15 @@ main() async {
 
   sharedPrefs = await SharedPreferences.getInstance();
 
-   FirebaseFirestore.instance.settings = const Settings(
+  FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED, 
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
   await SentryFlutter.init(
     (options) {
-      options.dsn = 'https://426ab5d997cbcb45965278b6b9cc5a32@o4511393718272000.ingest.us.sentry.io/4511393743896577';
+      options.dsn =
+          'https://426ab5d997cbcb45965278b6b9cc5a32@o4511393718272000.ingest.us.sentry.io/4511393743896577';
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
       // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
@@ -68,29 +73,30 @@ main() async {
 
 @NowaGenerated({'visibleInNowa': false})
 class MyApp extends StatelessWidget {
-  
   @NowaGenerated({'loader': 'auto-constructor'})
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      
       providers: [
         ChangeNotifierProvider<AppState>(create: (context) => AppState()),
-        ChangeNotifierProvider<AuthService>(create: (context) => AuthService()), 
-        ChangeNotifierProvider<CadastroController>(create: (context) => CadastroController()),
-        ChangeNotifierProvider<UserProvider>(create: (context) => UserProvider()),
+        ChangeNotifierProvider<AuthService>(create: (context) => AuthService()),
+        ChangeNotifierProvider<CadastroController>(
+            create: (context) => CadastroController()),
+        ChangeNotifierProvider<UserProvider>(
+            create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => EnderecoProvider()),
-        ChangeNotifierProvider<ConnectivityService>(create: (context) => ConnectivityService()),
+        ChangeNotifierProvider<ConnectivityService>(
+            create: (context) => ConnectivityService()),
       ],
       builder: (context, child) {
         return Consumer<ConnectivityService>(
           builder: (context, connectivity, child) {
-            
-          return ScreenUtilInit(
-              designSize: const Size(390, 844), // Tamanho base do seu design no Figma
+            return ScreenUtilInit(
+              designSize:
+                  const Size(390, 844), // Tamanho base do seu design no Figma
               minTextAdapt: true,
               splitScreenMode: true,
               builder: (context, child) {

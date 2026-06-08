@@ -18,7 +18,7 @@ void main() {
 
   Widget createWidgetUnderTest() {
     return ScreenUtilInit(
-      designSize: const Size(1000, 1000), // Tamanho grande para evitar overflows em testes unitários
+      designSize: const Size(1000, 1000), 
       minTextAdapt: true,
       builder: (context, child) => MultiProvider(
         providers: [

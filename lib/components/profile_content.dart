@@ -287,7 +287,7 @@ class _ProfileContentState extends State<ProfileContent> {
                                   ? null
                                   : () async {
                                       final picker = ImagePicker();
-                                      final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+                                      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
                                       if (pickedFile != null && mounted) {
                                         setState(() => _isUploading = true);
                                         try {

@@ -37,24 +37,20 @@ class _HomeContentState extends State<HomeContent> {
   late bool _isLoading;
   Timer? _loadingTimer;
 
-  final ScrollController _scrollController = ScrollController();
 
-  // Paginação de Lojas
   final List<LojasModel> _lojas = [];
   DocumentSnapshot? _lastLojaDoc;
   bool _isLoadingLojas = false;
   bool _hasMoreLojas = true;
   bool _errorLojas = false;
 
-  // Paginação de Produtos (Seção 1 - Geral)
   final List<ProdutosModel> _produtosNecessidades = [];
   bool _isLoadingProdutosNecessidades = true;
 
-  // Paginação de Produtos (Seção 2 - Promoção/Abaixo de 20)
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-  @override
+@override
   void initState() {
     super.initState();
     _isLoading = !_jaCarregouUmaVez;
@@ -62,12 +58,6 @@ class _HomeContentState extends State<HomeContent> {
     _carregarDadosIniciais();
     _carregarGpsComCache();
 
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200) {
-        _fetchLojas();
-      }
-    });
 
     if (_isLoading) {
       _loadingTimer = Timer(const Duration(seconds: 2), () {
@@ -84,9 +74,25 @@ class _HomeContentState extends State<HomeContent> {
   @override
   void dispose() {
     _loadingTimer?.cancel();
-    _scrollController.dispose();
     super.dispose();
   }
+
+  bool _listenerAttached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_listenerAttached) {
+      final primaryController = PrimaryScrollController.of(context);
+      primaryController.addListener(() {
+        if (primaryController.position.pixels >= primaryController.position.maxScrollExtent - 200) {
+          _fetchLojas();
+        }
+      });
+      _listenerAttached = true;
+    }
+  }
+
 
   Future<void> _carregarDadosIniciais() async {
     await Future.wait([
@@ -121,7 +127,7 @@ class _HomeContentState extends State<HomeContent> {
 
   Future<void> _fetchProdutosPromocao() async {
     try {
-      // Exemplo: Filtrando produtos abaixo de 20 reais
+
       final snapshot = await FirebaseFirestore.instance
           .collection('produtos')
           .where('loja_is_aberto', isEqualTo: true)
@@ -584,8 +590,7 @@ class _HomeContentState extends State<HomeContent> {
     }
 
     return CustomScrollView(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(
+     physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
       slivers: [

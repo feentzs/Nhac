@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nhac/controllers/cart_provider.dart';
-import 'package:nhac/models/usuario/carrinho_model.dart';
 import 'package:nhac/repository/cart_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
