@@ -89,8 +89,14 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
       context.pop();
     } catch (e) {
       if (!mounted) return;
+      
+      String mensagemErro = 'Erro ao atualizar foto';
+      if (e is FirebaseException && e.code == 'unauthenticated') {
+        mensagemErro = 'Falha de segurança: Caminho não autorizado';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro: $e')),
+        SnackBar(content: Text(mensagemErro)),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

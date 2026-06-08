@@ -69,32 +69,30 @@ class UserProvider with ChangeNotifier {
     if (user == null) return;
 
     try {
-      debugPrint("Iniciando upload para o usuário: ${user.uid}");
-      
       final ref = FirebaseStorage.instance
           .ref()
-          .child('perfil_fotos')
-          .child('${user.uid}.jpg');
+          .child('usuarios')
+          .child(user.uid)
+          .child('perfil.jpg');
 
-      debugPrint("Caminho no Storage: ${ref.fullPath}");
-
-      TaskSnapshot snapshot = await ref.putFile(
+      await ref.putFile(
         imagem,
         SettableMetadata(contentType: 'image/jpeg'),
       );
 
-      debugPrint("Upload concluído com sucesso.");
-
-      final url = await snapshot.ref.getDownloadURL();
-      debugPrint("URL obtida: $url");
+      final url = await ref.getDownloadURL();
 
       await _userRepository.atualizarDadosUsuario(user.uid, {
         'foto_url': url,
       });
 
       await carregarDadosUsuario();
+    } on FirebaseException catch (e) {
+      if (e.code == 'unauthenticated') {
+        debugPrint('Caminho do Storage não corresponde à regra de segurança');
+      }
+      rethrow;
     } catch (e) {
-      debugPrint("ERRO AO SALVAR FOTO: $e");
       rethrow;
     }
   }
