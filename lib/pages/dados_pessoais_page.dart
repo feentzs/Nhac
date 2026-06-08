@@ -1,5 +1,4 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -29,9 +28,8 @@ class DadosPessoaisPage extends StatelessWidget {
       );
     }
 
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final isGoogleUser = currentUser?.providerData.any((info) => info.providerId == 'google.com') ?? false;
-    final hasPassword = currentUser?.providerData.any((info) => info.providerId == 'password') ?? false;
+    final isGoogleUser = isGoogleUserOverride ?? userProvider.isGoogleUser;
+    final hasPassword = userProvider.hasPassword;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFE7E5),

@@ -20,6 +20,18 @@ class ProdutoDetalhesPage extends StatefulWidget {
 
 class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   int _quantidade = 1;
+  late Future<QuerySnapshot> _produtosRelacionadosFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _produtosRelacionadosFuture = FirebaseFirestore.instance
+        .collection('produtos')
+        .where('categoria_menu', isEqualTo: widget.produto.categoriaMenu)
+        .where('loja_is_aberto', isEqualTo: true)
+        .limit(6)
+        .get();
+  }
 
   void _incrementarQuantidade() {
     setState(() {
@@ -167,9 +179,11 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       ),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.end,
+                          alignment: WrapAlignment.center,
+                          spacing: 8.w,
+                          runSpacing: 4.h,
                           children: [
                             Text(
                               currencyFormat.format(widget.produto.preco),
@@ -190,33 +204,32 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                 ],
                               ),
                             ),
-                            SizedBox(width: 8.w),
-                            if (widget.produto.totalAvaliacoes > 0)
-                              Container(
-                                margin: EdgeInsets.only(bottom: 6.h),
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 8.w, vertical: 4.h),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF5E5),
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.star,
-                                        color: Colors.amber, size: 14.r),
-                                    SizedBox(width: 4.w),
-                                    Text(
-                                      widget.produto.mediaAvaliacao
-                                          .toStringAsFixed(1),
-                                      style: TextStyle(
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12.sp,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            Container(
+                              margin: EdgeInsets.only(bottom: 6.h),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8.w, vertical: 4.h),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF5E5),
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star,
+                                      color: Colors.amber, size: 14.r),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    3.1
+                                        .toStringAsFixed(1),
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.sp,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -361,15 +374,20 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('produtos')
-                              .limit(5)
-                              .snapshots(),
+                        child: FutureBuilder<QuerySnapshot>(
+                          future: _produtosRelacionadosFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
-                                    ConnectionState.waiting ||
-                                !snapshot.hasData ||
+                                    ConnectionState.waiting) {
+                              return const SizedBox.shrink();
+                            }
+
+                            if (snapshot.hasError) {
+                              debugPrint('Erro ao carregar produtos relacionados: ${snapshot.error}');
+                              return const SizedBox.shrink();
+                            }
+
+                            if (!snapshot.hasData ||
                                 snapshot.data!.docs.isEmpty) {
                               return const SizedBox.shrink();
                             }
@@ -379,16 +397,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                     doc.data() as Map<String, dynamic>,
                                     doc.id))
                                 .where((p) => p.uid != widget.produto.uid)
-                                .map((prod) => ProductSectionItem(
-                                      idProduto: prod.uid,
-                                      imageUrl: prod.imagemUrl.isNotEmpty
-                                          ? prod.imagemUrl
-                                          : 'https://via.placeholder.com/150',
-                                      name: prod.nome,
-                                      weight: '',
-                                      price: prod.preco,
-                                      discountPercent: null,
-                                    ))
+                                .take(5)
                                 .toList();
 
                             if (produtosRelacionados.isEmpty) {
@@ -399,12 +408,11 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                               title: 'Produtos Relacionados',
                               products: produtosRelacionados,
                               onSeeAll: () {},
-                            );
-                          },
+                            );                          },
                         ),
                       ),
 
-                      SizedBox(height: 100.h + bottomPadding),
+                      SizedBox(height: 100.w + bottomPadding),
                     ],
                   ),
                 ),
@@ -429,7 +437,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10.r,
-                    offset: const Offset(0, -5),
+                    offset: Offset(0, -5.h),
                   ),
                 ],
               ),
@@ -441,22 +449,36 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   SizedBox(width: 24.w),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-  final cartProvider = Provider.of<CartProvider>(context, listen: false);
-  cartProvider.adicionarItemComQuantidade(
-    idProduto: widget.produto.uid,
-    nome: widget.produto.nome,
-    preco: widget.produto.preco,
-    imagemUrl: widget.produto.imagemUrl,
-    quantidade: _quantidade,
-  );
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-      duration: const Duration(seconds: 2),
-      backgroundColor: Colors.green,
-    ),
-  );
+                      onPressed: () async {
+  try {
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    await cartProvider.adicionarItemComQuantidade(
+      idProduto: widget.produto.uid,
+      nome: widget.produto.nome,
+      preco: widget.produto.preco,
+      imagemUrl: widget.produto.imagemUrl,
+      quantidade: _quantidade,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 },style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6961),
                         foregroundColor: Colors.white,

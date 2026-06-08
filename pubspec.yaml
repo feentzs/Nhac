@@ -40,6 +40,7 @@ dependencies:
   firebase_messaging: ^16.2.2
   flutter_local_notifications: ^21.0.0
   flutter_screenutil: ^5.9.3
+  firebase_app_check: ^0.4.4+2
 dev_dependencies:
   sentry_dart_plugin: ^3.3.0
   flutter_test:
@@ -47,6 +48,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_native_splash: ^2.3.1
   network_image_mock: ^2.1.1
+  mocktail: ^1.0.4
 
 flutter:
   uses-material-design: true

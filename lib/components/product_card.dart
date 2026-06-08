@@ -94,29 +94,49 @@ class ProductCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'R\$ ${price.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                        color: const Color(0xFF5D201C),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'R\$ ${price.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                            color: const Color(0xFF5D201C),
+                          ),
+                        ),
                       ),
                     ),
+                    SizedBox(width: 8.w),
                     InkWell(
-                      onTap: () {
-                        context.read<CartProvider>().adicionarItem(
-                          idProduto: idProduto,
-                          nome: name,
-                          preco: price,
-                          imagemUrl: imageUrl,
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('$name adicionado ao carrinho!'),
-                            duration: const Duration(seconds: 1),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+                      onTap: () async {
+                        try {
+                          await context.read<CartProvider>().adicionarItem(
+                            idProduto: idProduto,
+                            nome: name,
+                            preco: price,
+                            imagemUrl: imageUrl,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('$name adicionado ao carrinho!'),
+                                duration: const Duration(seconds: 1),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString().replaceAll('Exception: ', '')),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       },
                       borderRadius: BorderRadius.circular(50.r),
                       child: Container(

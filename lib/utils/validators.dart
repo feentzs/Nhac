@@ -64,15 +64,20 @@ class Validators {
       return 'CPF obrigatório';
     }
 
+    // a) Remova tudo que não for dígito
     final cpf = value.replaceAll(RegExp(r'\D'), '');
+
+    // b) Rejeite se tiver tamanho diferente de 11
     if (cpf.length != 11) {
       return 'O CPF deve ter 11 dígitos';
     }
 
-    if (cpf.split('').every((char) => char == cpf[0])) {
+    // c) Rejeite CPFs com números todos iguais
+    if (RegExp(r'^(\d)\1{10}$').hasMatch(cpf)) {
       return 'CPF inválido';
     }
 
+    // d) Calcule os dois dígitos verificadores corretamente
     if (!_validarDigitosCPF(cpf)) {
       return 'CPF inválido';
     }
@@ -83,20 +88,22 @@ class Validators {
   static bool _validarDigitosCPF(String cpf) {
     List<int> numbers = cpf.split('').map((s) => int.parse(s)).toList();
 
+    // Primeiro dígito
     int sum = 0;
     for (int i = 0; i < 9; i++) {
       sum += numbers[i] * (10 - i);
     }
-    int firstDigit = 11 - (sum % 11);
-    if (firstDigit >= 10) firstDigit = 0;
+    int result = sum % 11;
+    int firstDigit = result < 2 ? 0 : 11 - result;
     if (numbers[9] != firstDigit) return false;
 
+    // Segundo dígito
     sum = 0;
     for (int i = 0; i < 10; i++) {
       sum += numbers[i] * (11 - i);
     }
-    int secondDigit = 11 - (sum % 11);
-    if (secondDigit >= 10) secondDigit = 0;
+    result = sum % 11;
+    int secondDigit = result < 2 ? 0 : 11 - result;
     if (numbers[10] != secondDigit) return false;
 
     return true;

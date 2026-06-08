@@ -7,7 +7,9 @@ import 'package:nhac/components/product_card.dart';
 import 'package:nhac/services/local_cache_service.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({super.key, this.initialCategory});
+
+  final String? initialCategory;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -20,22 +22,84 @@ class _SearchPageState extends State<SearchPage>
   String _searchQuery = '';
   bool _hasSubmitted = false;
   List<String> _historicoPesquisa = [];
+  Future<List<ProdutosModel>>? _searchFuture;
 
   @override
   void initState() {
     super.initState();
+
+    _animationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+
+    if (widget.initialCategory != null) {
+      _searchController.text = widget.initialCategory!;
+      _searchQuery = widget.initialCategory!;
+      _executarBusca(_searchQuery);
+    }
+
     LocalCacheService.carregarHistoricoPesquisa().then((lista) {
       if (mounted) setState(() => _historicoPesquisa = lista);
     });
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.trim();
-        _hasSubmitted = false;
-      });
-    });
-    _animationController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800));
+
     _animationController.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant SearchPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialCategory != oldWidget.initialCategory &&
+        widget.initialCategory != null) {
+      _searchController.text = widget.initialCategory!;
+      _searchQuery = widget.initialCategory!;
+      _executarBusca(_searchQuery);
+    }
+  }
+
+  void _executarBusca(String termo) {
+    if (termo.trim().isEmpty) return;
+
+    _salvarPesquisa(termo);
+    setState(() {
+      _hasSubmitted = true;
+      _searchQuery = termo;
+      _searchFuture = _realizarBuscaLocal(termo);
+    });
+    _animationController.forward(from: 0.0);
+  }
+
+  Future<List<ProdutosModel>> _realizarBuscaLocal(String termo) async {
+
+    
+    Query query = FirebaseFirestore.instance
+        .collection('produtos')
+        .where('loja_is_aberto', isEqualTo: true);
+
+    
+    if (widget.initialCategory != null) {
+      query = query.where('categoria_menu', isEqualTo: widget.initialCategory);
+    }
+
+    final snapshot = await query.get();
+
+    final todosProdutos = snapshot.docs
+        .map((doc) => ProdutosModel.fromMap(
+            doc.data() as Map<String, dynamic>, doc.id))
+        .toList();
+      return todosProdutos.where((p) {
+      if (widget.initialCategory != null && termo == widget.initialCategory) {
+        return true; 
+      }
+      return p.nome.toLowerCase().contains(termo.toLowerCase());
+    }).toList();
+  }
+
+  void _limparBusca() {
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _hasSubmitted = false;
+      _searchFuture = null;
+    });
   }
 
   @override
@@ -128,17 +192,24 @@ class _SearchPageState extends State<SearchPage>
                                       controller: _searchController,
                                       autofocus: true,
                                       textInputAction: TextInputAction.search,
-                                      onSubmitted: (value) {
-                                        _salvarPesquisa(value);
-                                        setState(() => _hasSubmitted = true);
-                                        _animationController.forward(from: 0.0);
+                                      onSubmitted: _executarBusca,
+                                      onChanged: (value) {
+                                        if (value.isEmpty && _hasSubmitted) {
+                                          _limparBusca();
+                                        }
                                       },
                                       decoration: InputDecoration(
                                           hintText: 'Procurar',
                                           hintStyle: TextStyle(
                                               color: Colors.grey.shade400),
                                           border: InputBorder.none))),
-                              const Icon(Icons.tune, color: Colors.grey),
+                              if (_searchController.text.isNotEmpty)
+                                GestureDetector(
+                                  onTap: _limparBusca,
+                                  child: const Icon(Icons.close, color: Colors.grey),
+                                )
+                              else
+                                const Icon(Icons.tune, color: Colors.grey),
                             ],
                           ),
                         ),
@@ -149,7 +220,7 @@ class _SearchPageState extends State<SearchPage>
               ),
             ),
             Expanded(
-              child: _searchQuery.isEmpty
+              child: !_hasSubmitted || _searchQuery.isEmpty
                   ? ListView(
                       physics: const BouncingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics()),
@@ -220,16 +291,16 @@ class _SearchPageState extends State<SearchPage>
       contentPadding: EdgeInsets.only(bottom: 8.h),
       onTap: () {
         _searchController.text = text;
-        _salvarPesquisa(text);
-        setState(() => _hasSubmitted = true);
-        _animationController.forward(from: 0.0);
+        _executarBusca(text);
       },
     );
   }
 
   Widget _buildSearchResults() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('produtos').snapshots(),
+    if (!_hasSubmitted || _searchFuture == null) return const SizedBox.shrink();
+
+    return FutureBuilder<List<ProdutosModel>>(
+      future: _searchFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
@@ -237,88 +308,96 @@ class _SearchPageState extends State<SearchPage>
                   valueColor:
                       const AlwaysStoppedAnimation<Color>(Color(0xFFFF6961))));
         }
-        if (snapshot.hasError ||
-            !snapshot.hasData ||
-            snapshot.data!.docs.isEmpty) {
-          return const Center(
-              child: Text('Nenhum produto encontrado.',
-                  style: TextStyle(color: Colors.grey)));
-        }
-        final produtos = snapshot.data!.docs
-            .map((doc) => ProdutosModel.fromMap(
-                doc.data() as Map<String, dynamic>, doc.id))
-            .where((p) =>
-                p.nome.toLowerCase().contains(_searchQuery.toLowerCase()))
-            .toList();
-        if (produtos.isEmpty) {
-          return const Center(
-              child: Text('Nenhum produto encontrado para sua pesquisa.',
-                  style: TextStyle(color: Colors.grey)));
-        }
-        if (_hasSubmitted) {
-          return GridView.builder(
-            physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics()),
-            padding: EdgeInsets.all(24.w),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16.w,
-                crossAxisSpacing: 16.w,
-                childAspectRatio: 0.7),
-            itemCount: produtos.length,
-            itemBuilder: (context, index) => _buildAnimatedItem(
-              GestureDetector(
-                onTap: () => Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            ProdutoDetalhesPage(produto: produtos[index]),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                          const begin = Offset(0.0, 1.0);
-                          const end = Offset.zero;
-                          const curve = Curves.easeOutCubic;
-                          var tween = Tween(begin: begin, end: end)
-                              .chain(CurveTween(curve: curve));
-                          return SlideTransition(
-                              position: animation.drive(tween), child: child);
-                        },
-                        transitionDuration: const Duration(milliseconds: 300))),
-                child: ProductCard(
-                    idProduto: produtos[index].uid,
-                    imageUrl: produtos[index].imagemUrl.isNotEmpty
-                        ? produtos[index].imagemUrl
-                        : 'https://via.placeholder.com/150',
-                    name: produtos[index].nome,
-                    weight: '1 un',
-                    price: produtos[index].preco),
+        
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(24.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: const Color(0xFFFF6961), size: 48.r),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'Ocorreu um erro ao buscar produtos.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey, fontSize: 16.sp),
+                  ),
+                  SizedBox(height: 16.h),
+                  ElevatedButton(
+                    onPressed: () => _executarBusca(_searchQuery),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6961),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
+                    ),
+                    child: const Text('Tentar novamente', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
               ),
-              index,
             ),
           );
         }
-        return ListView.builder(
+
+        final produtos = snapshot.data ?? [];
+
+        if (produtos.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, color: Colors.grey, size: 64.r),
+                SizedBox(height: 16.h),
+                Text(
+                  'Nenhum produto encontrado para "$_searchQuery".',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 16.sp),
+                ),
+                SizedBox(height: 24.h),
+                TextButton(
+                  onPressed: _limparBusca,
+                  child: const Text('Limpar busca', style: TextStyle(color: Color(0xFFFF6961), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return GridView.builder(
           physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics()),
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          padding: EdgeInsets.all(24.w),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16.w,
+              crossAxisSpacing: 16.w,
+              childAspectRatio: 0.7),
           itemCount: produtos.length,
           itemBuilder: (context, index) => _buildAnimatedItem(
-            ListTile(
-              contentPadding: EdgeInsets.only(bottom: 8.h),
-              leading: Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: BoxDecoration(
-                      color: Colors.grey.shade100, shape: BoxShape.circle),
-                  child: Icon(Icons.search, color: Colors.grey, size: 20.sp)),
-              title: Text(produtos[index].nome,
-                  style: TextStyle(color: Colors.black87, fontSize: 15.sp)),
-              trailing: Icon(Icons.north_west, color: Colors.grey, size: 16.sp),
-              onTap: () {
-                _searchController.text = produtos[index].nome;
-                _salvarPesquisa(produtos[index].nome);
-                setState(() => _hasSubmitted = true);
-                _animationController.forward(from: 0.0);
-              },
+            GestureDetector(
+              onTap: () => Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          ProdutoDetalhesPage(produto: produtos[index]),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 1.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOutCubic;
+                        var tween = Tween(begin: begin, end: end)
+                            .chain(CurveTween(curve: curve));
+                        return SlideTransition(
+                            position: animation.drive(tween), child: child);
+                      },
+                      transitionDuration: const Duration(milliseconds: 300))),
+              child: ProductCard(
+                  idProduto: produtos[index].uid,
+                  imageUrl: produtos[index].imagemUrl.isNotEmpty
+                      ? produtos[index].imagemUrl
+                      : 'https://via.placeholder.com/150',
+                  name: produtos[index].nome,
+                  weight: '1 un',
+                  price: produtos[index].preco),
             ),
             index,
           ),

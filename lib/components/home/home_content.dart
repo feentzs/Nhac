@@ -35,362 +35,32 @@ class _HomeContentState extends State<HomeContent> {
   String _currentAddress = 'Buscando localização...';
   static bool _jaCarregouUmaVez = false;
   late bool _isLoading;
+  Timer? _loadingTimer;
 
-  Widget _buildListaDeLojas() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('lojas').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Column(
-            children: List.generate(
-                3,
-                (index) => Padding(
-                      padding: EdgeInsets.only(bottom: 16.h),
-                      child: _buildBoxSkeleton(
-                          width: double.infinity,
-                          height: 90.h,
-                          borderRadius: 12.r),
-                    )),
-          );
-        }
 
-        if (snapshot.hasError ||
-            !snapshot.hasData ||
-            snapshot.data!.docs.isEmpty) {
-          return Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(24.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: const Center(
-              child: Text(
-                'Nenhum restaurante encontrado na região.',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-          );
-        }
+  final List<LojasModel> _lojas = [];
+  DocumentSnapshot? _lastLojaDoc;
+  bool _isLoadingLojas = false;
+  bool _hasMoreLojas = true;
+  bool _errorLojas = false;
 
-        final lojas = snapshot.data!.docs.map((doc) {
-          return LojasModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-        }).toList();
+  final List<ProdutosModel> _produtosNecessidades = [];
+  bool _isLoadingProdutosNecessidades = true;
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: lojas.length,
-          itemBuilder: (context, index) {
-            final loja = lojas[index];
+  final List<ProdutosModel> _produtosPromocao = [];
+  bool _isLoadingProdutosPromocao = true;
 
-            return Container(
-              margin: EdgeInsets.only(bottom: 16.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF5D201C).withValues(alpha: 0.05),
-                    blurRadius: 10.r,
-                    offset: const Offset(0.0, 4.0),
-                  ),
-                ],
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16.r),
-                onTap: () {
-                  if (loja.aberta) {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) => LojaPage(loja: loja),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          var curvedAnimation = CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutQuart,
-                            reverseCurve: Curves.easeInQuart,
-                          );
-                          var curvedSecondaryAnimation = CurvedAnimation(
-                            parent: secondaryAnimation,
-                            curve: Curves.easeOutQuart,
-                            reverseCurve: Curves.easeInQuart,
-                          );
-
-                          var enterTween = Tween(begin: const Offset(1.0, 0.0), end: Offset.zero);
-                          var exitTween = Tween(begin: Offset.zero, end: const Offset(-0.3, 0.0));
-
-                          Widget page = SlideTransition(
-                            position: enterTween.animate(curvedAnimation),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF5D201C).withValues(alpha: 0.1),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: child,
-                            ),
-                          );
-
-                          return page;
-                        },
-                        transitionDuration: const Duration(milliseconds: 400),
-                        reverseTransitionDuration: const Duration(milliseconds: 400),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('${loja.nome} está fechado no momento.')),
-                    );
-                  }
-                },
-                child: Opacity(
-                  opacity: loja.aberta ? 1.0 : 0.5,
-                  child: Padding(
-                    padding: EdgeInsets.all(12.w),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12.r),
-                          child: CachedNetworkImage(
-                            imageUrl: loja.imagemUrl,
-                            width: 70.w,
-                            height: 70.w,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Shimmer.fromColors(
-                              baseColor: Colors.grey.shade300,
-                              highlightColor: Colors.grey.shade100,
-                              child: Container(
-                                width: 70.w,
-                                height: 70.w,
-                                color: Colors.white,
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              width: 70.w,
-                              height: 70.w,
-                              color: Colors.grey.shade100,
-                              child: Icon(Icons.store,
-                                  color: Colors.grey, size: 24.r),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16.w),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      loja.nome,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16.sp,
-                                        color: const Color(0xFF5D201C),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.star,
-                                          color: Colors.amber, size: 16.r),
-                                      SizedBox(width: 4.w),
-                                      Text(
-                                        loja.mediaAvaliacao.toStringAsFixed(1),
-                                        style: TextStyle(
-                                          color: Colors.amber,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13.sp,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                loja.categoria,
-                                style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 13.sp),
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                loja.aberta ? 'Aberto agora' : 'Fechado',
-                                style: TextStyle(
-                                  color: loja.aberta
-                                      ? const Color(0xFFFF6961)
-                                      : Colors.red.shade300,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12.sp,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSecaoProdutosFirebase(String titulo) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('produtos')
-          .limit(5)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          debugPrint("🔴 ERRO DO FIREBASE: ${snapshot.error}");
-        } else if (snapshot.hasData) {
-          debugPrint("🟢 LOJAS ENCONTRADAS: ${snapshot.data!.docs.length}");
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildSectionSkeleton();
-        }
-
-        if (snapshot.hasError ||
-            !snapshot.hasData ||
-            snapshot.data!.docs.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        final produtosFirebase = snapshot.data!.docs.map((doc) {
-          return ProdutosModel.fromMap(
-              doc.data() as Map<String, dynamic>, doc.id);
-        }).toList();
-
-        final produtosParaTela = produtosFirebase.map((prod) {
-          return ProductSectionItem(
-            idProduto: prod.uid,
-            imageUrl: prod.imagemUrl.isNotEmpty
-                ? prod.imagemUrl
-                : 'https://via.placeholder.com/150',
-            name: prod.nome,
-            weight: '',
-            price: prod.preco,
-            discountPercent: null,
-          );
-        }).toList();
-
-        return HomeProductSection(
-          title: titulo,
-          onSeeAll: () {},
-          products: produtosParaTela,
-        );
-      },
-    );
-  }
-
-  final List<ProductSectionItem> _produtosNecessidades = [
-    const ProductSectionItem(
-      idProduto: 'prod_001',
-      imageUrl:
-          'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
-      name: 'Pãozinho',
-      weight: '50 g.',
-      price: 16.00,
-      discountPercent: null,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_002',
-      imageUrl:
-          'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
-      name: 'Carne',
-      weight: '68 g.',
-      price: 16.00,
-      discountPercent: 20,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_003',
-      imageUrl:
-          'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
-      name: 'Coxinha',
-      weight: '140 g.',
-      price: 1.90,
-      discountPercent: null,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_004',
-      imageUrl:
-          'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
-      name: 'Refrigerante Viver',
-      weight: '2L',
-      price: 03.99,
-      discountPercent: 10,
-    ),
-  ];
-
-  final List<ProductSectionItem> _produtosPromocao = [
-    const ProductSectionItem(
-      idProduto: 'prod_005',
-      imageUrl:
-          'https://pbs.twimg.com/media/GtXShofWAAAJX5w?format=jpg&name=small',
-      name: 'Pãozinho',
-      weight: '50 g.',
-      price: 16.00,
-      discountPercent: null,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_006',
-      imageUrl:
-          'https://pbs.twimg.com/media/G3TGk4iWIAA4s5I?format=jpg&name=large',
-      name: 'Carne',
-      weight: '68 g.',
-      price: 16.00,
-      discountPercent: 20,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_007',
-      imageUrl:
-          'https://pbs.twimg.com/media/G5QJ2csWMAAoV07?format=jpg&name=large',
-      name: 'Coxinha',
-      weight: '140 g.',
-      price: 1.90,
-      discountPercent: null,
-    ),
-    const ProductSectionItem(
-      idProduto: 'prod_008',
-      imageUrl:
-          'https://scontent-gru2-1.cdninstagram.com/v/t51.82787-15/529775120_18051698096641079_8755412289038896486_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&ig_cache_key=MzY5NDY0NTUwODQwODc3MjM5OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=bc5H_aNNKJ8Q7kNvwEYKUHk&_nc_oc=AdpsCnmGJAjhPQAngv4wL6jQ_ghXce55Vz-fwy4iNb2y8wJ5LlYQGbQEXKocsvfSX6mj8cPbeESIm2_CHEOEnESY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru2-1.cdninstagram.com&_nc_gid=gIS1rtj7AdY_TZoXLUV27A&_nc_ss=7a22e&oh=00_Af4KGjw7haLwhDBlF4-eJuHgGO9MC7QH7iGdfJxdETwJ3w&oe=6A01486A',
-      name: 'Refrigerante Viver',
-      weight: '2L',
-      price: 03.99,
-      discountPercent: 10,
-    ),
-  ];
-
-  @override
+@override
   void initState() {
     super.initState();
     _isLoading = !_jaCarregouUmaVez;
 
-    _produtosNecessidades.shuffle();
-    _produtosPromocao.shuffle();
+    _carregarDadosIniciais();
     _carregarGpsComCache();
 
+
     if (_isLoading) {
-      Timer(const Duration(seconds: 2), () {
+      _loadingTimer = Timer(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -399,6 +69,418 @@ class _HomeContentState extends State<HomeContent> {
         }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _loadingTimer?.cancel();
+    super.dispose();
+  }
+
+  bool _listenerAttached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_listenerAttached) {
+      final primaryController = PrimaryScrollController.of(context);
+      primaryController.addListener(() {
+        if (primaryController.position.pixels >= primaryController.position.maxScrollExtent - 200) {
+          _fetchLojas();
+        }
+      });
+      _listenerAttached = true;
+    }
+  }
+
+
+  Future<void> _carregarDadosIniciais() async {
+    await Future.wait([
+      _fetchProdutosNecessidades(),
+      _fetchProdutosPromocao(),
+      _fetchLojas(),
+    ]);
+  }
+
+  Future<void> _fetchProdutosNecessidades() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('produtos')
+          .where('loja_is_aberto', isEqualTo: true)
+          .limit(10)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _produtosNecessidades.clear();
+          _produtosNecessidades.addAll(snapshot.docs.map((doc) =>
+              ProdutosModel.fromMap(
+                  doc.data(), doc.id)));
+          _isLoadingProdutosNecessidades = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Erro ao buscar produtos necessidades: $e");
+      if (mounted) setState(() => _isLoadingProdutosNecessidades = false);
+    }
+  }
+
+  Future<void> _fetchProdutosPromocao() async {
+    try {
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('produtos')
+          .where('loja_is_aberto', isEqualTo: true)
+          .where('preco', isLessThanOrEqualTo: 20.0)
+          .limit(10)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _produtosPromocao.clear();
+          _produtosPromocao.addAll(snapshot.docs.map((doc) =>
+              ProdutosModel.fromMap(
+                  doc.data(), doc.id)));
+          _isLoadingProdutosPromocao = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Erro ao buscar produtos promoção: $e");
+      if (mounted) setState(() => _isLoadingProdutosPromocao = false);
+    }
+  }
+
+  Future<void> _fetchLojas() async {
+    if (_isLoadingLojas || !_hasMoreLojas) return;
+
+    setState(() {
+      _isLoadingLojas = true;
+      _errorLojas = false;
+    });
+
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('lojas')
+          .orderBy('is_aberto', descending: true)
+          .orderBy('nome')
+          .limit(10);
+
+      if (_lastLojaDoc != null) {
+        query = query.startAfterDocument(_lastLojaDoc!);
+      }
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _hasMoreLojas = false;
+            _isLoadingLojas = false;
+          });
+        }
+        return;
+      }
+
+      final novasLojas = snapshot.docs.map((doc) {
+        return LojasModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _lojas.addAll(novasLojas);
+          _lastLojaDoc = snapshot.docs.last;
+          _isLoadingLojas = false;
+        });
+      }
+    } catch (e) {
+      if (e.toString().contains('failed-precondition')) {
+        debugPrint(
+            "ERRO DE ÍNDICE: Clique no link acima para criar o índice composto no Firebase: $e");
+      } else {
+        debugPrint("Erro ao buscar lojas: $e");
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoadingLojas = false;
+          _errorLojas = true;
+        });
+      }
+    }
+  }
+
+  Widget _buildListaDeLojas() {
+    if (_errorLojas && _lojas.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(24.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, color: const Color(0xFFFF6961), size: 48.r),
+            SizedBox(height: 16.h),
+            Text(
+              'Ocorreu um erro ao carregar os restaurantes.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              onPressed: _fetchLojas,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF6961),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50.r),
+                ),
+              ),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_lojas.isEmpty && _isLoadingLojas) {
+      return Column(
+        children: List.generate(
+            3,
+            (index) => Padding(
+                  padding: EdgeInsets.only(bottom: 16.h),
+                  child: _buildBoxSkeleton(
+                      width: double.infinity, height: 90.h, borderRadius: 12.r),
+                )),
+      );
+    }
+
+    if (_lojas.isEmpty && !_isLoadingLojas) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(24.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: const Center(
+          child: Text(
+            'Nenhum restaurante encontrado na região.',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: _lojas.length,
+          itemBuilder: (context, index) {
+            final loja = _lojas[index];
+
+            return Container(
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                      blurRadius: 10.r,
+                      offset: const Offset(0.0, 4.0),
+                    ),
+                  ],
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16.r),
+                  onTap: () {
+                    if (loja.isAberto) {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  LojaPage(loja: loja),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            var curvedAnimation = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutQuart,
+                              reverseCurve: Curves.easeInQuart,
+                            );
+
+                            var enterTween = Tween(
+                                begin: const Offset(1.0, 0.0),
+                                end: Offset.zero);
+
+                            Widget page = SlideTransition(
+                              position: enterTween.animate(curvedAnimation),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF5D201C)
+                                          .withValues(alpha: 0.1),
+                                      blurRadius: 10,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: child,
+                              ),
+                            );
+
+                            return page;
+                          },
+                          transitionDuration: const Duration(milliseconds: 400),
+                          reverseTransitionDuration:
+                              const Duration(milliseconds: 400),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('${loja.nome} está fechado no momento.')),
+                      );
+                    }
+                  },
+                  child: Opacity(
+                    opacity: loja.isAberto ? 1.0 : 0.5,
+                    child: Padding(
+                      padding: EdgeInsets.all(12.w),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: CachedNetworkImage(
+                              imageUrl: loja.imagemUrl,
+                              width: 70.w,
+                              height: 70.w,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Shimmer.fromColors(
+                                baseColor: Colors.grey.shade300,
+                                highlightColor: Colors.grey.shade100,
+                                child: Container(
+                                  width: 70.w,
+                                  height: 70.w,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                width: 70.w,
+                                height: 70.w,
+                                color: Colors.grey.shade100,
+                                child: Icon(Icons.store,
+                                    color: Colors.grey, size: 24.r),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 16.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        loja.nome,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16.sp,
+                                          color: const Color(0xFF5D201C),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.star,
+                                            color: Colors.amber, size: 16.r),
+                                        SizedBox(width: 4.w),
+                                        Text(
+                                          loja.dadosOperacionais.avaliacaoMedia
+                                              .toStringAsFixed(1),
+                                          style: TextStyle(
+                                            color: Colors.amber,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13.sp,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4.h),
+                                Text(
+                                  loja.categoria,
+                                  style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 13.sp),
+                                ),
+                                SizedBox(height: 8.h),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${loja.dadosOperacionais.tempoEntregaMin}-${loja.dadosOperacionais.tempoEntregaMax} min',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12.sp),
+                                    ),
+                                    Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 6.w),
+                                      child: Text('•',
+                                          style: TextStyle(
+                                              color: Colors.grey.shade400)),
+                                    ),
+                                    Text(
+                                      loja.dadosOperacionais.taxaEntregaBase ==
+                                              0
+                                          ? 'Entrega Grátis'
+                                          : 'R\$ ${loja.dadosOperacionais.taxaEntregaBase.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: loja.dadosOperacionais
+                                                    .taxaEntregaBase ==
+                                                0
+                                            ? Colors.green
+                                            : Colors.grey.shade600,
+                                        fontWeight: loja.dadosOperacionais
+                                                    .taxaEntregaBase ==
+                                                0
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        fontSize: 12.sp,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ));
+          },
+        ),
+        if (_isLoadingLojas)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            child: const CircularProgressIndicator(color: Color(0xFFFF6961)),
+          ),
+      ],
+    );
   }
 
   Future<void> _carregarGpsComCache() async {
@@ -451,7 +533,7 @@ class _HomeContentState extends State<HomeContent> {
           LocalCacheService.salvarLocalizacaoGps(endereco);
         }
 
-        if (!mounted) return ;
+        if (!mounted) return;
         final enderecoProvider = context.read<EnderecoProvider>();
         if (enderecoProvider.enderecos.isEmpty) {
           final novoEndereco = EnderecoModel(
@@ -474,9 +556,13 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Future<void> _onRefresh() async {
+    _lastLojaDoc = null;
+    _hasMoreLojas = true;
+    _lojas.clear();
     await Future.wait([
       _pegarLocalizacaoUsuario(),
       context.read<UserProvider>().carregarDadosUsuario(),
+      _carregarDadosIniciais(),
     ]);
   }
 
@@ -504,7 +590,7 @@ class _HomeContentState extends State<HomeContent> {
     }
 
     return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(
+     physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
       slivers: [
@@ -741,6 +827,22 @@ class _HomeContentState extends State<HomeContent> {
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
                 tween: Tween(begin: 0.0, end: 1.0),
+                curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 30 * (1 - value)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _buildCategoriasRapidas(),
+              ),
+              SizedBox(height: 28.h),
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween(begin: 0.0, end: 1.0),
                 curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
                 builder: (context, value, child) {
                   return Opacity(
@@ -753,11 +855,15 @@ class _HomeContentState extends State<HomeContent> {
                 },
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 600),
-                  child: _isLoading
+                  child: _isLoadingProdutosNecessidades
                       ? _buildSectionSkeleton(
                           key: const ValueKey('section1_skeleton'))
-                      : _buildSecaoProdutosFirebase(
-                          'Temos tudo que você precisa'),
+                      : HomeProductSection(
+                          key: const ValueKey('section1_content'),
+                          title: 'Temos tudo que você precisa',
+                          onSeeAll: () {},
+                          products: _produtosNecessidades,
+                        ),
                 ),
               ),
               SizedBox(height: 28.h),
@@ -776,7 +882,7 @@ class _HomeContentState extends State<HomeContent> {
                 },
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 600),
-                  child: _isLoading
+                  child: _isLoadingProdutosPromocao
                       ? _buildSectionSkeleton(
                           key: const ValueKey('section2_skeleton'))
                       : HomeProductSection(
@@ -822,6 +928,75 @@ class _HomeContentState extends State<HomeContent> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCategoriasRapidas() {
+    final categorias = [
+      {'nome': 'Mercado', 'icon': Icons.shopping_basket},
+      {'nome': 'Lanches', 'icon': Icons.fastfood},
+      {'nome': 'Pizza', 'icon': Icons.local_pizza},
+      {'nome': 'Saudável', 'icon': Icons.eco},
+      {'nome': 'Doces', 'icon': Icons.icecream},
+    ];
+
+    return SizedBox(
+      height: 100.h,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: categorias.length,
+        itemBuilder: (context, index) {
+          final cat = categorias[index];
+          return GestureDetector(
+           onTap: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      SearchPage(initialCategory: cat['nome'] as String),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  transitionDuration: const Duration(milliseconds: 300),
+                ),
+              );
+            },
+            child: Container(
+              width: 80.w,
+              margin: EdgeInsets.only(right: 16.w),
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                          blurRadius: 10.r,
+                          offset: const Offset(0.0, 4.0),
+                        ),
+                      ],
+                    ),
+                    child: Icon(cat['icon'] as IconData,
+                        color: const Color(0xFFFF6961), size: 30.r),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    cat['nome'] as String,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF5D201C),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

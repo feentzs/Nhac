@@ -4,24 +4,6 @@ import 'package:nhac/components/product_card.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/produto_detalhes_page.dart';
 
-class ProductSectionItem {
-  const ProductSectionItem({
-    required this.idProduto,
-    required this.imageUrl,
-    required this.name,
-    required this.weight,
-    required this.price,
-    this.discountPercent,
-  });
-
-  final String idProduto;
-  final String imageUrl;
-  final String name;
-  final String weight;
-  final double price;
-  final int? discountPercent;
-}
-
 class HomeProductSection extends StatelessWidget {
   const HomeProductSection({
     super.key,
@@ -31,7 +13,7 @@ class HomeProductSection extends StatelessWidget {
   });
 
   final String title;
-  final List<ProductSectionItem> products;
+  final List<ProdutosModel> products;
   final VoidCallback? onSeeAll;
 
   @override
@@ -80,17 +62,8 @@ class HomeProductSection extends StatelessWidget {
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => ProdutoDetalhesPage(
-                            produto: ProdutosModel(
-                              uid: item.idProduto,
-                              categoria: 'Geral',
-                              disponivel: true,
-                              imagemUrl: item.imageUrl,
-                              lojaId: '',
-                              nome: item.name,
-                              preco: item.price,
-                            ),
-                          ),
+                          pageBuilder: (context, animation, secondaryAnimation) => 
+                              ProdutoDetalhesPage(produto: item),
                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                             const begin = Offset(0.0, 1.0);
                             const end = Offset.zero;
@@ -108,14 +81,14 @@ class HomeProductSection extends StatelessWidget {
                       );
                     },
                     child: ProductCard(
-                      idProduto: item.idProduto,
-                      imageUrl: item.imageUrl,
-                      name: item.name,
-                      weight: item.weight,
-                      price: item.price,
+                      idProduto: item.uid,
+                      imageUrl: item.imagemUrl,
+                      name: item.nome,
+                      weight: item.peso ?? '',
+                      price: item.preco,
                     ),
                   ),
-                  if (item.discountPercent != null)
+                  if (item.percentualDesconto != null)
                     Positioned(
                       top: 8.h,
                       left: 8.w,
@@ -129,7 +102,7 @@ class HomeProductSection extends StatelessWidget {
                           borderRadius: BorderRadius.circular(50.r),
                         ),
                         child: Text(
-                          '${item.discountPercent}%',
+                          '${item.percentualDesconto}%',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

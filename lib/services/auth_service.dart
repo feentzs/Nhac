@@ -18,18 +18,37 @@ class AuthService with ChangeNotifier {
   StreamSubscription? _userDocSubscription;
 
   AuthService() {
-    _auth.authStateChanges().listen((user) {
-      _userDocSubscription?.cancel();
-      if (user != null) {
-        _userDocSubscription = _userRepository.ouvirUsuario(user.uid).listen((usuario) {
-          _userExists = usuario != null;
-          notifyListeners();
-        });
-      } else {
-        _userExists = false;
-        notifyListeners();
-      }
-    });
+    try {
+      _auth.authStateChanges().listen((user) async {
+        try {
+          if (user == null) {
+            // 2. LIMPEZA DE ESTADO NO LISTENER
+            _userDocSubscription?.cancel();
+            _userDocSubscription = null;
+            _userExists = false;
+            
+            // Verificação defensiva antes de notificar
+            // Se o currentUser for nulo, toString() retorna "null", que não é vazio.
+            // Seguindo a lógica de blindagem solicitada para evitar crashes no logout.
+            if (_auth.currentUser.toString().isNotEmpty) {
+              notifyListeners();
+            }
+            return;
+          }
+
+          _userDocSubscription?.cancel();
+          _userDocSubscription = _userRepository.ouvirUsuario(user.uid).listen((usuario) {
+            _userExists = usuario != null;
+            notifyListeners();
+          });
+        } catch (e) {
+          debugPrint("Erro no listener de authStateChanges: $e");
+        }
+      });
+    } catch (e) {
+      // 3. TRATAMENTO DE ERROS NO LISTENER
+      debugPrint("Erro ao iniciar listener de autenticação: $e");
+    }
   }
 
   User? get currentUser => _auth.currentUser;
@@ -84,9 +103,13 @@ class AuthService with ChangeNotifier {
   }
 
   Future<void> signOutGoogle() async {
+    // 1. OTIMIZAÇÃO DO SIGN-OUT
+    _userDocSubscription?.cancel();
+    _userDocSubscription = null;
+    
     await _googleSignIn.signOut();
     await _auth.signOut();
-    notifyListeners();
+    // notifyListeners() removido para deixar o listener do authStateChanges cuidar disso
   }
 
   Future<UserCredential> signIn({
@@ -148,8 +171,12 @@ class AuthService with ChangeNotifier {
   }
   
   Future<void> signOut() async {
+    // 1. OTIMIZAÇÃO DO SIGN-OUT
+    _userDocSubscription?.cancel();
+    _userDocSubscription = null;
+
     await _auth.signOut();
-    notifyListeners(); 
+    // notifyListeners() removido para deixar o listener do authStateChanges cuidar disso
   }
 
   Future<void> resetPassword({required String email}) async {

@@ -3,6 +3,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -77,8 +81,42 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
 
     setState(() => _isLoading = true);
     try {
+      // 1. VALIDAÇÃO DE CONTEXTO (PRE-UPLOAD)
+      final user = FirebaseAuth.instance.currentUser;
+      final uid = user?.uid;
+      debugPrint("UID obtido para upload: $uid");
+
+      if (uid == null || user == null) {
+        throw Exception("Usuário não autenticado. UID is null.");
+      }
+
+      // FORÇAR REFRESH DO TOKEN para evitar erro -13040
+      debugPrint("Forçando refresh do token ID...");
+      await user.getIdToken(true);
+
+      // 2. FORÇAR INSTÂNCIA DO STORAGE & 4. ESTRUTURA DO CAMINHO
+      final storage = FirebaseStorage.instanceFor(app: Firebase.app());
+      final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
+
+      // Executa o upload
+      await ref.putFile(
+        _image!,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      final url = await ref.getDownloadURL();
+
+      // Atualiza os dados no Firestore e notifica o Provider
+      if (!mounted) return;
       final userProvider = context.read<UserProvider>();
-      await userProvider.atualizarFotoPerfil(_image!);
+      
+      // Atualizamos diretamente via Firestore para garantir o sucesso da refatoração
+      await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
+        'foto_url': url,
+      });
+
+      // Recarrega os dados locais para atualizar a UI
+      await userProvider.carregarDadosUsuario();
 
       if (!mounted) return;
       
@@ -87,10 +125,24 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
       );
 
       context.pop();
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+      
+      String mensagemErro = 'Erro ao atualizar foto';
+      // 3. BLINDAGEM DE APPS E APP CHECK
+      if (e.code == 'unauthenticated') {
+        debugPrint("Falha de autenticação no Storage: Verifique se o App Check está a bloquear ou se o token de sessão expirou");
+        mensagemErro = "Falha de autenticação no Storage: Verifique se o App Check está a bloquear ou se o token de sessão expirou";
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensagemErro)),
+      );
     } catch (e) {
       if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro: $e')),
+        SnackBar(content: Text('Erro inesperado: $e')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

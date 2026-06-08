@@ -4,9 +4,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nhac/models/usuario/carrinho_model.dart';
 import 'package:nhac/repository/cart_repository.dart'; 
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nhac/models/produto/produtos.dart';
+
 class CartProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final CartRepository _cartRepository = CartRepository();
+  final FirebaseAuth _auth;
+  final CartRepository _cartRepository;
+  final FirebaseFirestore _firestore;
+
+  CartProvider({
+    FirebaseAuth? auth, 
+    CartRepository? repository,
+    FirebaseFirestore? firestore,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _cartRepository = repository ?? CartRepository(),
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   final Map<String, CarrinhoModel> _itens = {};
   StreamSubscription<List<CarrinhoModel>>? _carrinhoSubscription;
@@ -19,8 +31,6 @@ class CartProvider extends ChangeNotifier {
 
   double get valorTotal => _valorTotal;
   int get totalDeUnidades => _totalDeUnidades;
-
-
 
   String _observacao = '';
 
@@ -64,26 +74,65 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  
-
-  
   Future<void> adicionarItem({
     required String idProduto,
     required String nome,
     required double preco,
     required String imagemUrl,
   }) async {
+    await adicionarItemComQuantidade(
+      idProduto: idProduto,
+      nome: nome,
+      preco: preco,
+      imagemUrl: imagemUrl,
+      quantidade: 1,
+    );
+  }
+
+  Future<void> adicionarItemComQuantidade({
+    required String idProduto,
+    required String nome,
+    required double preco,
+    required String imagemUrl,
+    required int quantidade,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    int novaQuantidade = 1;
+    String? lojaIdDoProduto;
+    try {
+      final doc = await _firestore.collection('produtos').doc(idProduto).get();
+      if (doc.exists) {
+        final produto = ProdutosModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        lojaIdDoProduto = produto.lojaId;
+        if (!produto.lojaIsAberto) {
+          throw Exception('A loja fechou enquanto você navegava. Não é possível adicionar este item.');
+        }
+      }
+    } catch (e) {
+      if (e.toString().contains('loja fechou')) rethrow;
+      debugPrint('Erro ao verificar integridade da loja: $e');
+    }
+
+    if (_itens.isNotEmpty && lojaIdDoProduto != null) {
+      final lojaAtual = _itens.values.first.lojaId;
+      if (lojaAtual != lojaIdDoProduto) {
+        throw Exception(
+            'Você não pode adicionar itens de restaurantes diferentes no mesmo pedido. Limpe o carrinho primeiro.');
+      }
+    }
+
+    final int novaQuantidade;
     if (_itens.containsKey(idProduto)) {
-      novaQuantidade = _itens[idProduto]!.quantidade + 1;
+      novaQuantidade = _itens[idProduto]!.quantidade + quantidade;
+    } else {
+      novaQuantidade = quantidade;
     }
 
     final novoItem = CarrinhoModel(
-      idDocumento: idProduto, 
+      idDocumento: idProduto,
       idProduto: idProduto,
+      lojaId: lojaIdDoProduto ?? '',
       nome: nome,
       preco: preco,
       quantidade: novaQuantidade,
@@ -92,34 +141,6 @@ class CartProvider extends ChangeNotifier {
 
     await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
   }
-  Future<void> adicionarItemComQuantidade({
-  required String idProduto,
-  required String nome,
-  required double preco,
-  required String imagemUrl,
-  required int quantidade,
-}) async {
-  final user = _auth.currentUser;
-  if (user == null) return;
-
-  final int novaQuantidade;
-  if (_itens.containsKey(idProduto)) {
-    novaQuantidade = _itens[idProduto]!.quantidade + quantidade;
-  } else {
-    novaQuantidade = quantidade;
-  }
-
-  final novoItem = CarrinhoModel(
-    idDocumento: idProduto,
-    idProduto: idProduto,
-    nome: nome,
-    preco: preco,
-    quantidade: novaQuantidade,
-    imagemUrl: imagemUrl,
-  );
-
-  await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
-}
 
   Future<void> removerItem(String idProduto) async {
     final user = _auth.currentUser;
