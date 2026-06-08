@@ -26,8 +26,11 @@ class AuthService with ChangeNotifier {
             _userDocSubscription?.cancel();
             _userDocSubscription = null;
             
-            _userExists = false;
-            notifyListeners();
+            // Verifica se o estado já é o pretendido para evitar notificações redundantes
+            if (_userExists != false) {
+              _userExists = false;
+              notifyListeners();
+            }
             return;
           }
 
