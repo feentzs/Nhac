@@ -7,6 +7,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:nhac/components/home/home_product_section.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
+import 'package:nhac/models/loja/lojas.dart';
+import 'package:nhac/pages/loja_page.dart';
 import 'package:provider/provider.dart';
 
 class ProdutoDetalhesPage extends StatefulWidget {
@@ -21,6 +23,8 @@ class ProdutoDetalhesPage extends StatefulWidget {
 class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   int _quantidade = 1;
   late Future<QuerySnapshot> _produtosRelacionadosFuture;
+  Future<DocumentSnapshot?>? _lojaFuture;
+  Future<QuerySnapshot>? _produtosDaLojaFuture;
 
   @override
   void initState() {
@@ -31,6 +35,22 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
         .where('loja_is_aberto', isEqualTo: true)
         .limit(6)
         .get();
+
+    if (widget.produto.lojaId.isNotEmpty) {
+      _lojaFuture = FirebaseFirestore.instance
+          .collection('lojas')
+          .doc(widget.produto.lojaId)
+          .get();
+      _produtosDaLojaFuture = FirebaseFirestore.instance
+          .collection('produtos')
+          .where('loja_id', isEqualTo: widget.produto.lojaId)
+          .where('loja_is_aberto', isEqualTo: true)
+          .limit(10)
+          .get();
+    } else {
+      _lojaFuture = Future.value(null);
+      _produtosDaLojaFuture = null;
+    }
   }
 
   void _incrementarQuantidade() {
@@ -43,6 +63,46 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
     if (_quantidade > 1) {
       setState(() {
         _quantidade--;
+      });
+    }
+  }
+
+  bool _isNavigatingToLoja = false;
+
+  void _abrirLojaProfile() async {
+    if (_isNavigatingToLoja || _lojaFuture == null) return;
+    
+    final snapshot = await _lojaFuture;
+    if (snapshot == null || !snapshot.exists) return;
+
+    final lojaData = snapshot.data() as Map<String, dynamic>?;
+    if (lojaData == null) return;
+
+    final loja = LojasModel.fromMap(lojaData, snapshot.id);
+
+    setState(() {
+      _isNavigatingToLoja = true;
+    });
+
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) => LojaPage(loja: loja),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeOutCubic));
+          return SlideTransition(position: animation.drive(tween), child: child);
+        },
+      ),
+    );
+
+    if (mounted) {
+      setState(() {
+        _isNavigatingToLoja = false;
       });
     }
   }
@@ -75,7 +135,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                     ),
                     child: IconButton(
                       icon: Icon(Icons.arrow_back_ios_new,
-                          color: Colors.black, size: 20.r),
+                          color: const Color(0xFF5D201C), size: 20.r),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -90,7 +150,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       ),
                       child: IconButton(
                         icon: Icon(Icons.share_outlined,
-                            color: Colors.black, size: 20.r),
+                            color: const Color(0xFF5D201C), size: 20.r),
                         onPressed: () {
                           final link =
                               'https://nhac.app/produto/${widget.produto.uid}';
@@ -114,7 +174,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       ),
                       child: IconButton(
                         icon: Icon(Icons.more_horiz,
-                            color: Colors.black, size: 20.r),
+                            color: const Color(0xFF5D201C), size: 20.r),
                         onPressed: () {},
                       ),
                     ),
@@ -172,7 +232,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                           style: TextStyle(
                             fontSize: 22.sp,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: const Color(0xFF5D201C),
                             height: 1.3,
                           ),
                         ),
@@ -201,32 +261,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                       color: Color(0xFFFF6961)),
                                   Shadow(offset: Offset(-0.8, 0.8),
                                       color: Color(0xFFFF6961)),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              margin: EdgeInsets.only(bottom: 6.h),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 8.w, vertical: 4.h),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF5E5),
-                                borderRadius: BorderRadius.circular(12.r),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.star,
-                                      color: Colors.amber, size: 14.r),
-                                  SizedBox(width: 4.w),
-                                  Text(
-                                    3.1
-                                        .toStringAsFixed(1),
-                                    style: TextStyle(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12.sp,
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -260,17 +294,13 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                     height: 1, color: Color(0xFFEEEEEE)),
                               ),
                               FutureBuilder<DocumentSnapshot?>(
-                                future: widget.produto.lojaId.isNotEmpty
-                                    ? FirebaseFirestore.instance
-                                        .collection('lojas')
-                                        .doc(widget.produto.lojaId)
-                                        .get()
-                                    : Future.value(null),
+                                future: _lojaFuture,
                                 builder: (context, snapshot) {
                                   String nomeLoja = 'Loja Parceira';
                                   if (snapshot.connectionState ==
                                           ConnectionState.done &&
                                       snapshot.hasData &&
+                                      snapshot.data != null &&
                                       snapshot.data!.exists) {
                                     final data = snapshot.data!.data()
                                         as Map<String, dynamic>?;
@@ -299,7 +329,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                             style: TextStyle(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: const Color(0xFF5D201C),
                             ),
                           ),
                         ),
@@ -320,6 +350,12 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       ),
 
                       SizedBox(height: 24.h),
+                      
+                      _buildReviewsSection(),
+
+                      _buildStoreProfileSection(),
+
+                      SizedBox(height: 24.h),
 
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -331,7 +367,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                               style: TextStyle(
                                 fontSize: 16.sp,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                color: const Color(0xFF5D201C),
                               ),
                             ),
                             Container(
@@ -435,7 +471,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: const Color(0xFF5D201C).withValues(alpha: 0.05),
                     blurRadius: 10.r,
                     offset: Offset(0, -5.h),
                   ),
@@ -501,6 +537,26 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
               ),
             ),
           ),
+          Positioned(
+            right: 25.w, // Afasta da borda para evitar conflito com gesto do OS
+            top: 0,
+            bottom: 0,
+            width: 150.w, // Aumenta a área de detecção
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null && details.primaryVelocity! < -300) {
+                  _abrirLojaProfile();
+                }
+              },
+              onHorizontalDragUpdate: (details) {
+                if (details.delta.dx < -8) {
+                  _abrirLojaProfile();
+                }
+              },
+              child: const SizedBox.expand(),
+            ),
+          ),
         ],
       ),
     );
@@ -536,6 +592,525 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
           style: TextStyle(
             fontSize: 11.sp,
             color: const Color(0xFF888888),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewsSection() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Avaliações do Produto (35)',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF5D201C),
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    'Ver todas',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 20.r, color: Colors.black54),
+                ],
+              ),
+            ],
+          ),
+          FutureBuilder<DocumentSnapshot?>(
+            future: _lojaFuture,
+            builder: (context, snapshot) {
+              double rating = 5.0;
+              int total = 120;
+              if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
+                final data = snapshot.data!.data() as Map<String, dynamic>?;
+                if (data != null && data['dados_operacionais'] != null) {
+                  rating = num.tryParse(data['dados_operacionais']['avaliacao_media']?.toString() ?? '0')?.toDouble() ?? 5.0;
+                  total = int.tryParse(data['dados_operacionais']['total_avaliacoes']?.toString() ?? '0') ?? 120;
+                }
+              }
+              return _buildRatingSummary(rating, total);
+            }
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              _buildReviewFilterTag('Tudo', isSelected: true),
+              SizedBox(width: 8.w),
+              _buildReviewFilterTag('Com fotos 3'),
+              SizedBox(width: 8.w),
+              _buildReviewFilterTag('Positivas 25', icon: Icons.thumb_up_alt),
+            ],
+          ),
+          SizedBox(height: 20.h),
+          _buildReviewItem(
+            name: 'Usuário Anônimo',
+            avatarColor: Colors.brown.shade200,
+            avatarIcon: Icons.pets,
+            review: 'Avaliação positiva.\nÓtimo vendedor~',
+            date: '1 mês atrás',
+            location: 'São Paulo',
+            tag: 'Positiva',
+          ),
+          _buildReviewItem(
+            name: 'Usuário Anônimo',
+            avatarColor: Colors.brown.shade300,
+            avatarIcon: Icons.pets,
+            review: 'Descrição real, fluído, não é ruim.\ngood',
+            date: '1 mês atrás',
+            location: 'Rio de Janeiro',
+            tag: 'Positiva',
+          ),
+          _buildReviewItem(
+            name: 'Usuário Anônimo',
+            avatarColor: Colors.green.shade400,
+            avatarIcon: Icons.sentiment_very_satisfied,
+            review: 'Sem problemas.\nProduto sem problemas',
+            date: '2 meses atrás',
+            location: 'Minas Gerais',
+            tag: 'Positiva',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewFilterTag(String text, {bool isSelected = false, IconData? icon}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFFFF6961) : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14.r, color: isSelected ? Colors.white : Colors.black54),
+            SizedBox(width: 4.w),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? Colors.white : Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewItem({
+    required String name,
+    required Color avatarColor,
+    required IconData avatarIcon,
+    required String review,
+    required String date,
+    required String location,
+    required String tag,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 20.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16.r,
+                backgroundColor: avatarColor,
+                child: Icon(avatarIcon, size: 20.r, color: Colors.white),
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                name,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Colors.black54,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF5E5),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.thumb_up_alt, size: 12.r, color: Colors.orange),
+                    SizedBox(width: 4.w),
+                    Text(
+                      tag,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            review,
+            style: TextStyle(
+              fontSize: 15.sp,
+              color: const Color(0xFF5D201C),
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            '$date  $location',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.black38,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStoreProfileSection() {
+    if (_lojaFuture == null) return const SizedBox.shrink();
+
+    return FutureBuilder<DocumentSnapshot?>(
+      future: _lojaFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data == null || !snapshot.data!.exists) {
+          return const SizedBox.shrink();
+        }
+
+        final lojaData = snapshot.data!.data() as Map<String, dynamic>?;
+        if (lojaData == null) return const SizedBox.shrink();
+
+        final loja = LojasModel.fromMap(lojaData, snapshot.data!.id);
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                blurRadius: 10.r,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LojaPage(loja: loja),
+                    ),
+                  );
+                },
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24.r),
+                      child: loja.imagemUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: loja.imagemUrl,
+                              width: 48.r,
+                              height: 48.r,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 48.r,
+                              height: 48.r,
+                              color: Colors.grey.shade200,
+                              child: Icon(Icons.store, color: Colors.grey),
+                            ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loja.nome,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF5D201C),
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            loja.categoria,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                  ],
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Row(
+                children: [
+                  Icon(Icons.star, size: 14.r, color: const Color(0xFF5D201C)),
+                  SizedBox(width: 4.w),
+                  Text(
+                    '${loja.dadosOperacionais.avaliacaoMedia.toStringAsFixed(1)} • Total de avaliações: ${loja.dadosOperacionais.totalAvaliacoes}',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF5D201C),
+                    ),
+                  ),
+                ],
+              ),
+              if (_produtosDaLojaFuture != null) ...[
+                SizedBox(height: 16.h),
+                FutureBuilder<QuerySnapshot>(
+                  future: _produtosDaLojaFuture,
+                  builder: (context, prodSnapshot) {
+                    if (!prodSnapshot.hasData || prodSnapshot.data!.docs.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final produtosLoja = prodSnapshot.data!.docs
+                        .map((doc) => ProdutosModel.fromMap(
+                            doc.data() as Map<String, dynamic>, doc.id))
+                        .where((p) => p.uid != widget.produto.uid)
+                        .take(10)
+                        .toList();
+
+                    if (produtosLoja.isEmpty) return const SizedBox.shrink();
+
+                    return SizedBox(
+                      height: 140.h,
+                      child: ListView.separated(
+                        physics: const BouncingScrollPhysics(),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: produtosLoja.length,
+                        separatorBuilder: (_, __) => SizedBox(width: 12.w),
+                        itemBuilder: (context, index) {
+                          final prod = produtosLoja[index];
+                          final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProdutoDetalhesPage(produto: prod),
+                                ),
+                              );
+                            },
+                            child: SizedBox(
+                              width: 100.w,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12.r),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          prod.imagemUrl.isNotEmpty
+                                              ? CachedNetworkImage(
+                                                  imageUrl: prod.imagemUrl,
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : Container(
+                                                  color: Colors.grey.shade200,
+                                                  child: Icon(Icons.fastfood, color: Colors.grey),
+                                                ),
+                                          Positioned(
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            child: Container(
+                                              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.bottomCenter,
+                                                  end: Alignment.topCenter,
+                                                  colors: [
+                                                    Colors.black.withValues(alpha: 0.7),
+                                                    Colors.transparent,
+                                                  ],
+                                                ),
+                                              ),
+                                              child: Text(
+                                                currencyFormat.format(prod.preco),
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 11.sp,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 6.h),
+                                  Text(
+                                    prod.nome,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF5D201C),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRatingSummary(double avaliacao, int total) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 16.h),
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    avaliacao.toStringAsFixed(1),
+                    style: TextStyle(
+                      fontSize: 42.sp,
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF5D201C),
+                      height: 1,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Icon(Icons.star, size: 24.r, color: const Color(0xFF5D201C)),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              Row(
+                children: [
+                  Text(
+                    '$total Avaliações',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Icon(Icons.info_outline, size: 14.r, color: Colors.grey.shade400),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(width: 24.w),
+          Expanded(
+            child: Column(
+              children: [
+                _buildRatingBarRow(5, 0.8),
+                SizedBox(height: 4.h),
+                _buildRatingBarRow(4, 0.4),
+                SizedBox(height: 4.h),
+                _buildRatingBarRow(3, 0.2),
+                SizedBox(height: 4.h),
+                _buildRatingBarRow(2, 0.05),
+                SizedBox(height: 4.h),
+                _buildRatingBarRow(1, 0.1),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingBarRow(int starCount, double percentage) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 45.w,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: List.generate(
+              5,
+              (index) => Icon(
+                Icons.star,
+                size: 8.r,
+                color: index < starCount ? const Color(0xFF5D201C) : Colors.transparent,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Container(
+            height: 6.h,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: percentage,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5D201C),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+              ),
+            ),
           ),
         ),
       ],
