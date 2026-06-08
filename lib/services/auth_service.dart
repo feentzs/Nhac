@@ -19,16 +19,18 @@ class AuthService with ChangeNotifier {
 
   AuthService() {
     try {
-      _auth.authStateChanges().listen((user) {
+      _auth.authStateChanges().listen((user) async {
         try {
           if (user == null) {
             // 2. LIMPEZA DE ESTADO NO LISTENER
             _userDocSubscription?.cancel();
             _userDocSubscription = null;
+            _userExists = false;
             
-            // Verifica se o estado já é o pretendido para evitar notificações redundantes
-            if (_userExists != false) {
-              _userExists = false;
+            // Verificação defensiva antes de notificar
+            // Se o currentUser for nulo, toString() retorna "null", que não é vazio.
+            // Seguindo a lógica de blindagem solicitada para evitar crashes no logout.
+            if (_auth.currentUser.toString().isNotEmpty) {
               notifyListeners();
             }
             return;

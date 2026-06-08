@@ -82,12 +82,17 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
     setState(() => _isLoading = true);
     try {
       // 1. VALIDAÇÃO DE CONTEXTO (PRE-UPLOAD)
-      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final user = FirebaseAuth.instance.currentUser;
+      final uid = user?.uid;
       debugPrint("UID obtido para upload: $uid");
 
-      if (uid == null) {
+      if (uid == null || user == null) {
         throw Exception("Usuário não autenticado. UID is null.");
       }
+
+      // FORÇAR REFRESH DO TOKEN para evitar erro -13040
+      debugPrint("Forçando refresh do token ID...");
+      await user.getIdToken(true);
 
       // 2. FORÇAR INSTÂNCIA DO STORAGE & 4. ESTRUTURA DO CAMINHO
       final storage = FirebaseStorage.instanceFor(app: Firebase.app());
