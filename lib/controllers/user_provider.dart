@@ -66,14 +66,17 @@ class UserProvider with ChangeNotifier {
 
   Future<void> atualizarFotoPerfil(File imagem) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    final uid = user?.uid;
+    debugPrint("UID obtido para upload no Provider: $uid");
+
+    if (uid == null) {
+      throw Exception("Usuário não autenticado no Provider. UID is null.");
+    }
 
     try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('usuarios')
-          .child(user.uid)
-          .child('perfil.jpg');
+      // Usando instanceFor para garantir a instância correta atrelada ao Firebase App
+      final storage = FirebaseStorage.instanceFor(app: Firebase.app());
+      final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
 
       await ref.putFile(
         imagem,
@@ -82,17 +85,18 @@ class UserProvider with ChangeNotifier {
 
       final url = await ref.getDownloadURL();
 
-      await _userRepository.atualizarDadosUsuario(user.uid, {
+      await _userRepository.atualizarDadosUsuario(uid, {
         'foto_url': url,
       });
 
       await carregarDadosUsuario();
     } on FirebaseException catch (e) {
       if (e.code == 'unauthenticated') {
-        debugPrint('Caminho do Storage não corresponde à regra de segurança');
+        debugPrint("Falha de autenticação no Storage: Verifique se o App Check está a bloquear ou se o token de sessão expirou");
       }
       rethrow;
     } catch (e) {
+      debugPrint("Erro ao atualizar foto de perfil: $e");
       rethrow;
     }
   }
