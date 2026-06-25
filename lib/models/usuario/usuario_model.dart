@@ -3,8 +3,7 @@ class UsuarioModel {
   final String nome;
   final String email;
   final String telefone;
-  final String? imagemUrl;
-  final bool ativo;
+  final String? imagemUrl; 
 
   UsuarioModel({
     required this.id,
@@ -12,13 +11,7 @@ class UsuarioModel {
     required this.email,
     required this.telefone,
     this.imagemUrl,
-    this.ativo = true,
   });
-
-  /// True apenas se existir uma foto de perfil não-vazia.
-  /// Prefira este getter a `imagemUrl!` para evitar crashes em usuários
-  /// que ainda não cadastraram uma foto (estado inicial normal).
-  bool get temFotoDePerfil => imagemUrl != null && imagemUrl!.isNotEmpty;
 
   factory UsuarioModel.fromMap(Map<String, dynamic> map) {
     return UsuarioModel(
@@ -27,10 +20,6 @@ class UsuarioModel {
       email: map['email']?.toString() ?? '',
       telefone: map['telefone']?.toString() ?? '',
       imagemUrl: map['imagemUrl']?.toString(),
-      // A API deve devolver 'ativo'; se o campo não vier (respostas
-      // antigas/parciais), assumimos true para não bloquear usuários
-      // legítimos por ausência de dado.
-      ativo: map['ativo'] as bool? ?? true,
     );
   }
 
@@ -41,7 +30,6 @@ class UsuarioModel {
       'email': email,
       'telefone': telefone,
       'imagemUrl': imagemUrl,
-      'ativo': ativo,
     };
   }
 }

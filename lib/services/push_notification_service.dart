@@ -1,13 +1,12 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:nhac/repositories/user_repository.dart';
 
 class PushNotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
-  final UserRepository _userRepository = UserRepository();
 
   final AndroidNotificationChannel _androidChannel = const AndroidNotificationChannel(
     'nhac_high_importance_channel', 
@@ -76,16 +75,16 @@ class PushNotificationService {
 
     if (userId != null) {
       try {
-        // Antes gravava direto no Firestore, coleção que o backend Spring
-        // Boot não lê mais. Passamos a gravar via API REST, no mesmo
-        // registro de usuário que o resto do app já usa.
-        await _userRepository.atualizarDadosUsuario(userId, {
-          'fcmToken': token,
-        });
+        await FirebaseFirestore.instance
+            .collection('usuarios') 
+            .doc(userId)
+            .set({
+              'fcmToken': token,
+            }, SetOptions(merge: true)); 
 
-        debugPrint('✅ FCM Token atualizado via API com sucesso!');
+        debugPrint('✅ FCM Token atualizado no Firestore com sucesso!');
       } catch (e) {
-        debugPrint('❌ Erro ao guardar o token via API: $e');
+        debugPrint('❌ Erro ao guardar o token no Firestore: $e');
       }
     } else {
       debugPrint('Nenhum utilizador logado. O token não foi guardado na base de dados.');

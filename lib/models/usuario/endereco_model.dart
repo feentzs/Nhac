@@ -21,13 +21,6 @@ class EnderecoModel {
     this.padrao = false,
   });
 
-  /// `complemento` é opcional/nullable (a API pode omiti-lo ou devolver
-  /// null). Use este getter em vez de `complemento!.isNotEmpty` — o
-  /// force-unwrap direto causava crash sempre que um endereço vinha sem
-  /// complemento preenchido.
-  String get complementoOuVazio => complemento ?? '';
-  bool get temComplemento => complementoOuVazio.isNotEmpty;
-
   EnderecoModel copyWith({
     String? id,
     String? rua,

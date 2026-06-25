@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/globals/app_constants.dart';
 
@@ -26,19 +25,7 @@ class ApiClient {
 
     dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          // Anexa o Firebase ID Token em toda requisição autenticável.
-          // Sem isso, o backend REST não recebe nenhuma credencial e não
-          // tem como saber quem está chamando cada endpoint.
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            try {
-              final token = await user.getIdToken();
-              options.headers['Authorization'] = 'Bearer $token';
-            } catch (e) {
-              debugPrint('⚠️ [AUTH] Falha ao obter ID token: $e');
-            }
-          }
+        onRequest: (options, handler) {
           debugPrint('🌍 [REQ HTTP] ${options.method} ${options.uri}');
           return handler.next(options);
         },

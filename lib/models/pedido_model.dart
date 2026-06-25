@@ -11,12 +11,7 @@ class PedidoModel {
   final String? observacao;
   final EnderecoModel enderecoEntrega;
   final List<CartItemModel> itens;
-
-  /// Valor em dinheiro que o cliente vai usar para pagar (para calcular o
-  /// troco). Só é relevante quando `formaPagamento == 'Dinheiro'`; fica
-  /// null nos demais casos.
-  final double? trocoPara;
-
+  
   final String? status; 
   final String? criadoEm;
 
@@ -30,7 +25,6 @@ class PedidoModel {
     this.observacao,
     required this.enderecoEntrega,
     required this.itens,
-    this.trocoPara,
     this.status,
     this.criadoEm,
   });
@@ -44,8 +38,7 @@ class PedidoModel {
       'formaPagamento': formaPagamento,
       'observacao': observacao,
       'enderecoEntrega': enderecoEntrega.toMap(), 
-      'itens': itens.map((item) => item.toMap()).toList(),
-      'trocoPara': trocoPara,
+      'itens': itens.map((item) => item.toMap()).toList(), 
     };
   }
 
@@ -62,9 +55,6 @@ class PedidoModel {
       itens: List<CartItemModel>.from(
         (map['itens'] ?? []).map((x) => CartItemModel.fromMap(x)),
       ),
-      trocoPara: map['trocoPara'] == null
-          ? null
-          : num.tryParse(map['trocoPara'].toString())?.toDouble(),
       status: map['status'],
       criadoEm: map['criadoEm'],
     );

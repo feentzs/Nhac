@@ -15,13 +15,13 @@ class BiometricService {
 
   static Future<bool> authenticate() async {
     try {
-      // BUG CORRIGIDO: antes, se o aparelho não tinha biometria configurada,
-      // a função retornava `true` (autenticado) sem exigir nada — ou seja,
-      // "sem biometria" liberava o acesso automaticamente (fail-open).
-      // Agora sempre delegamos ao local_auth, que já cai para PIN/padrão/
-      // senha do aparelho por causa de `biometricOnly: false`. Só quando o
-      // aparelho realmente não tem NENHUM mecanismo de bloqueio configurado
-      // é que o próprio plugin retorna false, negando o acesso por padrão.
+      final isSupported = await canAuthenticate();
+      
+      if (!isSupported) {
+       
+        return true; 
+      }
+
       return await _auth.authenticate(
         localizedReason: 'Autenticação necessária para acessar seus dados pessoais.',
         options: const AuthenticationOptions(
