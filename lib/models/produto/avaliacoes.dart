@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AvaliacoesModel{
   final String comentario;
-  final Timestamp? criadoEm;
-  final String idDocumento;
+  final String? criadoEm;
+  final String id;
   final String nomeUsuario;
   final double nota;
   final String userId;
@@ -11,7 +9,7 @@ class AvaliacoesModel{
   AvaliacoesModel({
     this.comentario = '',
     this.criadoEm,
-    required this.idDocumento,
+    required this.id,
     required this.nomeUsuario,
     required this.nota,
     required this.userId,
@@ -19,15 +17,15 @@ class AvaliacoesModel{
 
   AvaliacoesModel copyWith({
     String? comentario,
-    Timestamp? criadoEm,
-    String? idDocumento,
+    String? criadoEm,
+    String? id,
     String? nomeUsuario,
     double? nota,
     String? userId,
   }) => AvaliacoesModel(
     comentario: comentario ?? this.comentario,
     criadoEm: criadoEm ?? this.criadoEm,
-    idDocumento: idDocumento ?? this.idDocumento,
+    id: id ?? this.id,
     nomeUsuario: nomeUsuario ?? this.nomeUsuario,
     nota: nota ?? this.nota,
     userId: userId ?? this.userId,
@@ -36,21 +34,21 @@ class AvaliacoesModel{
   factory AvaliacoesModel.fromMap(Map<String, dynamic> map, String docId){
     return AvaliacoesModel(
       comentario: map['comentario'] ?? '',
-      criadoEm: map['criado_em'] as Timestamp?,
-      idDocumento: docId,
-      nomeUsuario: map['nome_usuario'] ?? '',
+      criadoEm: map['criadoEm']?.toString(),
+      id: docId,
+      nomeUsuario: map['nomeUsuario'] ?? '',
       nota: (map['nota'] ?? 0).toDouble(),
-      userId: map['user_id'] ?? '',
+      userId: map['userId'] ?? '',
     );
   }
 
   Map<String, dynamic> toMap(){
     return {
       'comentario': comentario,
-      'criado_em': criadoEm ?? FieldValue.serverTimestamp(),
-      'nome_usuario': nomeUsuario,
+      'criadoEm': criadoEm ?? DateTime.now().toIso8601String(),
+      'nomeUsuario': nomeUsuario,
       'nota': nota,
-      'user_id': userId,
+      'userId': userId,
     };
   }
 }

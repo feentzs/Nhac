@@ -1,13 +1,13 @@
 class FavoritosModel {
-  final String idDocumento;
-  final String idProduto;
+  final String id;
+  final String produtoId;
   final String imagemUrl;
   final String nome;
   final double preco;
 
   FavoritosModel({
-    required this.idDocumento,
-    required this.idProduto,
+    required this.id,
+    required this.produtoId,
     required this.imagemUrl,
     required this.nome,
     required this.preco,
@@ -15,31 +15,31 @@ class FavoritosModel {
 
   factory FavoritosModel.fromMap(Map<String, dynamic> map, String docId){
     return FavoritosModel(
-      idDocumento: docId,
-      idProduto: map['id_produto'] ?? '',
-      imagemUrl: map['imagem_url'] ?? '',
+      id: docId,
+      produtoId: map['produtoId'] ?? '',
+      imagemUrl: map['imagemUrl'] ?? '',
       nome: map['nome'] ?? '',
-      preco: map['preco']?.toDouble() ?? 0.0,
+      preco: (map['preco'] ?? 0.0).toDouble(),
     );
   }
 
   Map<String, dynamic> toMap(){
     return {
-      'id_produto': idProduto,
-      'imagem_url': imagemUrl,
+      'produtoId': produtoId,
+      'imagemUrl': imagemUrl,
       'nome': nome,
       'preco': preco,
     };
   }
   FavoritosModel copyWith({
-    String? idDocumento,
-    String? idProduto,
+    String? id,
+    String? produtoId,
     String? imagemUrl,
     String? nome,
     double? preco,
   }) => FavoritosModel(
-    idDocumento: idDocumento ?? this.idDocumento,
-    idProduto: idProduto ?? this.idProduto,
+    id: id ?? this.id,
+    produtoId: produtoId ?? this.produtoId,
     imagemUrl: imagemUrl ?? this.imagemUrl,
     nome: nome ?? this.nome,
     preco: preco ?? this.preco,

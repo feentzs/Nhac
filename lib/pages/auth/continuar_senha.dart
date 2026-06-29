@@ -64,7 +64,7 @@ class _ContinuarSenhaState extends State<ContinuarSenha> {
       
       if (!localContext.mounted) return;
 
-      localContext.read<UserProvider>().iniciarEscutaUsuario();
+      localContext.read<UserProvider>().carregarDadosUsuario();
       cadastroData.limparDados();
       
       localContext.showSuccess("Logado com sucesso!");

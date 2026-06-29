@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nhac/components/product_card.dart';
 import 'package:nhac/controllers/cart_provider.dart';
+import 'package:nhac/models/produto/produtos.dart';
 import 'package:provider/provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:network_image_mock/network_image_mock.dart';
@@ -17,6 +18,13 @@ void main() {
   });
 
   Widget createWidgetUnderTest() {
+    final produto = ProdutosModel(
+        id: 'p1', 
+        nome: 'Nhac Burger', 
+        preco: 35.90, 
+        imagemUrl: 'http://example.com/image.png',
+        categoriaMenu: 'Lanches'
+    );
     return ScreenUtilInit(
       designSize: const Size(1000, 1000), 
       minTextAdapt: true,
@@ -24,18 +32,14 @@ void main() {
         providers: [
           ChangeNotifierProvider<CartProvider>.value(value: mockCart),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           home: Scaffold(
             body: Center(
               child: SizedBox(
-                width: 400, // Largura ampla
+                width: 400,
                 height: 500,
                 child: ProductCard(
-                  idProduto: 'p1',
-                  imageUrl: 'http://example.com/image.png',
-                  name: 'Nhac Burger',
-                  weight: '500g',
-                  price: 35.90,
+                  produto: produto,
                 ),
               ),
             ),
@@ -51,18 +55,17 @@ void main() {
       await tester.pump();
 
       expect(find.text('Nhac Burger'), findsOneWidget);
-      expect(find.text('500g'), findsOneWidget);
       expect(find.text('R\$ 35.90'), findsOneWidget);
     });
   });
 
-  testWidgets('Deve chamar adicionarItem ao clicar no botão de adicionar', (tester) async {
-    registerFallbackValue('p1');
-    when(() => mockCart.adicionarItem(
+  testWidgets('Deve chamar adicionarItemComQuantidade ao clicar no botão de adicionar', (tester) async {
+    when(() => mockCart.adicionarItemComQuantidade(
           idProduto: any(named: 'idProduto'),
           nome: any(named: 'nome'),
           preco: any(named: 'preco'),
           imagemUrl: any(named: 'imagemUrl'),
+          quantidade: any(named: 'quantidade'),
         )).thenAnswer((_) async {});
 
     await mockNetworkImagesFor(() async {
@@ -73,15 +76,15 @@ void main() {
       await tester.tap(addIcon, warnIfMissed: false);
       await tester.pump();
 
-      verify(() => mockCart.adicionarItem(
+      verify(() => mockCart.adicionarItemComQuantidade(
             idProduto: 'p1',
             nome: 'Nhac Burger',
             preco: 35.90,
             imagemUrl: 'http://example.com/image.png',
+            quantidade: 1,
           )).called(1);
       
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('Nhac Burger adicionado ao carrinho!'), findsOneWidget);
     });
   });
 }

@@ -33,7 +33,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
         Stack(
           children: [
             GestureDetector(
-              onLongPress: () => _mostrarPreviewFoto(context, widget.usuario.fotoUrl),
+              onLongPress: () => _mostrarPreviewFoto(context, widget.usuario.imagemUrl),
               onLongPressUp: () => Navigator.of(context).pop(),
               child: Container(
                 width: 80.w,
@@ -41,14 +41,14 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white,
-                  image: (widget.usuario.fotoUrl.isNotEmpty)
-                      ? DecorationImage(image: CachedNetworkImageProvider(widget.usuario.fotoUrl), fit: BoxFit.cover)
+                  image: (widget.usuario.imagemUrl!.isNotEmpty)
+                      ? DecorationImage(image: CachedNetworkImageProvider(widget.usuario.imagemUrl ?? ''), fit: BoxFit.cover)
                       : null,
                   boxShadow: [BoxShadow(color: const Color(0xFF5D201C).withValues(alpha: 0.1), blurRadius: 10.r, offset: Offset(0, 4.h))],
                 ),
                 child: _isUploading
                     ? Center(child: Lottie.asset('assets/animations/loading_nhac.json', width: 40.w, height: 40.h))
-                    : (widget.usuario.fotoUrl.isNotEmpty)
+                    : (widget.usuario.imagemUrl!.isNotEmpty)
                         ? null
                         : Icon(Icons.person, size: 48.r, color: Colors.grey.shade400),
               ),

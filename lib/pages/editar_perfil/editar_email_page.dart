@@ -178,7 +178,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                           await authService.uptadeEmail(newEmail: _emailController.text.trim());
 
                           if (!context.mounted) return;
-                          parentContext.read<UserProvider>().iniciarEscutaUsuario();
+                          parentContext.read<UserProvider>().carregarDadosUsuario();
 
                           timer?.cancel();
                           if (context.mounted) Navigator.pop(context);  
@@ -241,7 +241,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       await authService.uptadeEmail(newEmail: _emailController.text.trim());
       
       if (!localContext.mounted) return;
-      localContext.read<UserProvider>().iniciarEscutaUsuario();
+      localContext.read<UserProvider>().carregarDadosUsuario();
       
       localContext.pop(); 
       localContext.showSuccess('Link de confirmação enviado para o novo e-mail!');
@@ -328,7 +328,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                               await authService.uptadeEmail(newEmail: _emailController.text.trim());
                               
                               if (!context.mounted) return;
-                              parentContext.read<UserProvider>().iniciarEscutaUsuario();
+                              parentContext.read<UserProvider>().carregarDadosUsuario();
 
                               if (context.mounted) Navigator.pop(context);
                               if (parentContext.mounted) parentContext.pop(); 

@@ -23,7 +23,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EnderecoProvider>().iniciarEscutaEnderecos();
+      context.read<EnderecoProvider>().buscarEnderecos();
     });
   }
 
@@ -224,7 +224,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
     final isPrimeiroEndereco = context.read<EnderecoProvider>().enderecos.isEmpty;
 
     final novoEndereco = EnderecoModel(
-      idDocumento: '', 
+      id: '', 
       rua: result['rua'] ?? '',
       numero: result['numero'] ?? 'S/N',
       bairro: result['bairro'] ?? '',
@@ -305,7 +305,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
                   ),
                   child: Icon(
                     endereco.bairro.toLowerCase().contains('tabalho') ||
-                            endereco.complemento
+                            (endereco.complemento ?? '')
                                 .toLowerCase()
                                 .contains('trabalho')
                         ? Icons.work_outline
@@ -364,9 +364,9 @@ class _EnderecosPageState extends State<EnderecosPage> {
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
-                      if (endereco.complemento.isNotEmpty)
+                      if (endereco.complemento?.isNotEmpty ?? false)
                         Text(
-                          endereco.complemento,
+                          endereco.complemento ?? '',
                           style: TextStyle(
                             color: Colors.grey.shade500,
                             fontSize: 12.0,
@@ -395,7 +395,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
         if (value == 'padrao') {
           await context
               .read<EnderecoProvider>()
-              .definirComoPadrao(endereco.idDocumento);
+              .definirComoPadrao(endereco.id);
           if (mounted) context.showSuccess('Endereço padrão atualizado!');
         } else if (value == 'editar') {
           _abrirEdicaoEndereco(endereco);
@@ -529,7 +529,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
                   try {
                     await context
                         .read<EnderecoProvider>()
-                        .atualizarEndereco(enderecoAtualizado);
+                        .atualizarEndereco(enderecoAtualizado.id, enderecoAtualizado);
                     if (context.mounted) {
                       context.showSuccess('Endereço atualizado com sucesso!');
                     }
@@ -564,7 +564,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
               Navigator.pop(context);
               await context
                   .read<EnderecoProvider>()
-                  .definirComoPadrao(endereco.idDocumento);
+                  .definirComoPadrao(endereco.id);
               if (mounted && context.mounted) {
                 context.showSuccess('Endereço padrão atualizado!');
               }
@@ -599,7 +599,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
               Navigator.pop(context);
               await context
                   .read<EnderecoProvider>()
-                  .removerEndereco(endereco.idDocumento);
+                  .removerEndereco(endereco.id);
               if (mounted && context.mounted) {
                 context.showSuccess('Endereço removido!');
               }

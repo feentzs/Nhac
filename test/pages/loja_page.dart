@@ -20,12 +20,12 @@ void main() {
         }
       };
 
-      final loja = LojasModel.fromMap(mockMap, 'loja-123');
+      final loja = LojasModel.fromMap(mockMap);
 
-      expect(loja.uid, 'loja-123');
+      expect(loja.id, 'loja-123');
       expect(loja.nome, 'Pizzaria Napoli');
       expect(loja.isAberto, true);
-      expect(loja.dadosOperacionais.taxaEntregaBase, 5.50);
+      expect(loja.dadosOperacionais!.taxaEntregaBase, 5.50);
     });
 
     test('Deve aplicar fallbacks e não quebrar se o Firestore mandar dados incompletos ou chaves antigas', () {

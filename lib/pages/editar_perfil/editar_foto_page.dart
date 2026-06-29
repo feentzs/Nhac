@@ -215,11 +215,11 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
                                   ],
                                 ),
                                 child: ClipOval(
-                                  child: _image != null
-                                      ? Image.file(_image!, fit: BoxFit.cover)
-                                      : (usuario!.fotoUrl.isNotEmpty == true
-                                          ? CachedNetworkImage(
-                                              imageUrl: usuario.fotoUrl,
+                                  child: _image != null 
+    ? Image.file(_image!, fit: BoxFit.cover)
+    : (usuario?.imagemUrl != null && usuario!.imagemUrl!.isNotEmpty 
+        ? CachedNetworkImage(
+            imageUrl: usuario.imagemUrl!,
                                               fit: BoxFit.cover,
                                               placeholder: (ctx, url) => Container(
                                                 color: Colors.grey.shade200,

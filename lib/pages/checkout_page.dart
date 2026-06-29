@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nhac/models/pedido_model.dart';
+import 'package:nhac/repositories/pedido_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:nhac/controllers/cart_provider.dart';
@@ -33,20 +36,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
     await Future.delayed(Duration.zero); 
     if (!mounted) return;
     final enderecoProvider = context.read<EnderecoProvider>();
-    final enderecoPadrao = enderecoProvider.enderecos.firstWhere(
-      (e) => e.padrao,
-      orElse: () => EnderecoModel(
-        idDocumento: '',
-        bairro: '',
-        cep: '',
-        cidade: '',
-        estado: '',
-        numero: '',
-        rua: '',
-      ),
-    );
-    if (enderecoPadrao.idDocumento.isNotEmpty &&
+    final EnderecoModel? enderecoPadrao = enderecoProvider.enderecos.isEmpty
+        ? null
+        : enderecoProvider.enderecos.firstWhere(
+            (e) => e.padrao,
+            orElse: () => EnderecoModel(
+              id: '', 
+              bairro: '',
+              cep: '',
+              cidade: '',
+              estado: '',
+              numero: '',
+              rua: '',
+            ),
+          );
+    if (enderecoPadrao != null &&
+        enderecoPadrao.id.isNotEmpty &&
         enderecoPadrao.numero.isEmpty) {
+        
       await _pedirNumeroEndereco(enderecoPadrao);
     }
     if (mounted) setState(() => _isLoading = false);
@@ -109,18 +116,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child:
                 Text('Cancelar', style: TextStyle(color: Colors.grey.shade600)),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final numero = numeroController.text.trim();
-                final enderecoAtualizado = endereco.copyWith(numero: numero);
-                await context
-                    .read<EnderecoProvider>()
-                    .atualizarEndereco(enderecoAtualizado);
-                if (!mounted) return;
-                Navigator.pop(context);
-              }
-            },
+         ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final numero = numeroController.text.trim();
+                  final enderecoAtualizado = endereco.copyWith(numero: numero);
+                  
+                  await context
+                      .read<EnderecoProvider>()
+                      .atualizarEndereco(enderecoAtualizado.id, enderecoAtualizado);
+                      
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                }
+              },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFE645C),
               shape: RoundedRectangleBorder(
@@ -517,7 +526,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AddressSelectionSheet(enderecos: enderecos),
     );
-    await enderecoProvider.iniciarEscutaEnderecos();
+    await enderecoProvider.buscarEnderecos();
     setState(() {});
   }
 
@@ -575,48 +584,83 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  void _confirmarPedido(
-      BuildContext context, double total, CartProvider cartProvider) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-        backgroundColor: Colors.white,
-        title: Text(
-          'Pedido confirmado!',
-          style: TextStyle(
-              fontSize: 22.sp,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF5D201C)),
-        ),
-        content: Text(
-          'Seu pedido no valor de ${currencyFormat.format(total)} foi recebido.\n'
-          'Acompanhe o status pelo app.',
-          style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              cartProvider.esvaziarCarrinho();
-              cartProvider.setObservacao('');
-              Navigator.pop(context);
-              context.go('/home-page');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFE645C),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50.r)),
-            ),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+  Future<void> _confirmarPedido(
+      BuildContext context, double total, CartProvider cartProvider) async {
+    
+    final enderecoProvider = context.read<EnderecoProvider>();
+    final enderecoPadrao = enderecoProvider.enderecos.firstWhere(
+      (e) => e.padrao,
+      orElse: () => enderecoProvider.enderecos.first,
     );
+
+    final pedido = PedidoModel(
+      usuarioId: FirebaseAuth.instance.currentUser?.uid ?? 'visitante',
+      lojaId: 'loja-001', 
+      valorTotal: total,
+      taxaFrete: 0.0, // frete atual
+      formaPagamento: _formaPagamento,
+      observacao: cartProvider.observacao,
+      enderecoEntrega: enderecoPadrao,
+      itens: cartProvider.itens.values.toList(),
+    );
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFFFF6961))),
+      );
+
+      final idGerado = await PedidoRepository().finalizarPedido(pedido);
+      
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          backgroundColor: Colors.white,
+          title: Text(
+            'Pedido confirmado!',
+            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
+          ),
+          content: Text(
+            'O seu pedido foi recebido com sucesso!\n\nID do Pedido: $idGerado',
+            style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                cartProvider.esvaziarCarrinho();
+                Navigator.pop(context); 
+                context.go('/home-page'); 
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFE645C),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
+              ),
+              child: const Text('Voltar ao Início', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); 
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
-}
+  }
 
 class _AddressSelectionSheet extends StatelessWidget {
   final List<EnderecoModel> enderecos;
@@ -670,7 +714,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                   onTap: () async {
                     await context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.idDocumento);
+                        .definirComoPadrao(endereco.id);
                     if (context.mounted) Navigator.pop(context);
                   },
                   leading: Container(
@@ -681,9 +725,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                     ),
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
-                              endereco.complemento
-                                  .toLowerCase()
-                                  .contains('trabalho')
+                             (endereco.complemento ?? '').toLowerCase().contains('trabalho')
                           ? Icons.work_outline
                           : Icons.home_outlined,
                       color: const Color(0xFFFF6961),
@@ -696,7 +738,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
                   ),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${endereco.complemento!.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),

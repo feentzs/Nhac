@@ -30,7 +30,7 @@ class _ProfileContentState extends State<ProfileContent> {
     final carrinho = context.read<CartProvider>();
     Navigator.pop(context);
     userProvider.limparUsuario();
-    carrinho.limparCarrinhoLocal();
+    carrinho.esvaziarCarrinho();
     await authService.signOut();
     if (!context.mounted) return;
     context.go('/bem-vindo');
@@ -184,8 +184,8 @@ class _ProfileContentState extends State<ProfileContent> {
     final enderecoProvider = context.watch<EnderecoProvider>();
     final enderecoPadrao = enderecoProvider.enderecos.where((e) => e.padrao).firstOrNull;
     final String textoEndereco = enderecoPadrao != null
-        ? '${enderecoPadrao.rua}, ${enderecoPadrao.numero}${enderecoPadrao.complemento.isNotEmpty ? ' - ${enderecoPadrao.complemento}' : ''}'
-        : 'Nenhum endereço cadastrado';
+    ? '${enderecoPadrao.rua}, ${enderecoPadrao.numero}${(enderecoPadrao.complemento?.isNotEmpty ?? false) ? ' - ${enderecoPadrao.complemento}' : ''}'
+    : 'Nenhum endereço selecionado';
 
     if (usuario == null) {
       return Container(
@@ -257,7 +257,7 @@ class _ProfileContentState extends State<ProfileContent> {
                       Stack(
                         children: [
                           GestureDetector(
-                            onLongPress: () => _mostrarPreviewFoto(context, usuario.fotoUrl),
+                            onLongPress: () => _mostrarPreviewFoto(context, usuario.imagemUrl),
                             onLongPressUp: () => Navigator.of(context).pop(),
                             child: Container(
                               width: 80.w,
@@ -271,7 +271,7 @@ class _ProfileContentState extends State<ProfileContent> {
                                   ? Center(child: Lottie.asset('assets/animations/loading_nhac.json', width: 40.w, height: 40.h))
                                   : ClipOval(
                                       child: CachedNetworkImage(
-                                        imageUrl: usuario.fotoUrl,
+                                        imageUrl: usuario.imagemUrl ?? '',
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                         errorWidget: (context, url, error) => Icon(Icons.person, size: 48.r, color: Colors.grey.shade400),

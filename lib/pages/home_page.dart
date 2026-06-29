@@ -46,9 +46,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       final cartProvider = context.read<CartProvider>();
       final enderecoProvider = context.read<EnderecoProvider>();
 
-      userProvider.iniciarEscutaUsuario();
-      cartProvider.iniciarEscutaCarrinho();
-      enderecoProvider.iniciarEscutaEnderecos();
+      userProvider.carregarDadosUsuario();
+      cartProvider.carregarCarrinhoLocal();
+      enderecoProvider.buscarEnderecos();
 
       cartProvider.addListener(_onCartChanged);
     });

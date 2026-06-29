@@ -3,26 +3,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/controllers/cart_provider.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:nhac/models/produto/produtos.dart';
 import 'package:provider/provider.dart';
 
-@NowaGenerated()
 class ProductCard extends StatelessWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
   const ProductCard({
     super.key,
-    required this.idProduto,
-    required this.imageUrl,
-    required this.name,
-    required this.weight,
-    required this.price,
+    required this.produto,
   });
 
-  final String idProduto;
-  final String imageUrl;
-  final String name;
-  final String weight;
-  final double price;
+  final ProdutosModel produto;
 
   @override
   Widget build(BuildContext context) {
@@ -47,25 +37,18 @@ class ProductCard extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
               child: CachedNetworkImage(
-                imageUrl: imageUrl,
+                imageUrl: produto.imagemUrl,
                 fit: BoxFit.cover,
                 width: double.infinity,
                 placeholder: (context, url) => Shimmer.fromColors(
                   baseColor: Colors.grey.shade300,
                   highlightColor: Colors.grey.shade100,
-                  child: Container(
-                    color: Colors.white,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
+                  child: Container(color: Colors.white),
                 ),
                 errorWidget: (context, url, error) => Container(
                   color: const Color(0xFFFFF0EE),
-                  child: Icon(
-                    Icons.image_not_supported_outlined,
-                    color: const Color(0xFF5D201C),
-                    size: 32.r,
-                  ),
+                  child: Icon(Icons.image_not_supported_outlined,
+                      color: const Color(0xFF5D201C), size: 32.r),
                 ),
               ),
             ),
@@ -76,80 +59,64 @@ class ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  produto.nome,
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.sp,
-                    color: const Color(0xFF5D201C),
-                  ),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.sp,
+                      color: const Color(0xFF5D201C)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 4.h),
-                Text(
-                  weight,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
-                ),
+                Text("500g",
+                    style: TextStyle(
+                        color: Colors.grey.shade600, fontSize: 12.sp)),
                 SizedBox(height: 8.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'R\$ ${price.toStringAsFixed(2)}',
-                          style: TextStyle(
+                      child: Text(
+                        'R\$ ${produto.preco.toStringAsFixed(2)}',
+                        style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16.sp,
-                            color: const Color(0xFF5D201C),
-                          ),
-                        ),
+                            color: const Color(0xFF5D201C)),
                       ),
                     ),
-                    SizedBox(width: 8.w),
                     InkWell(
                       onTap: () async {
                         try {
-                          await context.read<CartProvider>().adicionarItem(
-                            idProduto: idProduto,
-                            nome: name,
-                            preco: price,
-                            imagemUrl: imageUrl,
-                          );
+                          await context
+                              .read<CartProvider>()
+                              .adicionarItemComQuantidade(
+                                idProduto: produto.id,
+                                nome: produto.nome,
+                                preco: produto.preco,
+                                imagemUrl: produto.imagemUrl,
+                                quantidade: 1,
+                              );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('$name adicionado ao carrinho!'),
-                                duration: const Duration(seconds: 1),
-                                backgroundColor: Colors.green,
-                              ),
+                                  content: Text('${produto.nome} adicionado!'),
+                                  backgroundColor: Colors.green),
                             );
                           }
                         } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(e.toString().replaceAll('Exception: ', '')),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(e.toString()),
+                                backgroundColor: Colors.red),
+                          );
                         }
                       },
-                      borderRadius: BorderRadius.circular(50.r),
                       child: Container(
                         padding: EdgeInsets.all(4.w),
                         decoration: const BoxDecoration(
-                          color: Color(0xFF5D201C),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 16.r,
-                        ),
+                            color: Color(0xFF5D201C), shape: BoxShape.circle),
+                        child: Icon(Icons.add, color: Colors.white, size: 16.r),
                       ),
                     ),
                   ],

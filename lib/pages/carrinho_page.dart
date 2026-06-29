@@ -35,6 +35,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     super.dispose();
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,11 +95,15 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                       child: _buildAddressSection(context, defaultAddress),
                     ),
                     SizedBox(height: 24.h),
-                    ...cartProvider.itens.values.toList().asMap().entries.map((entry) {
+                    ...cartProvider.itens.values
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((entry) {
                       final index = entry.key;
                       final item = entry.value;
                       return TweenAnimationBuilder<double>(
-                        key: ValueKey('anim_${item.idProduto}'),
+                        key: ValueKey('anim_${item.produtoId}'),
                         duration: const Duration(milliseconds: 800),
                         tween: Tween(begin: 0.0, end: 1.0),
                         curve: Interval(
@@ -148,6 +154,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       ),
     );
   }
+
+  
 
   Widget _buildAddressSection(BuildContext context, EnderecoModel? address) {
     return Container(
@@ -252,7 +260,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AddressSelectionSheet(enderecos: enderecos),
     );
-    await enderecoProvider.iniciarEscutaEnderecos();
+    await enderecoProvider.buscarEnderecos();
     setState(() {});
   }
 
@@ -298,8 +306,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-
-  Widget _buildCartItem(CarrinhoModel item, CartProvider cartProvider) {
+  Widget _buildCartItem(CartItemModel item, CartProvider cartProvider) {
     double swipeProgress = 0.0;
     bool hasVibrated = false;
     bool isProgrammaticDeleting = false;
@@ -312,7 +319,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           tween: Tween(begin: 0.0, end: isProgrammaticDeleting ? 1.0 : 0.0),
           onEnd: () {
             if (isProgrammaticDeleting) {
-              cartProvider.excluirItemDoCarrinho(item.idProduto);
+              cartProvider.excluirItemDoCarrinho(item.produtoId);
             }
           },
           builder: (context, t, child) {
@@ -351,7 +358,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                       offset: Offset(
                           -slideValue * MediaQuery.of(context).size.width, 0),
                       child: Dismissible(
-                        key: Key(item.idProduto),
+                        key: Key(item.produtoId),
                         direction: isProgrammaticDeleting
                             ? DismissDirection.none
                             : DismissDirection.endToStart,
@@ -362,12 +369,12 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                           if (details.reached && !hasVibrated) {
                             HapticFeedback.mediumImpact();
                             hasVibrated = true;
-                          // ignore: curly_braces_in_flow_control_structures
+                            // ignore: curly_braces_in_flow_control_structures
                           } else if (!details.reached) hasVibrated = false;
                         },
                         onDismissed: (direction) {
                           if (!isProgrammaticDeleting) {
-                            cartProvider.excluirItemDoCarrinho(item.idProduto);
+                            cartProvider.excluirItemDoCarrinho(item.produtoId);
                           }
                         },
                         background: Container(
@@ -491,7 +498,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                               onPressed: () =>
                                                                   cartProvider
                                                                       .removerItem(
-                                                                          item.idProduto),
+                                                                          item.produtoId),
                                                             ),
                                                             Text(
                                                               item.quantidade
@@ -514,17 +521,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                               icon: Icon(
                                                                   Icons.add,
                                                                   size: 16.r),
-                                                              onPressed: () =>
-                                                                  cartProvider
-                                                                      .adicionarItem(
-                                                                idProduto: item
-                                                                    .idProduto,
-                                                                nome: item.nome,
-                                                                preco:
-                                                                    item.preco,
-                                                                imagemUrl: item
-                                                                    .imagemUrl,
-                                                              ),
+                                                           onPressed: () => cartProvider.adicionarItemComQuantidade(
+  idProduto: item.produtoId, 
+  nome: item.nome,
+  preco: item.preco,
+  imagemUrl: item.imagemUrl,
+  quantidade: 1, 
+),
                                                             ),
                                                           ],
                                                         ),
@@ -646,7 +649,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                   onTap: () async {
                     await context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.idDocumento);
+                        .definirComoPadrao(endereco.id);
                     if (context.mounted) Navigator.pop(context);
                   },
                   leading: Container(
@@ -658,7 +661,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
                               endereco.complemento
-                                  .toLowerCase()
+                                  !.toLowerCase()
                                   .contains('trabalho')
                           ? Icons.work_outline
                           : Icons.home_outlined,
@@ -670,7 +673,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 15.sp)),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${endereco.complemento!.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),
@@ -717,4 +720,6 @@ class _AddressSelectionSheet extends StatelessWidget {
       ),
     );
   }
+
+  
 }

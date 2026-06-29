@@ -1,74 +1,75 @@
 class EnderecoModel {
-  final String idDocumento;
-  final String bairro;
-  final String cep;
-  final String cidade;
-  final String complemento;
-  final String estado;
-  final String numero;
-  final bool padrao;
+  final String id;
   final String rua;
+  final String numero;
+  final String bairro;
+  final String cidade;
+  final String estado;
+  final String cep;
+  final String? complemento;
+  final bool padrao;
 
   EnderecoModel({
-    required this.idDocumento,
-    required this.bairro,
-    required this.cep,
-    required this.cidade,
-    this.complemento = '',
-    required this.estado,
-    required this.numero,
-    this.padrao = false,
+    this.id = '',
     required this.rua,
+    required this.numero,
+    required this.bairro,
+    required this.cidade,
+    required this.estado,
+    required this.cep,
+    this.complemento,
+    this.padrao = false,
   });
 
-  factory EnderecoModel.fromMap(Map<String, dynamic> map, String docId) {
+  EnderecoModel copyWith({
+    String? id,
+    String? rua,
+    String? numero,
+    String? bairro,
+    String? cidade,
+    String? estado,
+    String? cep,
+    String? complemento,
+    bool? padrao,
+  }) {
     return EnderecoModel(
-      idDocumento: docId,
-      bairro: map['bairro'] ?? '',
-      cep: map['cep'] ?? '',
-      cidade: map['cidade'] ?? '',
-      complemento: map['complemento'] ?? '',
-      estado: map['estado'] ?? '',
-      numero: map['numero'] ?? '',
-      padrao: map['padrao'] ?? false,
-      rua: map['rua'] ?? '',
+      id: id ?? this.id,
+      rua: rua ?? this.rua,
+      numero: numero ?? this.numero,
+      bairro: bairro ?? this.bairro,
+      cidade: cidade ?? this.cidade,
+      estado: estado ?? this.estado,
+      cep: cep ?? this.cep,
+      complemento: complemento ?? this.complemento,
+      padrao: padrao ?? this.padrao,
     );
   }
 
-  EnderecoModel copyWith({
-    String? idDocumento,
-    String? bairro,
-    String? cep,
-    String? cidade,
-    String? complemento,
-    String? estado,
-    String? numero,
-    bool? padrao,
-    String? rua,
-  }) =>
-      EnderecoModel(
-        idDocumento: idDocumento ?? this.idDocumento,
-        bairro: bairro ?? this.bairro,
-        cep: cep ?? this.cep,
-        cidade: cidade ?? this.cidade,
-        complemento: complemento ?? this.complemento,
-        estado: estado ?? this.estado,
-        numero: numero ?? this.numero,
-        padrao: padrao ?? this.padrao,
-        rua: rua ?? this.rua,
-      );
-
+  factory EnderecoModel.fromMap(Map<String, dynamic> map) {
+    return EnderecoModel(
+      id: map['id']?.toString() ?? '',
+      rua: map['rua']?.toString() ?? '',
+      numero: map['numero']?.toString() ?? '',
+      bairro: map['bairro']?.toString() ?? '',
+      cidade: map['cidade']?.toString() ?? '',
+      estado: map['estado']?.toString() ?? '',
+      cep: map['cep']?.toString() ?? '',
+      complemento: map['complemento']?.toString(),
+      padrao: map['padrao'] ?? false,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'bairro': bairro,
-      'cep': cep,
-      'cidade': cidade,
-      'complemento': complemento,
-      'estado': estado,
-      'numero': numero,
-      'padrao': padrao,
+      'id': id,
       'rua': rua,
+      'numero': numero,
+      'bairro': bairro,
+      'cidade': cidade,
+      'estado': estado,
+      'cep': cep,
+      'complemento': complemento,
+      'padrao': padrao,
     };
   }
 }

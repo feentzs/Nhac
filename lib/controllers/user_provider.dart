@@ -1,12 +1,10 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:nhac/models/usuario/usuario_model.dart';
-import 'package:nhac/repository/user_repository.dart';
-import 'package:nhac/services/local_cache_service.dart';
+import 'package:nhac/repositories/user_repository.dart';
 
 class UserProvider with ChangeNotifier {
   final FirebaseAuth _auth;
@@ -17,64 +15,44 @@ class UserProvider with ChangeNotifier {
         _userRepository = repository ?? UserRepository();
   
   UsuarioModel? _usuario;
-  
-  StreamSubscription<UsuarioModel?>? _usuarioSubscription; 
+  bool _isLoading = false;
 
   UsuarioModel? get usuario => _usuario;
+  bool get isLoading => _isLoading;
 
   bool get isGoogleUser => _auth.currentUser?.providerData.any((info) => info.providerId == 'google.com') ?? false;
   bool get hasPassword => _auth.currentUser?.providerData.any((info) => info.providerId == 'password') ?? false;
 
-  Future<void> iniciarEscutaUsuario() async {
+  Future<void> carregarDadosUsuario() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final cached = await LocalCacheService.carregarUsuario();
-    if (cached != null && _usuario == null) {
-      _usuario = UsuarioModel.fromMap(cached, user.uid);
+    try {
+      _isLoading = true;
+      notifyListeners(); //   <-- pode apagar se der bosta
+
+      _usuario = await _userRepository.buscarUsuario(user.uid);
+      
+    } catch (e) {
+      debugPrint("Erro ao carregar dados do utilizador: $e");
+    } finally {
+      _isLoading = false;
       notifyListeners();
-    }
-
-    _usuarioSubscription?.cancel();
-    _usuarioSubscription = _userRepository.ouvirUsuario(user.uid).listen((usuarioAtualizado) {
-      _usuario = usuarioAtualizado;
-
-      if (_usuario != null && !_usuario!.ativo) {
-        _auth.signOut();
-        limparUsuario();
-        return;
-      }
-
-      if (_usuario != null) {
-        LocalCacheService.salvarUsuario(_usuario!.toMap());
-      }
-
-      notifyListeners();
-    });
-  }
-
-  Future<void> carregarDadosUsuario() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        _usuario = await _userRepository.buscarUsuario(user.uid);
-        notifyListeners();
-      } catch (e) {
-        debugPrint("Erro ao carregar dados do usuário: $e");
-      }
     }
   }
 
   Future<void> atualizarFotoPerfil(File imagem) async {
     final user = _auth.currentUser;
     final uid = user?.uid;
-    debugPrint("UID obtido para upload no Provider: $uid");
 
     if (uid == null) {
-      throw Exception("Usuário não autenticado no Provider. UID is null.");
+      throw Exception("Utilizador não autenticado no Provider.");
     }
 
     try {
+      _isLoading = true;
+      notifyListeners();
+
       final storage = FirebaseStorage.instanceFor(app: Firebase.app());
       final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
 
@@ -86,31 +64,22 @@ class UserProvider with ChangeNotifier {
       final url = await ref.getDownloadURL();
 
       await _userRepository.atualizarDadosUsuario(uid, {
-        'foto_url': url,
+        'imagemUrl': url, 
       });
 
       await carregarDadosUsuario();
-    } on FirebaseException catch (e) {
-      if (e.code == 'unauthenticated') {
-        debugPrint("Falha de autenticação no Storage: Verifique se o App Check está a bloquear ou se o token de sessão expirou");
-      }
-      rethrow;
+
     } catch (e) {
       debugPrint("Erro ao atualizar foto de perfil: $e");
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   void limparUsuario() {
     _usuario = null;
-    _usuarioSubscription?.cancel();
-    LocalCacheService.limparUsuario();
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _usuarioSubscription?.cancel(); 
-    super.dispose();
   }
 }

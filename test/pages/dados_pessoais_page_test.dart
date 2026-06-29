@@ -11,10 +11,10 @@ import 'package:provider/provider.dart';
 class MockUserProvider extends ChangeNotifier implements UserProvider {
   @override
   UsuarioModel? get usuario => UsuarioModel(
-        uid: '123',
+        id: '123',
         nome: 'Usuario Teste',
         email: 'teste@google.com',
-        fotoUrl: '',
+        imagemUrl: '',
         telefone: '11999999999',
       );
 
@@ -25,7 +25,8 @@ class MockUserProvider extends ChangeNotifier implements UserProvider {
   bool get hasPassword => false;
 
   @override
-  Future<void> iniciarEscutaUsuario() async {}
+  bool get isLoading => false;
+
   @override
   void limparUsuario() {}
   @override

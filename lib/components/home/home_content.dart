@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/loja_page.dart';
+import 'package:nhac/repositories/loja_repository.dart';
+import 'package:nhac/repositories/produto_repository.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -37,12 +38,14 @@ class _HomeContentState extends State<HomeContent> {
   late bool _isLoading;
   Timer? _loadingTimer;
 
-
   final List<LojasModel> _lojas = [];
-  DocumentSnapshot? _lastLojaDoc;
+  int _currentPageLojas = 0;
   bool _isLoadingLojas = false;
   bool _hasMoreLojas = true;
   bool _errorLojas = false;
+
+  final _lojaRepository = LojaRepository();
+  final _produtoRepository = ProdutoRepository();
 
   final List<ProdutosModel> _produtosNecessidades = [];
   bool _isLoadingProdutosNecessidades = true;
@@ -50,14 +53,13 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-@override
+  @override
   void initState() {
     super.initState();
     _isLoading = !_jaCarregouUmaVez;
 
     _carregarDadosIniciais();
     _carregarGpsComCache();
-
 
     if (_isLoading) {
       _loadingTimer = Timer(const Duration(seconds: 2), () {
@@ -85,14 +87,14 @@ class _HomeContentState extends State<HomeContent> {
     if (!_listenerAttached) {
       final primaryController = PrimaryScrollController.of(context);
       primaryController.addListener(() {
-        if (primaryController.position.pixels >= primaryController.position.maxScrollExtent - 200) {
+        if (primaryController.position.pixels >=
+            primaryController.position.maxScrollExtent - 200) {
           _fetchLojas();
         }
       });
       _listenerAttached = true;
     }
   }
-
 
   Future<void> _carregarDadosIniciais() async {
     await Future.wait([
@@ -104,48 +106,32 @@ class _HomeContentState extends State<HomeContent> {
 
   Future<void> _fetchProdutosNecessidades() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('produtos')
-          .where('loja_is_aberto', isEqualTo: true)
-          .limit(10)
-          .get();
-
+      final produtos = await _produtoRepository.buscarNecessidades();
       if (mounted) {
         setState(() {
           _produtosNecessidades.clear();
-          _produtosNecessidades.addAll(snapshot.docs.map((doc) =>
-              ProdutosModel.fromMap(
-                  doc.data(), doc.id)));
+          _produtosNecessidades.addAll(produtos);
           _isLoadingProdutosNecessidades = false;
         });
       }
     } catch (e) {
-      debugPrint("Erro ao buscar produtos necessidades: $e");
+      debugPrint("Erro ao buscar necessidades da API: $e");
       if (mounted) setState(() => _isLoadingProdutosNecessidades = false);
     }
   }
 
   Future<void> _fetchProdutosPromocao() async {
     try {
-
-      final snapshot = await FirebaseFirestore.instance
-          .collection('produtos')
-          .where('loja_is_aberto', isEqualTo: true)
-          .where('preco', isLessThanOrEqualTo: 20.0)
-          .limit(10)
-          .get();
-
+      final promocoes = await _produtoRepository.buscarPromocoes();
       if (mounted) {
         setState(() {
           _produtosPromocao.clear();
-          _produtosPromocao.addAll(snapshot.docs.map((doc) =>
-              ProdutosModel.fromMap(
-                  doc.data(), doc.id)));
+          _produtosPromocao.addAll(promocoes);
           _isLoadingProdutosPromocao = false;
         });
       }
     } catch (e) {
-      debugPrint("Erro ao buscar produtos promoção: $e");
+      debugPrint("Erro ao buscar promoções da API: $e");
       if (mounted) setState(() => _isLoadingProdutosPromocao = false);
     }
   }
@@ -159,19 +145,10 @@ class _HomeContentState extends State<HomeContent> {
     });
 
     try {
-      Query query = FirebaseFirestore.instance
-          .collection('lojas')
-          .orderBy('is_aberto', descending: true)
-          .orderBy('nome')
-          .limit(10);
+      final novasLojas =
+          await _lojaRepository.buscarLojas(page: _currentPageLojas, size: 10);
 
-      if (_lastLojaDoc != null) {
-        query = query.startAfterDocument(_lastLojaDoc!);
-      }
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isEmpty) {
+      if (novasLojas.isEmpty) {
         if (mounted) {
           setState(() {
             _hasMoreLojas = false;
@@ -181,25 +158,20 @@ class _HomeContentState extends State<HomeContent> {
         return;
       }
 
-      final novasLojas = snapshot.docs.map((doc) {
-        return LojasModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
-
       if (mounted) {
         setState(() {
           _lojas.addAll(novasLojas);
-          _lastLojaDoc = snapshot.docs.last;
+          _currentPageLojas++;
+
+          if (novasLojas.length < 10) {
+            _hasMoreLojas = false;
+          }
+
           _isLoadingLojas = false;
         });
       }
     } catch (e) {
-      if (e.toString().contains('failed-precondition')) {
-        debugPrint(
-            "ERRO DE ÍNDICE: Clique no link acima para criar o índice composto no Firebase: $e");
-      } else {
-        debugPrint("Erro ao buscar lojas: $e");
-      }
-
+      debugPrint("Erro ao buscar lojas da API REST: $e");
       if (mounted) {
         setState(() {
           _isLoadingLojas = false;
@@ -220,7 +192,8 @@ class _HomeContentState extends State<HomeContent> {
         ),
         child: Column(
           children: [
-            Icon(Icons.error_outline, color: const Color(0xFFFF6961), size: 48.r),
+            Icon(Icons.error_outline,
+                color: const Color(0xFFFF6961), size: 48.r),
             SizedBox(height: 16.h),
             Text(
               'Ocorreu um erro ao carregar os restaurantes.',
@@ -408,7 +381,7 @@ class _HomeContentState extends State<HomeContent> {
                                             color: Colors.amber, size: 16.r),
                                         SizedBox(width: 4.w),
                                         Text(
-                                          loja.dadosOperacionais.avaliacaoMedia
+                                          loja.dadosOperacionais!.avaliacaoMedia
                                               .toStringAsFixed(1),
                                           style: TextStyle(
                                             color: Colors.amber,
@@ -431,7 +404,7 @@ class _HomeContentState extends State<HomeContent> {
                                 Row(
                                   children: [
                                     Text(
-                                      '${loja.dadosOperacionais.tempoEntregaMin}-${loja.dadosOperacionais.tempoEntregaMax} min',
+                                      '${loja.dadosOperacionais?.tempoEntregaMin}-${loja.dadosOperacionais?.tempoEntregaMax} min',
                                       style: TextStyle(
                                           color: Colors.grey.shade600,
                                           fontSize: 12.sp),
@@ -444,18 +417,18 @@ class _HomeContentState extends State<HomeContent> {
                                               color: Colors.grey.shade400)),
                                     ),
                                     Text(
-                                      loja.dadosOperacionais.taxaEntregaBase ==
+                                      loja.dadosOperacionais?.taxaEntregaBase ==
                                               0
                                           ? 'Entrega Grátis'
-                                          : 'R\$ ${loja.dadosOperacionais.taxaEntregaBase.toStringAsFixed(2)}',
+                                          : 'R\$ ${loja.dadosOperacionais?.taxaEntregaBase.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         color: loja.dadosOperacionais
-                                                    .taxaEntregaBase ==
+                                                    ?.taxaEntregaBase ==
                                                 0
                                             ? Colors.green
                                             : Colors.grey.shade600,
                                         fontWeight: loja.dadosOperacionais
-                                                    .taxaEntregaBase ==
+                                                    ?.taxaEntregaBase ==
                                                 0
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -537,7 +510,7 @@ class _HomeContentState extends State<HomeContent> {
         final enderecoProvider = context.read<EnderecoProvider>();
         if (enderecoProvider.enderecos.isEmpty) {
           final novoEndereco = EnderecoModel(
-            idDocumento: '',
+            id: '',
             rua: place.street ?? '',
             numero: '',
             bairro: place.subLocality ?? '',
@@ -556,7 +529,7 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Future<void> _onRefresh() async {
-    _lastLojaDoc = null;
+    _currentPageLojas = 0;
     _hasMoreLojas = true;
     _lojas.clear();
     await Future.wait([
@@ -584,13 +557,13 @@ class _HomeContentState extends State<HomeContent> {
     String enderecoTopo = _currentAddress;
     if (enderecoPadrao != null) {
       enderecoTopo = '${enderecoPadrao.rua}, ${enderecoPadrao.numero}';
-      if (enderecoPadrao.complemento.isNotEmpty) {
+      if ((enderecoPadrao.complemento ?? '').isNotEmpty) {
         enderecoTopo += ' - ${enderecoPadrao.complemento}';
       }
     }
 
     return CustomScrollView(
-     physics: const AlwaysScrollableScrollPhysics(
+      physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
       slivers: [
@@ -948,13 +921,14 @@ class _HomeContentState extends State<HomeContent> {
         itemBuilder: (context, index) {
           final cat = categorias[index];
           return GestureDetector(
-           onTap: () {
+            onTap: () {
               Navigator.push(
                 context,
                 PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       SearchPage(initialCategory: cat['nome'] as String),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
                     return FadeTransition(opacity: animation, child: child);
                   },
                   transitionDuration: const Duration(milliseconds: 300),
@@ -973,7 +947,8 @@ class _HomeContentState extends State<HomeContent> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF5D201C).withValues(alpha: 0.05),
+                          color:
+                              const Color(0xFF5D201C).withValues(alpha: 0.05),
                           blurRadius: 10.r,
                           offset: const Offset(0.0, 4.0),
                         ),
@@ -1150,7 +1125,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                   onTap: () {
                     context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.idDocumento);
+                        .definirComoPadrao(endereco.id);
                     Navigator.pop(context);
                   },
                   leading: Container(
@@ -1161,7 +1136,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                     ),
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
-                              endereco.complemento
+                              (endereco.complemento ?? '')
                                   .toLowerCase()
                                   .contains('trabalho')
                           ? Icons.work_outline
@@ -1178,7 +1153,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${(endereco.complemento ?? '').isNotEmpty ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),

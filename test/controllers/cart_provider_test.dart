@@ -1,49 +1,35 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nhac/controllers/cart_provider.dart';
-import 'package:nhac/repository/cart_repository.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nhac/repositories/cart_repository.dart';
 
 class MockCartRepository extends Mock implements CartRepository {}
-class MockFirebaseAuth extends Mock implements FirebaseAuth {}
-class MockUser extends Mock implements User {}
-class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
 
 void main() {
   group('CartProvider Unit Tests (Business Logic)', () {
     late CartProvider cartProvider;
     late MockCartRepository mockRepo;
-    late MockFirebaseAuth mockAuth;
-    late MockUser mockUser;
-    late MockFirebaseFirestore mockFirestore;
 
     setUp(() {
       mockRepo = MockCartRepository();
-      mockAuth = MockFirebaseAuth();
-      mockUser = MockUser();
-      mockFirestore = MockFirebaseFirestore();
-
-      when(() => mockUser.uid).thenReturn('user-123');
-      when(() => mockAuth.currentUser).thenReturn(mockUser);
       
+      when(() => mockRepo.salvarCarrinhoLocal(any())).thenAnswer((_) async => Future.value());
+      when(() => mockRepo.limparCarrinho()).thenAnswer((_) async => Future.value());
+      when(() => mockRepo.carregarCarrinhoLocal()).thenAnswer((_) async => []);
+
       cartProvider = CartProvider(
-        auth: mockAuth, 
         repository: mockRepo,
-        firestore: mockFirestore,
-      ); 
+      );
     });
 
-    test('Limpeza de estado deve resetar todas as variáveis', () {
-      cartProvider.limparCarrinhoLocal();
+    test('Esvaziar carrinho deve resetar todas as variáveis e chamar repositório', () async {
+      await cartProvider.esvaziarCarrinho();
       
       expect(cartProvider.itens, isEmpty);
       expect(cartProvider.valorTotal, 0.0);
       expect(cartProvider.totalDeUnidades, 0);
       expect(cartProvider.observacao, '');
-    });
-
-    test('Deve impedir itens de lojas diferentes (Regra de Negócio)', () {
+      verify(() => mockRepo.limparCarrinho()).called(1);
     });
   });
 }

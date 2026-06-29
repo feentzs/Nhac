@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/models/usuario/usuario_model.dart'; 
-import 'package:nhac/repository/user_repository.dart'; 
+import 'package:nhac/repositories/user_repository.dart'; 
 
 class AuthService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -22,31 +21,25 @@ class AuthService with ChangeNotifier {
       _auth.authStateChanges().listen((user) async {
         try {
           if (user == null) {
-            // 2. LIMPEZA DE ESTADO NO LISTENER
             _userDocSubscription?.cancel();
             _userDocSubscription = null;
             _userExists = false;
             
-            // Verificação defensiva antes de notificar
-            // Se o currentUser for nulo, toString() retorna "null", que não é vazio.
-            // Seguindo a lógica de blindagem solicitada para evitar crashes no logout.
+            
             if (_auth.currentUser.toString().isNotEmpty) {
               notifyListeners();
             }
             return;
           }
 
-          _userDocSubscription?.cancel();
-          _userDocSubscription = _userRepository.ouvirUsuario(user.uid).listen((usuario) {
-            _userExists = usuario != null;
-            notifyListeners();
-          });
+         final usuario = await _userRepository.buscarUsuario(user.uid);
+          _userExists = usuario != null;
+          notifyListeners();
         } catch (e) {
           debugPrint("Erro no listener de authStateChanges: $e");
         }
       });
     } catch (e) {
-      // 3. TRATAMENTO DE ERROS NO LISTENER
       debugPrint("Erro ao iniciar listener de autenticação: $e");
     }
   }
@@ -75,16 +68,16 @@ class AuthService with ChangeNotifier {
 
       if (usuarioExistente == null) {
         UsuarioModel novoUsuarioGoogle = UsuarioModel(
-          uid: userCredencial.user!.uid,
+          id: userCredencial.user!.uid,
           nome: userCredencial.user!.displayName ?? 'Usuário Google', 
           email: userCredencial.user!.email ?? '', 
-          fotoUrl: userCredencial.user!.photoURL ?? '', 
+          imagemUrl: userCredencial.user!.photoURL ?? '', 
           telefone: userCredencial.user!.phoneNumber ?? '',
         );
         await _userRepository.salvarUsuario(novoUsuarioGoogle);
       } else {
         Map<String, dynamic> dadosParaAtualizar = {
-          'ultimo_login': FieldValue.serverTimestamp(),
+'ultimo_login': DateTime.now().toIso8601String(),
         };
 
         if (userCredencial.user!.photoURL != null && userCredencial.user!.photoURL!.isNotEmpty) {
@@ -103,13 +96,11 @@ class AuthService with ChangeNotifier {
   }
 
   Future<void> signOutGoogle() async {
-    // 1. OTIMIZAÇÃO DO SIGN-OUT
     _userDocSubscription?.cancel();
     _userDocSubscription = null;
     
     await _googleSignIn.signOut();
     await _auth.signOut();
-    // notifyListeners() removido para deixar o listener do authStateChanges cuidar disso
   }
 
   Future<UserCredential> signIn({
@@ -121,7 +112,7 @@ class AuthService with ChangeNotifier {
 
       final usuario = await _userRepository.buscarUsuario(credencial.user!.uid);
       
-      if (usuario != null && !usuario.ativo) {
+      if (usuario != null) {
         await _auth.signOut(); 
         throw AuthException('Esta conta foi desativada pelo usuário.');
       }
@@ -129,7 +120,7 @@ class AuthService with ChangeNotifier {
       await _userRepository.atualizarDadosUsuario(
         credencial.user!.uid, 
         {
-          'ultimo_login': FieldValue.serverTimestamp(),
+          'ultimo_login': DateTime.now().toIso8601String(),
           'email': credencial.user!.email ?? email,
         }
       );
@@ -154,10 +145,10 @@ class AuthService with ChangeNotifier {
       );
 
       UsuarioModel novoUsuario = UsuarioModel(
-        uid: credencial.user!.uid,
+        id: credencial.user!.uid,
         nome: nome,
         email: email,
-        fotoUrl: '',
+        imagemUrl: '',
         telefone: telefone,
       );
 
@@ -171,12 +162,10 @@ class AuthService with ChangeNotifier {
   }
   
   Future<void> signOut() async {
-    // 1. OTIMIZAÇÃO DO SIGN-OUT
     _userDocSubscription?.cancel();
     _userDocSubscription = null;
 
     await _auth.signOut();
-    // notifyListeners() removido para deixar o listener do authStateChanges cuidar disso
   }
 
   Future<void> resetPassword({required String email}) async {
@@ -338,10 +327,10 @@ class AuthService with ChangeNotifier {
 
       if (usuarioAtual != null) {
         UsuarioModel novoUsuario = UsuarioModel(
-          uid: usuarioAtual.uid,
+          id: usuarioAtual.uid,
           nome: nome,
           email: '', 
-          fotoUrl: '',
+          imagemUrl: '',
           telefone: telefone,
         );
         
