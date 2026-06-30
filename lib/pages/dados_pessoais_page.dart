@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -78,7 +78,7 @@ class DadosPessoaisPage extends StatelessWidget {
             ),
             NhacMenuTile(
               titulo: 'Senha', 
-              subtitulo: hasPassword ? '**************' : 'Não cadastrada', 
+              subtitulo: hasPassword ? '**************' : 'N�o cadastrada', 
               onTap: () {},
             ),
           ],

@@ -7,7 +7,7 @@ class EnderecoModel {
   final String estado;
   final String cep;
   final String? complemento;
-  final bool padrao;
+  final bool isPadrao;
 
   EnderecoModel({
     this.id = '',
@@ -18,7 +18,7 @@ class EnderecoModel {
     required this.estado,
     required this.cep,
     this.complemento,
-    this.padrao = false,
+    this.isPadrao = false,
   });
 
   EnderecoModel copyWith({
@@ -30,7 +30,7 @@ class EnderecoModel {
     String? estado,
     String? cep,
     String? complemento,
-    bool? padrao,
+    bool? isPadrao,
   }) {
     return EnderecoModel(
       id: id ?? this.id,
@@ -41,7 +41,7 @@ class EnderecoModel {
       estado: estado ?? this.estado,
       cep: cep ?? this.cep,
       complemento: complemento ?? this.complemento,
-      padrao: padrao ?? this.padrao,
+      isPadrao: isPadrao ?? this.isPadrao,
     );
   }
 
@@ -55,7 +55,7 @@ class EnderecoModel {
       estado: map['estado']?.toString() ?? '',
       cep: map['cep']?.toString() ?? '',
       complemento: map['complemento']?.toString(),
-      padrao: map['padrao'] ?? false,
+      isPadrao: map['isPadrao'] ?? false,
     );
   }
 
@@ -69,7 +69,7 @@ class EnderecoModel {
       'estado': estado,
       'cep': cep,
       'complemento': complemento,
-      'padrao': padrao,
+      'isPadrao': isPadrao,
     };
   }
 }

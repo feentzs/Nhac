@@ -519,7 +519,7 @@ class _HomeContentState extends State<HomeContent> {
             estado: place.administrativeArea ?? '',
             cep: place.postalCode ?? '',
             complemento: '',
-            padrao: true,
+            isPadrao: true,
           );
           await enderecoProvider.adicionarEndereco(novoEndereco);
         }
@@ -551,15 +551,15 @@ class _HomeContentState extends State<HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    final enderecoPadrao = context.select<EnderecoProvider, EnderecoModel?>(
-      (p) => p.enderecos.where((e) => e.padrao).firstOrNull,
+    final enderecoisPadrao = context.select<EnderecoProvider, EnderecoModel?>(
+      (p) => p.enderecos.where((e) => e.isPadrao).firstOrNull,
     );
 
     String enderecoTopo = _currentAddress;
-    if (enderecoPadrao != null) {
-      enderecoTopo = '${enderecoPadrao.rua}, ${enderecoPadrao.numero}';
-      if ((enderecoPadrao.complemento ?? '').isNotEmpty) {
-        enderecoTopo += ' - ${enderecoPadrao.complemento}';
+    if (enderecoisPadrao != null) {
+      enderecoTopo = '${enderecoisPadrao.rua}, ${enderecoisPadrao.numero}';
+      if ((enderecoisPadrao.complemento ?? '').isNotEmpty) {
+        enderecoTopo += ' - ${enderecoisPadrao.complemento}';
       }
     }
 
@@ -1056,7 +1056,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                   onTap: () {
                     context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.id);
+                        .definirComoisPadrao(endereco.id);
                     Navigator.pop(context);
                   },
                   leading: Container(
@@ -1089,7 +1089,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),
                   ),
-                  trailing: endereco.padrao
+                  trailing: endereco.isPadrao
                       ? Icon(Icons.check_circle,
                           color: const Color(0xFFFF6961), size: 22.r)
                       : null,

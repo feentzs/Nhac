@@ -89,7 +89,7 @@ class EnderecoProvider with ChangeNotifier {
   }
 
   // Função restaurada!
-  Future<void> definirComoPadrao(String enderecoId) async {
+  Future<void> definirComoisPadrao(String enderecoId) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
@@ -102,7 +102,7 @@ class EnderecoProvider with ChangeNotifier {
       await _enderecoRepository.atualizarEndereco(
         user.uid, 
         enderecoId, 
-        enderecoSelecionado.copyWith(padrao: true)
+        enderecoSelecionado.copyWith(isPadrao: true)
       );
 
       await buscarEnderecos();

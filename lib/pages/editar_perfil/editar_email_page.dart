@@ -1,4 +1,4 @@
-Ôªøimport 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:go_router/go_router.dart';
@@ -49,7 +49,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
     String? erroTemp = Validators.validarEmail(texto);
 
     if (erroTemp == null && texto.toLowerCase() == emailAtual.toLowerCase()) {
-      erroTemp = 'Este j√° √© o seu e-mail atual';
+      erroTemp = 'Este j· È o seu e-mail atual';
     }
 
     setState(() {
@@ -145,7 +145,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: const Text(
-                'Verifique seu n√∫mero',
+                'Verifique seu n˙mero',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF5D201C)),
               ),
               content: Column(
@@ -157,7 +157,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                     Text(erroSms!, style: const TextStyle(color: Colors.red))
                   else ...[
                     Text(
-                      'Enviamos um c√≥digo para $telefoneCompleto para confirmar sua identidade.',
+                      'Enviamos um cÛdigo para $telefoneCompleto para confirmar sua identidade.',
                       style: const TextStyle(color: Color(0xFF5D201C)),
                     ),
                     const SizedBox(height: 20),
@@ -184,11 +184,11 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                           if (context.mounted) Navigator.pop(context);  
                           if (parentContext.mounted) parentContext.pop(); 
 
-                          parentContext.showSuccess('Link de confirma√ß√£o enviado para o novo e-mail!');
+                          parentContext.showSuccess('Link de confirmaÁ„o enviado para o novo e-mail!');
                         } catch (e) {
                           setStateDialog(() {
                             verificandoCodigo = false;
-                            erroSms = 'C√≥digo inv√°lido ou expirado.';
+                            erroSms = 'CÛdigo inv·lido ou expirado.';
                           });
                         }
                       },
@@ -209,7 +209,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                     TextButton(
                       onPressed: tempoRestante == 0 ? () => enviarSms(setStateDialog) : null,
                       child: Text(
-                        tempoRestante > 0 ? 'Reenviar em ${tempoRestante}s' : 'Reenviar c√≥digo',
+                        tempoRestante > 0 ? 'Reenviar em ${tempoRestante}s' : 'Reenviar cÛdigo',
                         style: TextStyle(color: tempoRestante > 0 ? Colors.grey : const Color(0xFFFE645C)),
                       ),
                     ),
@@ -244,7 +244,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       localContext.read<UserProvider>().carregarDadosUsuario();
       
       localContext.pop(); 
-      localContext.showSuccess('Link de confirma√ß√£o enviado para o novo e-mail!');
+      localContext.showSuccess('Link de confirmaÁ„o enviado para o novo e-mail!');
     } catch (e) {
       if (!localContext.mounted) return;
       localContext.showError('Erro ao atualizar e-mail: $e');
@@ -278,7 +278,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    'Para sua seguran√ßa, digite sua senha atual antes de alterar o e-mail.',
+                    'Para sua seguranÁa, digite sua senha atual antes de alterar o e-mail.',
                     style: TextStyle(color: Color(0xFF5D201C)),
                   ),
                   const SizedBox(height: 20),
@@ -302,7 +302,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                       ? null
                       : () async {
                           if (senhaController.text.isEmpty) {
-                            setStateDialog(() => erroSenha = 'A senha n√£o pode ser vazia');
+                            setStateDialog(() => erroSenha = 'A senha n„o pode ser vazia');
                             return;
                           }
 
@@ -333,7 +333,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                               if (context.mounted) Navigator.pop(context);
                               if (parentContext.mounted) parentContext.pop(); 
 
-                              parentContext.showSuccess('Link de confirma√ß√£o enviado para o novo e-mail!');
+                              parentContext.showSuccess('Link de confirmaÁ„o enviado para o novo e-mail!');
                             }
                           } catch (e) {
                             if (context.mounted) {
@@ -378,7 +378,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
         if (context.mounted) {
           context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Usu√°rios do Google n√£o podem alterar o e-mail por aqui.')),
+            const SnackBar(content: Text('Usu·rios do Google n„o podem alterar o e-mail por aqui.')),
           );
         }
       });
@@ -409,7 +409,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                     children: [
                       const SizedBox(height: 16.0),
                       const Text(
-                        'Digite seu novo endere√ßo de email',
+                        'Digite seu novo endereÁo de email',
                         style: TextStyle(
                           fontSize: 28.0,
                           fontWeight: FontWeight.bold,
@@ -419,7 +419,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                       ),
                       const SizedBox(height: 12.0),
                       Text(
-                        'Enviaremos um link de confirma√ß√£o para o seu novo endere√ßo de email',
+                        'Enviaremos um link de confirmaÁ„o para o seu novo endereÁo de email',
                         style: TextStyle(
                           fontSize: 16.0,
                           color: Colors.grey.shade600,

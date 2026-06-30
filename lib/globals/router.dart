@@ -116,8 +116,11 @@ final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   refreshListenable: authServiceRoteador,
  redirect: (BuildContext context, GoRouterState state) {
-    final bool estaAutenticado = authServiceRoteador.currentUser != null;
-    final bool usuarioExisteNoBanco = authServiceRoteador.userExists;
+    if (!authServiceRoteador.carregado) {
+      return '/splash';
+    }
+
+    final bool estaAutenticado = authServiceRoteador.isAuthenticated;
 
     final bool telaPublica = state.matchedLocation == '/' ||
         state.matchedLocation == '/splash' ||
@@ -136,13 +139,7 @@ final GoRouter appRouter = GoRouter(
       return '/bem-vindo';
     }
 
-    
-    if (estaAutenticado && !usuarioExisteNoBanco && !noMeioDoCadastro) {
-       
-       return null; 
-    }
-
-    if (estaAutenticado && usuarioExisteNoBanco && telaPublica && state.matchedLocation != '/splash' && !noMeioDoCadastro) {
+    if (estaAutenticado && telaPublica && state.matchedLocation != '/splash' && !noMeioDoCadastro) {
       return '/home-page';
     }
 

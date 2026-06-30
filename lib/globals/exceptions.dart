@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AppException implements Exception {
@@ -19,6 +20,27 @@ class NetworkException extends AppException {
 }
 
 AppException mapException(Object error) {
+  if (error is DioException) {
+    if (error.response?.data != null && error.response!.data is Map) {
+      final data = error.response!.data as Map<String, dynamic>;
+      if (data.containsKey('message')) {
+        return AppException(data['message'].toString());
+      }
+    }
+    
+    if (error.response?.statusCode == 401) {
+      return AuthException('Sessão expirada. Faça login novamente.');
+    }
+    
+    if (error.type == DioExceptionType.connectionTimeout || 
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.connectionError) {
+      return NetworkException('Sem conexão com a internet.');
+    }
+    
+    return AppException('Ocorreu um erro no servidor: ${error.response?.statusCode ?? error.message}');
+  }
+
   if (error is FirebaseAuthException) {
     switch (error.code) {
       case 'user-not-found':

@@ -2,11 +2,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nhac/services/auth_service.dart';
 
 class PushNotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final AuthService _authService;
+
+  PushNotificationService(this._authService);
 
   final AndroidNotificationChannel _androidChannel = const AndroidNotificationChannel(
     'nhac_high_importance_channel', 
@@ -22,7 +25,7 @@ class PushNotificationService {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('Permissão de notificações concedida!');
-      
+
       String? token = await _fcm.getToken();
       if (token != null) {
         debugPrint('MEU FCM TOKEN: $token');
@@ -39,7 +42,7 @@ class PushNotificationService {
 
       const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const InitializationSettings initSettings = InitializationSettings(android: androidInit);
-      
+
       await _localNotifications.initialize(
         settings: initSettings, 
       );
@@ -70,8 +73,8 @@ class PushNotificationService {
   }
 
   Future<void> _guardarTokenNoBancoDeDados(String token) async {
-
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    // TODO(backend): expor um endpoint tipo PATCH /usuarios/{id}/fcm-token e migrar esta gravação para a API REST
+    String? userId = _authService.usuarioId;
 
     if (userId != null) {
       try {

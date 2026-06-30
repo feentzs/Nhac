@@ -66,7 +66,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           final defaultAddress = enderecoProvider.enderecos.isEmpty
               ? null
               : enderecoProvider.enderecos.firstWhere(
-                  (e) => e.padrao,
+                  (e) => e.isPadrao,
                   orElse: () => enderecoProvider.enderecos.first,
                 );
 
@@ -650,7 +650,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                   onTap: () async {
                     await context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.id);
+                        .definirComoisPadrao(endereco.id);
                     if (context.mounted) Navigator.pop(context);
                   },
                   leading: Container(
@@ -679,7 +679,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),
                   ),
-                  trailing: endereco.padrao
+                  trailing: endereco.isPadrao
                       ? Icon(Icons.check_circle,
                           color: const Color(0xFFFF6961), size: 22.r)
                       : null,

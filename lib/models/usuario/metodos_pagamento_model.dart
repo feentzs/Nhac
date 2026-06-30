@@ -3,7 +3,7 @@ class MetodosPagamentoModel {
   final String bandeira;
   final String? criadoEm;
   final String nomeCartao;
-  final bool padrao;
+  final bool isPadrao;
   final String tipo;
   final String ultimosDigitos;
 
@@ -12,7 +12,7 @@ class MetodosPagamentoModel {
     required this.bandeira,
     this.criadoEm,
     required this.nomeCartao,
-    this.padrao = false,
+    this.isPadrao = false,
     required this.tipo,
     required this.ultimosDigitos,
   });
@@ -23,7 +23,7 @@ class MetodosPagamentoModel {
       bandeira: map['bandeira'] ?? '',
       criadoEm: map['criadoEm']?.toString(), 
       nomeCartao: map['nomeCartao'] ?? '',
-      padrao: map['padrao'] ?? false,
+      isPadrao: map['isPadrao'] ?? false,
       tipo: map['tipo'] ?? '',
       ultimosDigitos: map['ultimosDigitos'] ?? '',
     );
@@ -34,7 +34,7 @@ class MetodosPagamentoModel {
     String? bandeira,
     String? criadoEm,
     String? nomeCartao,
-    bool? padrao,
+    bool? isPadrao,
     String? tipo,
     String? ultimosDigitos,
   }) =>
@@ -43,7 +43,7 @@ class MetodosPagamentoModel {
         bandeira: bandeira ?? this.bandeira,
         criadoEm: criadoEm ?? this.criadoEm,
         nomeCartao: nomeCartao ?? this.nomeCartao,
-        padrao: padrao ?? this.padrao,
+        isPadrao: isPadrao ?? this.isPadrao,
         tipo: tipo ?? this.tipo,
         ultimosDigitos: ultimosDigitos ?? this.ultimosDigitos,
       );
@@ -53,7 +53,7 @@ class MetodosPagamentoModel {
       'bandeira': bandeira,
       'criadoEm': criadoEm ?? DateTime.now().toIso8601String(),
       'nomeCartao': nomeCartao,
-      'padrao': padrao,
+      'isPadrao': isPadrao,
       'tipo': tipo,
       'ultimosDigitos': ultimosDigitos,
     };

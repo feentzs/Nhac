@@ -52,7 +52,7 @@ main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  final pushService = PushNotificationService();
+  final pushService = PushNotificationService(authServiceRoteador);
   await pushService.initialize();
 
   sharedPrefs = await SharedPreferences.getInstance();

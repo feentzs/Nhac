@@ -182,9 +182,9 @@ class _ProfileContentState extends State<ProfileContent> {
     final userProvider = context.watch<UserProvider>();
     final usuario = userProvider.usuario;
     final enderecoProvider = context.watch<EnderecoProvider>();
-    final enderecoPadrao = enderecoProvider.enderecos.where((e) => e.padrao).firstOrNull;
-    final String textoEndereco = enderecoPadrao != null
-    ? '${enderecoPadrao.rua}, ${enderecoPadrao.numero}${(enderecoPadrao.complemento?.isNotEmpty ?? false) ? ' - ${enderecoPadrao.complemento}' : ''}'
+    final enderecoisPadrao = enderecoProvider.enderecos.where((e) => e.isPadrao).firstOrNull;
+    final String textoEndereco = enderecoisPadrao != null
+    ? '${enderecoisPadrao.rua}, ${enderecoisPadrao.numero}${(enderecoisPadrao.complemento?.isNotEmpty ?? false) ? ' - ${enderecoisPadrao.complemento}' : ''}'
     : 'Nenhum endereço selecionado';
 
     if (usuario == null) {

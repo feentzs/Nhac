@@ -232,7 +232,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
       estado: result['estado'] ?? '',
       cep: '', 
       complemento: result['complemento'] ?? '', 
-      padrao: isPrimeiroEndereco,
+      isPadrao: isPrimeiroEndereco,
     );
 
     try {
@@ -280,7 +280,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
             offset: const Offset(0, 5),
           ),
         ],
-        border: endereco.padrao
+        border: endereco.isPadrao
             ? Border.all(color: const Color(0xFFFE645C), width: 2)
             : Border.all(color: Colors.white, width: 2),
       ),
@@ -289,8 +289,8 @@ class _EnderecosPageState extends State<EnderecosPage> {
         child: InkWell(
           borderRadius: BorderRadius.circular(24.0),
           onTap: () {
-            if (!endereco.padrao) {
-              _confirmarPadrao(endereco);
+            if (!endereco.isPadrao) {
+              _confirmarisPadrao(endereco);
             }
           },
           child: Padding(
@@ -333,7 +333,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
                                 maxLines: 1,
                               ),
                             ),
-                          if (endereco.padrao) ...[
+                          if (endereco.isPadrao) ...[
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -392,10 +392,10 @@ class _EnderecosPageState extends State<EnderecosPage> {
       icon: const Icon(Icons.more_vert, color: Colors.grey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       onSelected: (value) async {
-        if (value == 'padrao') {
+        if (value == 'isPadrao') {
           await context
               .read<EnderecoProvider>()
-              .definirComoPadrao(endereco.id);
+              .definirComoisPadrao(endereco.id);
           if (mounted) context.showSuccess('Endereço padrão atualizado!');
         } else if (value == 'editar') {
           _abrirEdicaoEndereco(endereco);
@@ -404,9 +404,9 @@ class _EnderecosPageState extends State<EnderecosPage> {
         }
       },
       itemBuilder: (context) => [
-        if (!endereco.padrao)
+        if (!endereco.isPadrao)
           const PopupMenuItem(
-            value: 'padrao',
+            value: 'isPadrao',
             child: Row(
               children: [
                 Icon(Icons.check_circle_outline, size: 20),
@@ -546,7 +546,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
     );
   }
 
-  void _confirmarPadrao(EnderecoModel endereco) {
+  void _confirmarisPadrao(EnderecoModel endereco) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -564,7 +564,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
               Navigator.pop(context);
               await context
                   .read<EnderecoProvider>()
-                  .definirComoPadrao(endereco.id);
+                  .definirComoisPadrao(endereco.id);
               if (mounted && context.mounted) {
                 context.showSuccess('Endereço padrão atualizado!');
               }

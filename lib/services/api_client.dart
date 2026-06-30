@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/globals/app_constants.dart';
+import 'package:nhac/services/session_storage_service.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -25,7 +26,11 @@ class ApiClient {
 
     dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
+        onRequest: (options, handler) async {
+          final token = await SessionStorageService().obterToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
           debugPrint('🌍 [REQ HTTP] ${options.method} ${options.uri}');
           return handler.next(options);
         },
@@ -33,8 +38,13 @@ class ApiClient {
           debugPrint('✅ [RES HTTP] ${response.statusCode} ${response.requestOptions.path}');
           return handler.next(response);
         },
-        onError: (DioException e, handler) {
+        onError: (DioException e, handler) async {
           debugPrint('❌ [ERR HTTP] Status: ${e.response?.statusCode} | Rota: ${e.requestOptions.path}');
+          
+          if (e.response?.statusCode == 401) {
+             await SessionStorageService().limparSessao();
+          }
+
           if (e.response?.data != null) {
             debugPrint('Detalhes do Erro: ${e.response?.data}');
           }

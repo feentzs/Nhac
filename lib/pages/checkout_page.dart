@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +9,7 @@ import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
+import 'package:nhac/services/auth_service.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -36,10 +36,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     await Future.delayed(Duration.zero); 
     if (!mounted) return;
     final enderecoProvider = context.read<EnderecoProvider>();
-    final EnderecoModel? enderecoPadrao = enderecoProvider.enderecos.isEmpty
+    final EnderecoModel? enderecoisPadrao = enderecoProvider.enderecos.isEmpty
         ? null
         : enderecoProvider.enderecos.firstWhere(
-            (e) => e.padrao,
+            (e) => e.isPadrao,
             orElse: () => EnderecoModel(
               id: '', 
               bairro: '',
@@ -50,11 +50,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
               rua: '',
             ),
           );
-    if (enderecoPadrao != null &&
-        enderecoPadrao.id.isNotEmpty &&
-        enderecoPadrao.numero.isEmpty) {
+    if (enderecoisPadrao != null &&
+        enderecoisPadrao.id.isNotEmpty &&
+        enderecoisPadrao.numero.isEmpty) {
         
-      await _pedirNumeroEndereco(enderecoPadrao);
+      await _pedirNumeroEndereco(enderecoisPadrao);
     }
     if (mounted) setState(() => _isLoading = false);
   }
@@ -160,19 +160,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
     }
 
-    final EnderecoModel? enderecoPadrao = enderecoProvider.enderecos.isEmpty
+    final EnderecoModel? enderecoisPadrao = enderecoProvider.enderecos.isEmpty
         ? null
         : enderecoProvider.enderecos.firstWhere(
-            (e) => e.padrao,
+            (e) => e.isPadrao,
             orElse: () => enderecoProvider.enderecos.first,
           );
 
     final subtotal = cartProvider.valorTotal;
-    final frete = 0.0;
+    final frete = 5.0; // TODO(backend): usar loja.dadosOperacionais.taxaEntregaBase quando o backend implementar frete variável por loja — hoje o servidor sempre cobra R$ 5,00 fixos.
     final total = subtotal + frete;
     final tempoEntrega = '30 - 50 min';
     final podeFinalizar =
-        enderecoPadrao != null && enderecoPadrao.numero.isNotEmpty;
+        enderecoisPadrao != null && enderecoisPadrao.numero.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFE7E5),
@@ -222,8 +222,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          enderecoPadrao != null
-                              ? '${enderecoPadrao.rua}, ${enderecoPadrao.numero}'
+                          enderecoisPadrao != null
+                              ? '${enderecoisPadrao.rua}, ${enderecoisPadrao.numero}'
                               : 'Nenhum endereço selecionado',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -231,10 +231,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             color: const Color(0xFF5D201C),
                           ),
                         ),
-                        if (enderecoPadrao != null) ...[
+                        if (enderecoisPadrao != null) ...[
                           SizedBox(height: 4.h),
                           Text(
-                            '${enderecoPadrao.bairro} - ${enderecoPadrao.cidade}/${enderecoPadrao.estado}',
+                            '${enderecoisPadrao.bairro} - ${enderecoisPadrao.cidade}/${enderecoisPadrao.estado}',
                             style: TextStyle(
                                 color: Colors.grey.shade600, fontSize: 12.sp),
                           ),
@@ -378,11 +378,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           style: TextStyle(
                               color: Colors.grey.shade700, fontSize: 14.sp)),
                       Text(
-                        frete == 0 ? 'Grátis' : currencyFormat.format(frete),
+                        currencyFormat.format(frete),
                         style: TextStyle(
-                          color: frete == 0 ? Colors.green : Colors.black87,
-                          fontWeight:
-                              frete == 0 ? FontWeight.w600 : FontWeight.normal,
+                          color: Colors.black87,
                           fontSize: 14.sp,
                         ),
                       ),
@@ -588,12 +586,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
       BuildContext context, double total, CartProvider cartProvider) async {
     
     final enderecoProvider = context.read<EnderecoProvider>();
-    final enderecoPadrao = enderecoProvider.enderecos.firstWhere(
-      (e) => e.padrao,
+    final enderecoisPadrao = enderecoProvider.enderecos.firstWhere(
+      (e) => e.isPadrao,
       orElse: () => enderecoProvider.enderecos.first,
     );
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final authService = context.read<AuthService>();
+    final uid = authService.usuarioId;
     if (uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -609,10 +608,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       usuarioId: uid,
       lojaId: cartProvider.lojaId,
       valorTotal: total,
-      taxaFrete: 0.0,
+      taxaFrete: 5.0, // Garantir consistência
       formaPagamento: _formaPagamento,
       observacao: cartProvider.observacao,
-      enderecoEntrega: enderecoPadrao,
+      enderecoEntrega: enderecoisPadrao,
       itens: cartProvider.itens.values.toList(),
     );
 
@@ -672,7 +671,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
     }
   }
-  }
+}
 
 class _AddressSelectionSheet extends StatelessWidget {
   final List<EnderecoModel> enderecos;
@@ -726,7 +725,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                   onTap: () async {
                     await context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.id);
+                        .definirComoisPadrao(endereco.id);
                     if (context.mounted) Navigator.pop(context);
                   },
                   leading: Container(
@@ -755,7 +754,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),
                   ),
-                  trailing: endereco.padrao
+                  trailing: endereco.isPadrao
                       ? Icon(Icons.check_circle,
                           color: const Color(0xFFFF6961), size: 22.r)
                       : null,

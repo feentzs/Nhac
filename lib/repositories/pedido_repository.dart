@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/models/pedido_model.dart';
 import 'package:nhac/services/api_client.dart';
 
@@ -19,12 +20,9 @@ class PedidoRepository {
         throw Exception("Falha ao criar o pedido. Tente novamente.");
       }
     } on DioException catch (e) {
-
-      if (e.response != null && e.response?.statusCode == 400) {
-        final mensagemErro = e.response?.data['mensagem'] ?? 'Dados do pedido inválidos.';
-        throw Exception("Erro de Validação: $mensagemErro");
-      }
-      throw Exception("Erro de conexão com o servidor. Tente novamente.");
+      throw mapException(e);
+    } catch (e) {
+      throw Exception("Erro inesperado: $e");
     }
   }
 }
