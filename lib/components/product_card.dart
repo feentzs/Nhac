@@ -86,29 +86,22 @@ class ProductCard extends StatelessWidget {
                     ),
                     InkWell(
                       onTap: () async {
-                        try {
-                          await context
-                              .read<CartProvider>()
-                              .adicionarItemComQuantidade(
-                                idProduto: produto.id,
-                                nome: produto.nome,
-                                preco: produto.preco,
-                                imagemUrl: produto.imagemUrl,
-                                quantidade: 1,
-                              );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('${produto.nome} adicionado!'),
-                                  backgroundColor: Colors.green),
-                            );
-                          }
-                        } catch (e) {
-                          if (!context.mounted) return;
+                        final cartProvider = context.read<CartProvider>();
+                        final success = await cartProvider.adicionarItemComQuantidade(
+                          idProduto: produto.id,
+                          nome: produto.nome,
+                          preco: produto.preco,
+                          imagemUrl: produto.imagemUrl,
+                          lojaId: produto.lojaId,
+                          quantidade: 1,
+                        );
+                        if (success && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(e.toString()),
-                                backgroundColor: Colors.red),
+                            SnackBar(content: Text('${produto.nome} adicionado ao carrinho!')),
+                          );
+                        } else if (!success && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Você já possui itens de outra loja no carrinho!')),
                           );
                         }
                       },

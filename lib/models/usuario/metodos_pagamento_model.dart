@@ -17,9 +17,9 @@ class MetodosPagamentoModel {
     required this.ultimosDigitos,
   });
 
-  factory MetodosPagamentoModel.fromMap(Map<String, dynamic> map, String docId) {
+  factory MetodosPagamentoModel.fromMap(Map<String, dynamic> map) {
     return MetodosPagamentoModel(
-      id: docId,
+      id: map['id']?.toString() ?? '',
       bandeira: map['bandeira'] ?? '',
       criadoEm: map['criadoEm']?.toString(), 
       nomeCartao: map['nomeCartao'] ?? '',

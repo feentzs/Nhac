@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:nhac/globals/app_constants.dart';
 
 class ApiClient {
-
   static final ApiClient _instance = ApiClient._internal();
-
   late final Dio dio;
 
   factory ApiClient() {
@@ -13,9 +13,9 @@ class ApiClient {
   ApiClient._internal() {
     dio = Dio(
       BaseOptions(
-        baseUrl: 'https://backend-nhac.onrender.com/api/v1', 
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        baseUrl: AppConstants.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -23,24 +23,20 @@ class ApiClient {
       ),
     );
 
-   
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-         
-          
-          print('🌍 [REQ HTTP] ${options.method} ${options.uri}');
-          return handler.next(options); 
+          debugPrint('🌍 [REQ HTTP] ${options.method} ${options.uri}');
+          return handler.next(options);
         },
         onResponse: (response, handler) {
-
-          print('✅ [RES HTTP] ${response.statusCode} ${response.requestOptions.path}');
-          return handler.next(response); 
+          debugPrint('✅ [RES HTTP] ${response.statusCode} ${response.requestOptions.path}');
+          return handler.next(response);
         },
         onError: (DioException e, handler) {
-          print('❌ [ERR HTTP] Status: ${e.response?.statusCode} | Rota: ${e.requestOptions.path}');
+          debugPrint('❌ [ERR HTTP] Status: ${e.response?.statusCode} | Rota: ${e.requestOptions.path}');
           if (e.response?.data != null) {
-             print('Detalhes do Erro: ${e.response?.data}');
+            debugPrint('Detalhes do Erro: ${e.response?.data}');
           }
           return handler.next(e);
         },

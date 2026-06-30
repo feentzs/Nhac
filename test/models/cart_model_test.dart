@@ -26,6 +26,7 @@ void main() {
         imagemUrl: 'url',
         nome: 'Teste',
         preco: 10.0,
+        lojaId: 'loja-A',
         quantidade: 1,
       );
 

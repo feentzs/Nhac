@@ -5,7 +5,9 @@ import '../components/product_card.dart';
 import '../repositories/produto_repository.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final String? initialCategory;
+
+  const SearchPage({super.key, this.initialCategory});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -16,6 +18,23 @@ class _SearchPageState extends State<SearchPage> {
   final ProdutoRepository _repository = ProdutoRepository();
   
   Future<List<ProdutosModel>>? _searchFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+      _searchController.text = widget.initialCategory!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _iniciarBusca(widget.initialCategory!);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _iniciarBusca(String termo) {
     if (termo.isEmpty) return;

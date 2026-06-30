@@ -6,6 +6,7 @@ class ProdutosModel {
   final String categoriaMenu;    
   final String imagemUrl;   
   final int percentualDesconto;
+  final String lojaId;
 
   ProdutosModel({
     required this.id,
@@ -15,6 +16,7 @@ class ProdutosModel {
     required this.categoriaMenu,
     this.imagemUrl = '',
     this.percentualDesconto = 0,
+    this.lojaId = '',
   });
 
   factory ProdutosModel.fromMap(Map<String, dynamic> map) {
@@ -26,6 +28,7 @@ class ProdutosModel {
       categoriaMenu: map['categoriaMenu']?.toString() ?? '',
       imagemUrl: map['imagemUrl']?.toString() ?? '',
       percentualDesconto: map['percentualDesconto'] ?? 0,
+      lojaId: map['lojaId']?.toString() ?? '',
     );
   }
 
@@ -39,6 +42,7 @@ class ProdutosModel {
       'categoriaMenu': categoriaMenu,
       'imagemUrl': imagemUrl,
       'percentualDesconto': percentualDesconto,
+      'lojaId': lojaId,
     };
   }
 }

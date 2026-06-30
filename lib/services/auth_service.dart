@@ -14,15 +14,11 @@ class AuthService with ChangeNotifier {
   bool _userExists = false;
   bool get userExists => _userExists;
   
-  StreamSubscription? _userDocSubscription;
-
   AuthService() {
     try {
       _auth.authStateChanges().listen((user) async {
         try {
           if (user == null) {
-            _userDocSubscription?.cancel();
-            _userDocSubscription = null;
             _userExists = false;
             
             
@@ -96,8 +92,6 @@ class AuthService with ChangeNotifier {
   }
 
   Future<void> signOutGoogle() async {
-    _userDocSubscription?.cancel();
-    _userDocSubscription = null;
     
     await _googleSignIn.signOut();
     await _auth.signOut();
@@ -162,8 +156,7 @@ class AuthService with ChangeNotifier {
   }
   
   Future<void> signOut() async {
-    _userDocSubscription?.cancel();
-    _userDocSubscription = null;
+    
 
     await _auth.signOut();
   }

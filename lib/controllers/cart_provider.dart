@@ -5,24 +5,28 @@ import 'package:nhac/repositories/cart_repository.dart';
 class CartProvider extends ChangeNotifier {
   final CartRepository _cartRepository;
 
-  CartProvider({CartRepository? repository}) 
+  CartProvider({CartRepository? repository})
       : _cartRepository = repository ?? CartRepository();
 
   Map<String, CartItemModel> _itens = {};
-  
   double _valorTotal = 0.0;
   int _totalDeUnidades = 0;
   String _observacao = '';
+  String _lojaIdAtual = '';   
 
   Map<String, CartItemModel> get itens => _itens;
   int get quantidadeItens => _itens.length;
   double get valorTotal => _valorTotal;
   int get totalDeUnidades => _totalDeUnidades;
   String get observacao => _observacao;
+  String get lojaId => _lojaIdAtual;   
 
   Future<void> carregarCarrinhoLocal() async {
     final listaSalva = await _cartRepository.carregarCarrinhoLocal();
-    _itens = { for (var item in listaSalva) item.produtoId : item };
+    _itens = {for (var item in listaSalva) item.produtoId: item};
+    if (_itens.isNotEmpty) {
+      _lojaIdAtual = _itens.values.first.lojaId;  
+    }
     _recalcularTotais();
   }
 
@@ -33,15 +37,18 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> adicionarItemComQuantidade({
+  Future<bool> adicionarItemComQuantidade({
     required String idProduto,
     required String nome,
     required double preco,
     required String imagemUrl,
+    required String lojaId,    
     required int quantidade,
   }) async {
-    
-    
+    if (_itens.isNotEmpty && _lojaIdAtual.isNotEmpty && _lojaIdAtual != lojaId) {
+      return false;   
+    }
+
     if (_itens.containsKey(idProduto)) {
       _itens[idProduto]!.quantidade += quantidade;
     } else {
@@ -50,12 +57,15 @@ class CartProvider extends ChangeNotifier {
         nome: nome,
         imagemUrl: imagemUrl,
         preco: preco,
+        lojaId: lojaId,   
         quantidade: quantidade,
       );
     }
 
+    _lojaIdAtual = lojaId;   
     _recalcularTotais();
     await _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
+    return true;   
   }
 
   Future<void> removerItem(String idProduto) async {
@@ -67,12 +77,15 @@ class CartProvider extends ChangeNotifier {
       _itens.remove(idProduto);
     }
 
+    if (_itens.isEmpty) _lojaIdAtual = '';   
+
     _recalcularTotais();
     await _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
   }
 
   Future<void> excluirItemDoCarrinho(String idProduto) async {
     _itens.remove(idProduto);
+    if (_itens.isEmpty) _lojaIdAtual = '';   
     _recalcularTotais();
     await _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
   }
@@ -80,6 +93,7 @@ class CartProvider extends ChangeNotifier {
   Future<void> esvaziarCarrinho() async {
     _itens.clear();
     _observacao = '';
+    _lojaIdAtual = '';   
     _recalcularTotais();
     await _cartRepository.limparCarrinho();
   }
@@ -87,12 +101,10 @@ class CartProvider extends ChangeNotifier {
   void _recalcularTotais() {
     _valorTotal = 0.0;
     _totalDeUnidades = 0;
-    
     _itens.forEach((key, item) {
       _valorTotal += item.preco * item.quantidade;
       _totalDeUnidades += item.quantidade;
     });
-    
     notifyListeners();
   }
 }

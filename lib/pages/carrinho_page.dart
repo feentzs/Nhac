@@ -526,6 +526,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
   nome: item.nome,
   preco: item.preco,
   imagemUrl: item.imagemUrl,
+  lojaId: item.lojaId,
   quantidade: 1, 
 ),
                                                             ),

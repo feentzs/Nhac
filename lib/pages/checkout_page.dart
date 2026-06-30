@@ -593,11 +593,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
       orElse: () => enderecoProvider.enderecos.first,
     );
 
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão expirada. Faça login novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      context.go('/bem-vindo');
+      return;
+    }
+
     final pedido = PedidoModel(
-      usuarioId: FirebaseAuth.instance.currentUser?.uid ?? 'visitante',
-      lojaId: 'loja-001', 
+      usuarioId: uid,
+      lojaId: cartProvider.lojaId,
       valorTotal: total,
-      taxaFrete: 0.0, // frete atual
+      taxaFrete: 0.0,
       formaPagamento: _formaPagamento,
       observacao: cartProvider.observacao,
       enderecoEntrega: enderecoPadrao,

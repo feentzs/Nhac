@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,16 +30,7 @@ class LocalCacheService {
   static Future<void> salvarUsuario(Map<String, dynamic> dados) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
-      final Map<String, dynamic> dadosSerializaveis = Map.from(dados);
-      
-      dadosSerializaveis.forEach((key, value) {
-        if (value is Timestamp) {
-          dadosSerializaveis[key] = value.millisecondsSinceEpoch;
-        }
-      });
-
-      await prefs.setString(_keyUsuario, jsonEncode(dadosSerializaveis));
+      await prefs.setString(_keyUsuario, jsonEncode(dados));
     } catch (e) {
       debugPrint('LocalCacheService: erro ao salvar usuário — $e');
     }

@@ -2,7 +2,8 @@ class CartItemModel {
   final String produtoId;
   final String nome;
   final String imagemUrl;
-  final double preco; 
+  final double preco;
+  final String lojaId;   
   int quantidade;
 
   CartItemModel({
@@ -10,6 +11,7 @@ class CartItemModel {
     required this.nome,
     required this.imagemUrl,
     required this.preco,
+    required this.lojaId,  
     this.quantidade = 1,
   });
 
@@ -18,7 +20,8 @@ class CartItemModel {
       'produtoId': produtoId,
       'nome': nome,
       'imagemUrl': imagemUrl,
-      'precoHistorico': preco, 
+      'precoHistorico': preco,
+      'lojaId': lojaId,      
       'quantidade': quantidade,
     };
   }
@@ -29,6 +32,7 @@ class CartItemModel {
       nome: map['nome'] ?? '',
       imagemUrl: map['imagemUrl'] ?? '',
       preco: num.tryParse(map['precoHistorico']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      lojaId: map['lojaId']?.toString() ?? '',  
       quantidade: map['quantidade'] ?? 1,
     );
   }

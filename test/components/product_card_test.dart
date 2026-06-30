@@ -65,8 +65,9 @@ void main() {
           nome: any(named: 'nome'),
           preco: any(named: 'preco'),
           imagemUrl: any(named: 'imagemUrl'),
+          lojaId: any(named: 'lojaId'),
           quantidade: any(named: 'quantidade'),
-        )).thenAnswer((_) async {});
+        )).thenAnswer((_) async => true);
 
     await mockNetworkImagesFor(() async {
       await tester.pumpWidget(createWidgetUnderTest());
@@ -81,6 +82,7 @@ void main() {
             nome: 'Nhac Burger',
             preco: 35.90,
             imagemUrl: 'http://example.com/image.png',
+            lojaId: '',
             quantidade: 1,
           )).called(1);
       

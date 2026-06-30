@@ -9,7 +9,6 @@ import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/pages/loja_page.dart';
 import 'package:provider/provider.dart';
-import 'package:nhac/repositories/loja_repository.dart';
 import 'package:nhac/repositories/produto_repository.dart';
 
 class ProdutoDetalhesPage extends StatefulWidget {
@@ -29,7 +28,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   Future<List<ProdutosModel>>? _produtosDaLojaFuture;
 
   final _produtoRepository = ProdutoRepository();
-  final _lojaRepository = LojaRepository();
 
   @override
   void initState() {
@@ -462,10 +460,11 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         try {
                           final cartProvider = Provider.of<CartProvider>(context, listen: false);
                           await cartProvider.adicionarItemComQuantidade(
-                            idProduto: widget.produto.id, // uid para id
+                            idProduto: widget.produto.id, 
                             nome: widget.produto.nome,
                             preco: widget.produto.preco,
                             imagemUrl: widget.produto.imagemUrl,
+                            lojaId: widget.produto.lojaId,
                             quantidade: _quantidade,
                           );
                           if (context.mounted) {

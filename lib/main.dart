@@ -1,3 +1,8 @@
+import 'package:flutter/foundation.dart';
+import 'package:nhac/repositories/loja_repository.dart';
+import 'package:nhac/repositories/produto_repository.dart';
+import 'package:nhac/repositories/pedido_repository.dart';
+import 'package:nhac/pages/no_internet_page.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
@@ -38,9 +43,12 @@ main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await FirebaseAppCheck.instance
-      // ignore: deprecated_member_use
-      .activate(androidProvider: AndroidProvider.debug);
+  await FirebaseAppCheck.instance.activate(
+    // ignore: deprecated_member_use
+    androidProvider: kDebugMode
+        ? AndroidProvider.debug
+        : AndroidProvider.playIntegrity,
+  );
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -62,7 +70,6 @@ main() async {
     },
     appRunner: () => runApp(SentryWidget(child: const MyApp())),
   );
-  await Sentry.captureException(Exception('This is a sample exception.'));
 }
 
 @NowaGenerated({'visibleInNowa': false})
@@ -77,7 +84,7 @@ class MyApp extends StatelessWidget {
       
       providers: [
         ChangeNotifierProvider<AppState>(create: (context) => AppState()),
-        ChangeNotifierProvider<AuthService>(create: (context) => AuthService()),
+        ChangeNotifierProvider<AuthService>.value(value: authServiceRoteador),
         ChangeNotifierProvider<CadastroController>(
             create: (context) => CadastroController()),
         ChangeNotifierProvider<UserProvider>(
@@ -86,6 +93,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EnderecoProvider()),
         ChangeNotifierProvider<ConnectivityService>(
             create: (context) => ConnectivityService()),
+        Provider<LojaRepository>(create: (_) => LojaRepository()),
+        Provider<ProdutoRepository>(create: (_) => ProdutoRepository()),
+        Provider<PedidoRepository>(create: (_) => PedidoRepository()),
       ],
       builder: (context, child) {
         return Consumer<ConnectivityService>(
@@ -101,9 +111,9 @@ class MyApp extends StatelessWidget {
                   theme: AppState.of(context).theme,
                   routerConfig: appRouter,
                   builder: (context, navigator) {
-                    // if (!connectivity.isOnline) {
-                    //   return const NoInternetPage();
-                    // }
+                    if (!connectivity.isOnline) {
+                      return const NoInternetPage();
+                    }
                     return navigator!;
                   },
                 );

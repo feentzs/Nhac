@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:nhac/components/home/home_category_chips.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/loja_page.dart';
@@ -44,8 +45,8 @@ class _HomeContentState extends State<HomeContent> {
   bool _hasMoreLojas = true;
   bool _errorLojas = false;
 
-  final _lojaRepository = LojaRepository();
-  final _produtoRepository = ProdutoRepository();
+  late final LojaRepository _lojaRepository;
+  late final ProdutoRepository _produtoRepository;
 
   final List<ProdutosModel> _produtosNecessidades = [];
   bool _isLoadingProdutosNecessidades = true;
@@ -810,7 +811,7 @@ class _HomeContentState extends State<HomeContent> {
                     ),
                   );
                 },
-                child: _buildCategoriasRapidas(),
+                child: const HomeCategoryChips(),
               ),
               SizedBox(height: 28.h),
               TweenAnimationBuilder<double>(
@@ -904,76 +905,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _buildCategoriasRapidas() {
-    final categorias = [
-      {'nome': 'Mercado', 'icon': Icons.shopping_basket},
-      {'nome': 'Lanches', 'icon': Icons.fastfood},
-      {'nome': 'Pizza', 'icon': Icons.local_pizza},
-      {'nome': 'Saudável', 'icon': Icons.eco},
-      {'nome': 'Doces', 'icon': Icons.icecream},
-    ];
-
-    return SizedBox(
-      height: 100.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categorias.length,
-        itemBuilder: (context, index) {
-          final cat = categorias[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      SearchPage(initialCategory: cat['nome'] as String),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-                  transitionDuration: const Duration(milliseconds: 300),
-                ),
-              );
-            },
-            child: Container(
-              width: 80.w,
-              margin: EdgeInsets.only(right: 16.w),
-              child: Column(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFF5D201C).withValues(alpha: 0.05),
-                          blurRadius: 10.r,
-                          offset: const Offset(0.0, 4.0),
-                        ),
-                      ],
-                    ),
-                    child: Icon(cat['icon'] as IconData,
-                        color: const Color(0xFFFF6961), size: 30.r),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    cat['nome'] as String,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF5D201C),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Widget _buildBoxSkeleton(
       {double? width, double? height, double borderRadius = 8}) {
