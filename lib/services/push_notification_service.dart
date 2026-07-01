@@ -44,7 +44,7 @@ class PushNotificationService {
       const InitializationSettings initSettings = InitializationSettings(android: androidInit);
 
       await _localNotifications.initialize(
-        settings: initSettings, 
+        initSettings, 
       );
 
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -53,10 +53,10 @@ class PushNotificationService {
 
         if (notification != null && android != null) {
           _localNotifications.show(
-            id: notification.hashCode,
-            title: notification.title,
-            body: notification.body,
-            notificationDetails: NotificationDetails(
+            notification.hashCode,
+            notification.title,
+            notification.body,
+            NotificationDetails(
               android: AndroidNotificationDetails(
                 _androidChannel.id,
                 _androidChannel.name,
