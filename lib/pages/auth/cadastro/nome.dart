@@ -114,30 +114,13 @@ class _NomeState extends State<Nome> {
                       if (cadastroData.email.isNotEmpty) {
                           localContext.push('/cadastro/telefone'); 
                         } else {
-                           final authService = localContext.read<AuthService>(); 
-
-                           try {
-                             setState(() => _isLoading = true);
-
-                             await authService.finalizarCadastroTelefone(
-                               nome: cadastroData.nome,
-                               telefone: cadastroData.telefone,
-                             );
-                             
-                             if (!localContext.mounted) return;
-                             cadastroData.limparDados();
-                             localContext.showSuccess('Cadastro finalizado!');
-                             localContext.go('/home-page');
-                             
-                           } catch (e) {
-                             if (localContext.mounted) {
-                               localContext.showError(e.toString());
-                             }
-                           } finally {
-                             if (localContext.mounted) {
-                               setState(() => _isLoading = false);
-                             }
-                           }
+                           // Cadastro por telefone não é suportado pelo backend
+                           // atual (apenas e-mail + senha via /auth/registrar).
+                           // TODO(backend): reabilitar quando existir verificação
+                           // de telefone/SMS integrada à API.
+                           localContext.showError(
+                             'Cadastro por telefone está temporariamente indisponível. Use seu e-mail.',
+                           );
                         }
                       }
                     : null,

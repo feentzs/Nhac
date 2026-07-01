@@ -180,35 +180,19 @@ class _EmailClienteState extends State<EmailCliente> {
               BotaoLargoNhac(
                 texto: 'Continuar com o Google',
                 isSecundario: true,
-                carregando: _isGoogleLoading,
                 icone: SvgPicture.asset(
                   'assets/google-logo.svg',
                   height: 24.0,
                   width: 24.0,
                 ),
-                onPressed: () async {
-                    final localContext = context;
-                    final authService = localContext.read<AuthService>();
-                    try {
-                      final googleAccount = await authService.pickGoogleAccount();
-                      if (googleAccount == null) return;
-
-                      setState(() => _isGoogleLoading = true);
-
-                      await authService.signInWithGoogleAccount(googleAccount);
-                      
-                      if (!localContext.mounted) return;
-                      localContext.go('/home-page');
-                    } catch (e) {
-                      if (localContext.mounted) {
-                        localContext.showError(e.toString());
-                      }
-                    } finally {
-                      if (localContext.mounted) {
-                        setState(() => _isGoogleLoading = false);
-                      }
-                    }
-                  },
+                // TODO(backend): reabilitar quando existir um endpoint de
+                // autenticação social (ex.: POST /auth/social) que valide um
+                // ID Token do Google/Firebase e emita o JWT próprio da API.
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Login com Google estará disponível em breve.')),
+                  );
+                },
               ),
               const SizedBox(height: 16.0),
 
@@ -216,8 +200,13 @@ class _EmailClienteState extends State<EmailCliente> {
                 texto: 'Continuar com o telefone',
                 isSecundario: true,
                 icone: const Icon(Icons.phone, size: 24.0, color: Color(0xFF5D201C)),
+                // TODO(backend): reabilitar quando existir verificação de
+                // telefone/SMS integrada à API (o backend atual só autentica
+                // por e-mail + senha).
                 onPressed: () {
-                  context.push('/insira_telefone');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Login por telefone estará disponível em breve.')),
+                  );
                 },
               ),
 
@@ -240,34 +229,18 @@ class _EmailClienteState extends State<EmailCliente> {
     );
   }
 
+  // O backend atual não tem endpoint para verificar se um e-mail já possui
+  // conta (não existe "checarEmail" na API — apenas /auth/login e
+  // /auth/registrar). Por isso sempre seguimos para a tela de senha
+  // (login); quem ainda não tem conta encontra lá o link para cadastro.
   Future<void> redirecionadorEmail() async {
     final localContext = context;
-    final authService = localContext.read<AuthService>();
     final cadastroData = localContext.read<CadastroController>();
 
     final emailDoUsuario = _emailController.text.trim();
 
-    try {
-      setState(() => _isLoading = true);
-
-      bool emailExiste = await authService.checarEmail(emailDoUsuario);
-
-      if (!localContext.mounted) return;
-
-      cadastroData.setEmail(emailDoUsuario);
-
-      if (emailExiste) {
-        localContext.push('/continuar_senha');
-      } else {
-        localContext.push('/cadastro/nome');
-      }
-    } catch (e) {
-      if (!localContext.mounted) return;
-      localContext.showError("Erro ao verificar email: $e");
-    } finally {
-      if (localContext.mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    cadastroData.setEmail(emailDoUsuario);
+    if (!localContext.mounted) return;
+    localContext.push('/continuar_senha');
   }
 }

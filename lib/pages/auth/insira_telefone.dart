@@ -134,41 +134,14 @@ class _InsiraTelefoneState extends State<InsiraTelefone> {
                 texto: 'Continuar', 
                 carregando: _isLoading,
                  onPressed: _numeroValido
-                      ? () async {
-                          final localContext = context;
-                          final authService = localContext.read<AuthService>();
-                          final cadastroData = localContext.read<CadastroController>();
-                          
-                          final telefoneLimpo = maskFormatter.getUnmaskedText();
-                          cadastroData.setTelefone(telefoneLimpo); 
-
-                          try {
-                            setState(() => _isLoading = true);
-
-                            await authService.enviarSmsDeVerificacao(
-                              telefone: telefoneLimpo,
-                              onCodeSent: (String verId) {
-                                if (localContext.mounted) {
-                                  setState(() => _isLoading = false);
-                                }
-                                cadastroData.setVerificationId(verId);
-                                if (localContext.mounted) {
-                                  localContext.push('/verificacao_numero', extra: _telefoneController.text);
-                                }
-                              },
-                              onFailed: (String erro) {
-                                if (localContext.mounted) {
-                                  setState(() => _isLoading = false);
-                                  localContext.showError('Erro ao enviar SMS: $erro');
-                                }
-                              },
-                            );
-                          } catch (e) {
-                             if (localContext.mounted) {
-                                setState(() => _isLoading = false);
-                                localContext.showError(e.toString());
-                             }
-                          }
+                      ? () {
+                          // Cadastro/login por telefone não é suportado pelo
+                          // backend atual (apenas e-mail + senha).
+                          // TODO(backend): reabilitar quando existir verificação
+                          // de telefone/SMS integrada à API.
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Login por telefone estará disponível em breve.')),
+                          );
                         }
                       : null,
               ),

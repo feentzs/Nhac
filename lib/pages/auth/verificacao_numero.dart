@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
@@ -146,49 +144,13 @@ class _VerificacaoNumeroState extends State<VerificacaoNumero> {
                   onChanged: (value) {},
                  onCompleted: (value) async {
                     final localContext = context;
-                    final router = GoRouter.of(localContext);
-                    final authService = localContext.read<AuthService>();
-                    final cadastroData = localContext.read<CadastroController>();
-
-                    try {
-                      if (localContext.mounted) {
-                        LoadingNhac.mostrar(localContext, mensagem: 'Verificando código...');
-                      }
-
-                      UserCredential credencial = await authService.loginComSms(
-                        verificationId: cadastroData.verificationId,
-                        smsCode: value,
-                      );
-
-                      if (!localContext.mounted) return;
-                      
-                      bool isNewUser = credencial.additionalUserInfo?.isNewUser ?? false;
-                      
-                      final docUsuario = await FirebaseFirestore.instance
-                          .collection('usuarios')
-                          .doc(credencial.user!.uid)
-                          .get();
-
-                      if (localContext.mounted) {
-                        LoadingNhac.esconder(localContext);
-                      }
-
-                      if (!localContext.mounted) return;
-
-                      if (!isNewUser && docUsuario.exists) {
-                        cadastroData.limparDados();
-                        router.go('/home-page');
-                      } else {
-                        
-                        router.push('/cadastro/nome'); 
-                      }
-
-                    } catch (e) {
-                      if (localContext.mounted) {
-                        LoadingNhac.esconder(localContext);
-                        localContext.showError('Código SMS inválido ou expirado.');
-                      }
-                    } 
+                    // Verificação por SMS não é suportada pelo backend atual
+                    // (apenas e-mail + senha via /auth/login e /auth/registrar).
+                    // TODO(backend): reabilitar quando existir verificação de
+                    // telefone/SMS integrada à API.
+                    if (localContext.mounted) {
+                      localContext.showError('Login por telefone está temporariamente indisponível.');
+                    }
                   },
                   
                    autoFocus: true,

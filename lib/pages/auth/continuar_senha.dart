@@ -57,9 +57,9 @@ class _ContinuarSenhaState extends State<ContinuarSenha> {
       final authService = localContext.read<AuthService>();
       final cadastroData = localContext.read<CadastroController>();
 
-      await authService.signIn(
-        email: cadastroData.email, 
-        password: _senhaController.text.trim() 
+      await authService.login(
+        email: cadastroData.email,
+        senha: _senhaController.text.trim()
       );
       
       if (!localContext.mounted) return;
@@ -207,13 +207,37 @@ class _ContinuarSenhaState extends State<ContinuarSenha> {
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
                             onTap: () {
-                              GoRouter.of(context).push('/verificacao');
+                              // TODO(backend): a API atual não tem endpoint
+                              // de recuperação de senha. Reabilitar quando existir.
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Recuperação de senha estará disponível em breve.')),
+                              );
                             },
                             child: const Text(
                               'Esqueceu sua senha?',
                               style: TextStyle(
                                 fontSize: 14.0,
                                 color: Color(0xFFFF6961),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 40.0,
+                        width: double.infinity,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () {
+                              context.push('/cadastro/nome');
+                            },
+                            child: const Text(
+                              'Não tem conta? Criar conta',
+                              style: TextStyle(
+                                fontSize: 14.0,
+                                color: Color(0xFF5D201C),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
