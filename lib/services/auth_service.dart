@@ -73,5 +73,36 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Alias de [logout] mantido pelo nome já usado em outras telas do app
+  /// (ex.: `profile_content.dart`).
+  Future<void> signOut() => logout();
+
+  /// Atualiza o nome do usuário autenticado via `PATCH /usuarios/{id}`.
+  /// Substitui o antigo método baseado em Firebase Auth.
+  Future<void> updateUserName({required String userName}) async {
+    if (_usuarioId == null) {
+      throw AuthException('Utilizador não autenticado.');
+    }
+    try {
+      await _dio.patch('/usuarios/$_usuarioId', data: {'nome': userName});
+      _nome = userName;
+      await _sessionStorage.salvarSessao(
+        token: (await _sessionStorage.obterToken())!,
+        usuarioId: _usuarioId!,
+        nome: userName,
+      );
+      notifyListeners();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  // Login/cadastro social (Google) e por telefone/SMS não são suportados
+  // pelo backend atual (apenas e-mail + senha via /auth/login e /auth/registrar).
+  // Todo ponto de entrada dessas opções na UI foi desabilitado (ver telas em
+  // lib/pages/auth/**). Mantido como propriedades estáveis para as telas que
+  // ainda checam o "tipo" de conta -- hoje toda conta é e-mail/senha.
   // TODO(backend): reabilitar quando /auth/social existir (Google, SMS, etc.)
+  bool get isGoogleUser => false;
+  bool get hasPassword => true;
 }
