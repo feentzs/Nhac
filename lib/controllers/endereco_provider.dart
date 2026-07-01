@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nhac/globals/router.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
 import 'package:nhac/repositories/endereco_repository.dart';
+import 'package:nhac/services/auth_service.dart';
 
 class EnderecoProvider with ChangeNotifier {
   final EnderecoRepository _enderecoRepository;
-  final FirebaseAuth _auth;
+  final AuthService _authService;
 
-  EnderecoProvider({FirebaseAuth? auth, EnderecoRepository? repository})
-      : _auth = auth ?? FirebaseAuth.instance,
+  EnderecoProvider({AuthService? authService, EnderecoRepository? repository})
+      : _authService = authService ?? authServiceRoteador,
         _enderecoRepository = repository ?? EnderecoRepository();
 
   List<EnderecoModel> _enderecos = [];
@@ -18,14 +19,14 @@ class EnderecoProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> buscarEnderecos() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final usuarioId = _authService.usuarioId;
+    if (usuarioId == null) return;
 
     try {
       _isLoading = true;
       notifyListeners();
 
-      _enderecos = await _enderecoRepository.buscarEnderecos(user.uid);
+      _enderecos = await _enderecoRepository.buscarEnderecos(usuarioId);
     } catch (e) {
       debugPrint("Erro ao buscar endereços: $e");
     } finally {
@@ -35,15 +36,15 @@ class EnderecoProvider with ChangeNotifier {
   }
 
   Future<void> adicionarEndereco(EnderecoModel endereco) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-    
+    final usuarioId = _authService.usuarioId;
+    if (usuarioId == null) return;
+
     try {
       _isLoading = true;
       notifyListeners();
-      
-      await _enderecoRepository.adicionarEndereco(user.uid, endereco);
-      await buscarEnderecos(); 
+
+      await _enderecoRepository.adicionarEndereco(usuarioId, endereco);
+      await buscarEnderecos();
     } catch (e) {
       _isLoading = false;
       notifyListeners();
@@ -53,14 +54,14 @@ class EnderecoProvider with ChangeNotifier {
   }
 
   Future<void> removerEndereco(String enderecoId) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-    
+    final usuarioId = _authService.usuarioId;
+    if (usuarioId == null) return;
+
     try {
       _isLoading = true;
       notifyListeners();
 
-      await _enderecoRepository.removerEndereco(user.uid, enderecoId);
+      await _enderecoRepository.removerEndereco(usuarioId, enderecoId);
       await buscarEnderecos();
     } catch (e) {
       _isLoading = false;
@@ -71,14 +72,14 @@ class EnderecoProvider with ChangeNotifier {
   }
 
   Future<void> atualizarEndereco(String enderecoId, EnderecoModel endereco) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final usuarioId = _authService.usuarioId;
+    if (usuarioId == null) return;
 
     try {
       _isLoading = true;
       notifyListeners();
 
-      await _enderecoRepository.atualizarEndereco(user.uid, enderecoId, endereco);
+      await _enderecoRepository.atualizarEndereco(usuarioId, enderecoId, endereco);
       await buscarEnderecos();
     } catch (e) {
       _isLoading = false;
@@ -88,10 +89,9 @@ class EnderecoProvider with ChangeNotifier {
     }
   }
 
-  // Função restaurada!
-  Future<void> definirComoisPadrao(String enderecoId) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+  Future<void> definirComoPadrao(String enderecoId) async {
+    final usuarioId = _authService.usuarioId;
+    if (usuarioId == null) return;
 
     try {
       _isLoading = true;
@@ -100,9 +100,9 @@ class EnderecoProvider with ChangeNotifier {
       final enderecoSelecionado = _enderecos.firstWhere((e) => e.id == enderecoId);
 
       await _enderecoRepository.atualizarEndereco(
-        user.uid, 
-        enderecoId, 
-        enderecoSelecionado.copyWith(isPadrao: true)
+        usuarioId,
+        enderecoId,
+        enderecoSelecionado.copyWith(isPadrao: true),
       );
 
       await buscarEnderecos();

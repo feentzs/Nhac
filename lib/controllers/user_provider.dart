@@ -1,38 +1,41 @@
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:nhac/globals/router.dart';
 import 'package:nhac/models/usuario/usuario_model.dart';
 import 'package:nhac/repositories/user_repository.dart';
+import 'package:nhac/services/auth_service.dart';
 
 class UserProvider with ChangeNotifier {
-  final FirebaseAuth _auth;
+  final AuthService _authService;
   final UserRepository _userRepository;
 
-  UserProvider({FirebaseAuth? auth, UserRepository? repository})
-      : _auth = auth ?? FirebaseAuth.instance,
+  UserProvider({AuthService? authService, UserRepository? repository})
+      : _authService = authService ?? authServiceRoteador,
         _userRepository = repository ?? UserRepository();
-  
+
   UsuarioModel? _usuario;
   bool _isLoading = false;
 
   UsuarioModel? get usuario => _usuario;
   bool get isLoading => _isLoading;
 
-  bool get isGoogleUser => _auth.currentUser?.providerData.any((info) => info.providerId == 'google.com') ?? false;
-  bool get hasPassword => _auth.currentUser?.providerData.any((info) => info.providerId == 'password') ?? false;
+  // Login social (Google) e por telefone não são suportados pelo backend
+  // atual — toda conta hoje é criada por e-mail + senha via /auth/registrar.
+  // TODO(backend): reabilitar quando /auth/social existir.
+  bool get isGoogleUser => false;
+  bool get hasPassword => true;
 
   Future<void> carregarDadosUsuario() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final usuarioId = _authService.usuarioId;
+    if (usuarioId == null) return;
 
     try {
       _isLoading = true;
-      notifyListeners(); //   <-- pode apagar se der bosta
+      notifyListeners();
 
-      _usuario = await _userRepository.buscarUsuario(user.uid);
-      
+      _usuario = await _userRepository.buscarUsuario(usuarioId);
     } catch (e) {
       debugPrint("Erro ao carregar dados do utilizador: $e");
     } finally {
@@ -42,10 +45,9 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<void> atualizarFotoPerfil(File imagem) async {
-    final user = _auth.currentUser;
-    final uid = user?.uid;
+    final usuarioId = _authService.usuarioId;
 
-    if (uid == null) {
+    if (usuarioId == null) {
       throw Exception("Utilizador não autenticado no Provider.");
     }
 
@@ -54,7 +56,7 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
 
       final storage = FirebaseStorage.instanceFor(app: Firebase.app());
-      final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
+      final ref = storage.ref().child('usuarios').child(usuarioId).child('perfil.jpg');
 
       await ref.putFile(
         imagem,
@@ -63,12 +65,11 @@ class UserProvider with ChangeNotifier {
 
       final url = await ref.getDownloadURL();
 
-      await _userRepository.atualizarDadosUsuario(uid, {
-        'imagemUrl': url, 
+      await _userRepository.atualizarDadosUsuario(usuarioId, {
+        'imagemUrl': url,
       });
 
       await carregarDadosUsuario();
-
     } catch (e) {
       debugPrint("Erro ao atualizar foto de perfil: $e");
       rethrow;
