@@ -57,7 +57,7 @@ class HomeAddressBottomSheet extends StatelessWidget {
                   onTap: () async {
                     await context
                         .read<EnderecoProvider>()
-                        .definirComoisPadrao(endereco.id);
+                        .definirComoPadrao(endereco.id);
                     if (context.mounted) Navigator.pop(context);
                   },
                   leading: Container(

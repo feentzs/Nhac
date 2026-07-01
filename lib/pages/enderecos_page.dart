@@ -395,7 +395,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
         if (value == 'isPadrao') {
           await context
               .read<EnderecoProvider>()
-              .definirComoisPadrao(endereco.id);
+              .definirComoPadrao(endereco.id);
           if (mounted) context.showSuccess('Endereço padrão atualizado!');
         } else if (value == 'editar') {
           _abrirEdicaoEndereco(endereco);
@@ -564,7 +564,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
               Navigator.pop(context);
               await context
                   .read<EnderecoProvider>()
-                  .definirComoisPadrao(endereco.id);
+                  .definirComoPadrao(endereco.id);
               if (mounted && context.mounted) {
                 context.showSuccess('Endereço padrão atualizado!');
               }

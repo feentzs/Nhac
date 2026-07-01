@@ -1056,7 +1056,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                   onTap: () {
                     context
                         .read<EnderecoProvider>()
-                        .definirComoisPadrao(endereco.id);
+                        .definirComoPadrao(endereco.id);
                     Navigator.pop(context);
                   },
                   leading: Container(
