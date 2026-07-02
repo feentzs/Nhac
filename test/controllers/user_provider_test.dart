@@ -1,30 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:nhac/repositories/user_repository.dart';
+import 'package:nhac/services/auth_service.dart';
 
 class MockUserRepository extends Mock implements UserRepository {}
-class MockFirebaseAuth extends Mock implements FirebaseAuth {}
-class MockUser extends Mock implements User {}
+class MockAuthService extends Mock implements AuthService {}
 
 void main() {
   group('UserProvider Unit Tests', () {
     late UserProvider userProvider;
     late MockUserRepository mockRepo;
-    late MockFirebaseAuth mockAuth;
-    late MockUser mockUser;
+    late MockAuthService mockAuth;
 
     setUp(() {
       mockRepo = MockUserRepository();
-      mockAuth = MockFirebaseAuth();
-      mockUser = MockUser();
+      mockAuth = MockAuthService();
 
-      when(() => mockAuth.currentUser).thenReturn(mockUser);
-      when(() => mockUser.uid).thenReturn('user-123');
+      when(() => mockAuth.usuarioId).thenReturn('user-123');
       
       userProvider = UserProvider(
-        auth: mockAuth,
+        authService: mockAuth,
         repository: mockRepo,
       );
     });
