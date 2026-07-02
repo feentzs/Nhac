@@ -5,15 +5,85 @@ on:
     branches:
       - main
       - eu-e-tu
+      - context-ia-migration
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
+# Cancela execuções antigas da mesma branch quando um novo push chega,
+# evitando gastar minutos de CI com builds já obsoletos.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Privilégio mínimo por padrão; o job de release eleva para "write" só onde precisa.
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.35.5' # fixo (não "stable") para builds reprodutíveis — ajuste para a versão que o time usa localmente
+
 jobs:
+
+  # ── Qualidade (analyze + test) — roda em todo push/PR, em qualquer branch ──
+  # Isto é o gate que faltava: hoje um build quebrado ou um teste falhando só
+  # é percebido quando alguém tenta gerar o APK manualmente. Os outros dois
+  # jobs dependem deste (`needs: quality`) e não rodam se ele falhar.
+  quality:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+        continue-on-error: true # não bloqueia o build ainda; remova esta linha quando o time estiver com o código formatado
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.run_number }}
+          path: coverage/lcov.info
+          retention-days: 14
+          if-no-files-found: ignore
 
   # ── Build DEBUG (branch: eu-e-tu) ────────────────────────────────────────
   build-debug:
     name: Build Debug APK
-    if: github.ref == 'refs/heads/eu-e-tu'
+    needs: quality
+    if: github.ref == 'refs/heads/eu-e-tu' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -29,19 +99,26 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      - name: Create .env file
-        run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
 
-      - name: Install Dependencies
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Install dependencies
         run: flutter pub get
 
       - name: Build Debug APK
         run: flutter build apk --debug
 
-      - name: Upload Debug APK as Artifact
+      - name: Upload Debug APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-${{ github.run_number }}
@@ -51,8 +128,10 @@ jobs:
   # ── Build RELEASE (branch: main) ─────────────────────────────────────────
   build-release:
     name: Build Release APK
-    if: github.ref == 'refs/heads/main'
+    needs: quality
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
 
@@ -70,17 +149,23 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      - name: Decode Keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/codemagic.keystore
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "${{ github.workspace }}/codemagic.keystore"
 
       - name: Create .env file
-        run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
+        run: echo "${{ secrets.ENV_FILE }}" > .env
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: flutter pub get
 
       - name: Build Release APK
@@ -90,6 +175,17 @@ jobs:
           CM_KEYSTORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Remove keystore from workspace
+        if: always()
+        run: rm -f "${{ github.workspace }}/codemagic.keystore"
+
+      - name: Upload Release APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
 
       - name: Create Pre-Release
         uses: softprops/action-gh-release@v2
