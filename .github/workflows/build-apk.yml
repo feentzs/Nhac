@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - eu-e-tu
+      - context-ia-migration
   workflow_dispatch:
 
 jobs:

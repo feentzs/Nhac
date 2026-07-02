@@ -105,9 +105,15 @@ class AuthService with ChangeNotifier {
       UserCredential credencial = await _auth.signInWithEmailAndPassword(email: email, password: password);
 
       final usuario = await _userRepository.buscarUsuario(credencial.user!.uid);
-      
-      if (usuario != null) {
-        await _auth.signOut(); 
+
+      // BUG CORRIGIDO: a condição estava invertida. `usuario != null` significa
+      // que o perfil EXISTE e está ok — isso não pode bloquear o login (o
+      // comportamento anterior derrubava 100% dos logins de contas válidas).
+      // Quem deve ser bloqueado é: (a) credencial do Firebase sem perfil
+      // correspondente no backend, ou (b) perfil explicitamente desativado
+      // via `desativarConta` (campo `ativo: false`).
+      if (usuario == null || !usuario.ativo) {
+        await _auth.signOut();
         throw AuthException('Esta conta foi desativada pelo usuário.');
       }
 

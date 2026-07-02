@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
+import 'package:nhac/repositories/user_repository.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'dart:async';
 import 'package:nowa_runtime/nowa_runtime.dart';
@@ -163,11 +163,16 @@ class _VerificacaoNumeroState extends State<VerificacaoNumero> {
                       if (!localContext.mounted) return;
                       
                       bool isNewUser = credencial.additionalUserInfo?.isNewUser ?? false;
-                      
-                      final docUsuario = await FirebaseFirestore.instance
-                          .collection('usuarios')
-                          .doc(credencial.user!.uid)
-                          .get();
+
+                      // BUG CORRIGIDO: aqui era consultado o Firestore
+                      // diretamente para saber se o usuário já existia. Como
+                      // o cadastro agora é feito via API REST (não grava
+                      // mais em `usuarios` no Firestore), esse documento
+                      // nunca existe — todo usuário retornante era tratado
+                      // como novo e reenviado para o cadastro. Consultamos
+                      // o mesmo backend REST usado pelo resto do app.
+                      final usuarioExistente = await UserRepository()
+                          .buscarUsuario(credencial.user!.uid);
 
                       if (localContext.mounted) {
                         LoadingNhac.esconder(localContext);
@@ -175,7 +180,7 @@ class _VerificacaoNumeroState extends State<VerificacaoNumero> {
 
                       if (!localContext.mounted) return;
 
-                      if (!isNewUser && docUsuario.exists) {
+                      if (!isNewUser && usuarioExistente != null) {
                         cadastroData.limparDados();
                         router.go('/home-page');
                       } else {

@@ -459,7 +459,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       onPressed: () async {
                         try {
                           final cartProvider = Provider.of<CartProvider>(context, listen: false);
-                          await cartProvider.adicionarItemComQuantidade(
+                          final success = await cartProvider.adicionarItemComQuantidade(
                             idProduto: widget.produto.id, 
                             nome: widget.produto.nome,
                             preco: widget.produto.preco,
@@ -468,13 +468,29 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                             quantidade: _quantidade,
                           );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-                                duration: const Duration(seconds: 2),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                            // BUG CORRIGIDO: o retorno bool era ignorado, então
+                            // quando o item era de uma loja diferente da que
+                            // já estava no carrinho (adicionarItemComQuantidade
+                            // retorna false e NÃO adiciona), o usuário via a
+                            // mesma mensagem verde de sucesso mesmo sem o item
+                            // ter sido adicionado.
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
+                                  duration: const Duration(seconds: 2),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Você já possui itens de outra loja no carrinho!'),
+                                  duration: Duration(seconds: 3),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
                         } catch (e) {
                           if (context.mounted) {

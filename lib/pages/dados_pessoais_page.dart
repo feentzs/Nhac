@@ -58,7 +58,7 @@ class DadosPessoaisPage extends StatelessWidget {
             const SizedBox(height: 16.0),
             NhacMenuTile(
               titulo: 'Foto de Perfil',
-              subtitulo: usuario.imagemUrl!.isNotEmpty ? 'Alterar foto' : 'Adicionar foto',
+              subtitulo: usuario.temFotoDePerfil ? 'Alterar foto' : 'Adicionar foto',
               onTap: () => context.push('/editar-foto'),
             ),
             NhacMenuTile(

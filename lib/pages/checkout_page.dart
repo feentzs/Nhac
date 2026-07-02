@@ -605,6 +605,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
+    // BUG CORRIGIDO: o valor de troco digitado pelo cliente nunca era
+    // enviado no pedido (o controller era lido apenas para exibir o campo,
+    // e nunca chegava ao PedidoModel). Extraímos aqui, aceitando tanto
+    // vírgula quanto ponto como separador decimal.
+    double? trocoPara;
+    final trocoTexto = _trocoController.text.trim();
+    if (_formaPagamento == 'Dinheiro' && trocoTexto.isNotEmpty) {
+      trocoPara = trocoTexto.contains(',')
+          ? double.tryParse(trocoTexto.replaceAll('.', '').replaceAll(',', '.'))
+          : double.tryParse(trocoTexto);
+    }
+
     final pedido = PedidoModel(
       usuarioId: uid,
       lojaId: cartProvider.lojaId,
@@ -614,6 +626,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       observacao: cartProvider.observacao,
       enderecoEntrega: enderecoPadrao,
       itens: cartProvider.itens.values.toList(),
+      trocoPara: trocoPara,
     );
 
     try {
@@ -750,7 +763,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
                   ),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento!.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${endereco.temComplemento ? ' - ${endereco.complementoOuVazio}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),

@@ -3,10 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -81,45 +78,17 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
 
     setState(() => _isLoading = true);
     try {
-      // 1. VALIDAÇÃO DE CONTEXTO (PRE-UPLOAD)
-      final user = FirebaseAuth.instance.currentUser;
-      final uid = user?.uid;
-      debugPrint("UID obtido para upload: $uid");
-
-      if (uid == null || user == null) {
-        throw Exception("Usuário não autenticado. UID is null.");
-      }
-
-      // FORÇAR REFRESH DO TOKEN para evitar erro -13040
-      debugPrint("Forçando refresh do token ID...");
-      await user.getIdToken(true);
-
-      // 2. FORÇAR INSTÂNCIA DO STORAGE & 4. ESTRUTURA DO CAMINHO
-      final storage = FirebaseStorage.instanceFor(app: Firebase.app());
-      final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
-
-      // Executa o upload
-      await ref.putFile(
-        _image!,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-
-      final url = await ref.getDownloadURL();
-
-      // Atualiza os dados no Firestore e notifica o Provider
-      if (!mounted) return;
+      // BUG CORRIGIDO: esta tela gravava a foto direto no Firestore usando
+      // a chave 'foto_url', enquanto o resto do app lê o usuário pela API
+      // REST usando a chave 'imagemUrl'. Resultado: a foto "salvava com
+      // sucesso" mas nunca aparecia em lugar nenhum do app. Delegar para
+      // o UserProvider reusa o caminho que já faz upload no Storage e
+      // grava a URL correta via API.
       final userProvider = context.read<UserProvider>();
-      
-      // Atualizamos diretamente via Firestore para garantir o sucesso da refatoração
-      await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
-        'foto_url': url,
-      });
-
-      // Recarrega os dados locais para atualizar a UI
-      await userProvider.carregarDadosUsuario();
+      await userProvider.atualizarFotoPerfil(_image!);
 
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto de perfil atualizada com sucesso!')),
       );
@@ -127,12 +96,10 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
       context.pop();
     } on FirebaseException catch (e) {
       if (!mounted) return;
-      
+
       String mensagemErro = 'Erro ao atualizar foto';
-      // 3. BLINDAGEM DE APPS E APP CHECK
       if (e.code == 'unauthenticated') {
-        debugPrint("Falha de autenticação no Storage: Verifique se o App Check está a bloquear ou se o token de sessão expirou");
-        mensagemErro = "Falha de autenticação no Storage: Verifique se o App Check está a bloquear ou se o token de sessão expirou";
+        mensagemErro = 'Falha de autenticação. Verifique sua conexão e tente novamente.';
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -140,7 +107,7 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro inesperado: $e')),
       );
