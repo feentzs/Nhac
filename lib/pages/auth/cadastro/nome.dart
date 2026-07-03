@@ -26,7 +26,7 @@ class Nome extends StatefulWidget {
 @NowaGenerated()
 class _NomeState extends State<Nome> {
   bool _nomeValido = false;
-  bool _isLoading = false;
+  final bool  _isLoading = false;
   String? _erroNome;
 
   final TextEditingController _nomeController = TextEditingController();

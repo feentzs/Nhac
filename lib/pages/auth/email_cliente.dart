@@ -29,7 +29,7 @@ class _EmailClienteState extends State<EmailCliente> {
 
   bool _emailValido = false;
   String? _erroEmail;
-  bool _isLoading = false;
+   final bool _isLoading = false;
 
   final List<String> _dominios = [
     '@gmail.com',

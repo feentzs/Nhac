@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+
 Future<void> main() async {
   final client = HttpClient();
   final baseUrl = 'backend-nhac.onrender.com';
@@ -9,7 +11,7 @@ Future<void> main() async {
     final uuid = 'test-uuid-${DateTime.now().millisecondsSinceEpoch}';
     final email = 'test_${DateTime.now().millisecondsSinceEpoch}@nhac.com';
     
-    print('1. Registering user...');
+    debugPrint('1. Registering user...');
     final regUri = Uri.https(baseUrl, '/api/v1/auth/registrar');
     final regRequest = await client.postUrl(regUri);
     regRequest.headers.contentType = ContentType.json;
@@ -25,11 +27,11 @@ Future<void> main() async {
     regRequest.write(jsonEncode(regBody));
     final regResponse = await regRequest.close();
     final regResponseBody = await regResponse.transform(utf8.decoder).join();
-    print('Reg status: ${regResponse.statusCode}');
-    print('Reg body: $regResponseBody');
+    debugPrint('Reg status: ${regResponse.statusCode}');
+    debugPrint('Reg body: $regResponseBody');
     
     if (regResponse.statusCode != 201) {
-      print('Failed to register user.');
+      debugPrint('Failed to register user.');
       return;
     }
     
@@ -37,7 +39,7 @@ Future<void> main() async {
     final token = regData['token'] as String;
     final userId = regData['usuarioId'] as String;
     
-    print('2. Adding address...');
+    debugPrint('2. Adding address...');
     final addrUri = Uri.https(baseUrl, '/api/v1/usuarios/$userId/enderecos');
     final addrRequest = await client.postUrl(addrUri);
     addrRequest.headers.contentType = ContentType.json;
@@ -56,20 +58,20 @@ Future<void> main() async {
     
     addrRequest.write(jsonEncode(addrBody));
     final addrResponse = await addrRequest.close();
-    print('Add address status: ${addrResponse.statusCode}');
+    debugPrint('Add address status: ${addrResponse.statusCode}');
     
-    print('3. Getting addresses...');
+    debugPrint('3. Getting addresses...');
     final getUri = Uri.https(baseUrl, '/api/v1/usuarios/$userId/enderecos');
     final getRequest = await client.getUrl(getUri);
     getRequest.headers.set('Authorization', 'Bearer $token');
     
     final getResponse = await getRequest.close();
     final getResponseBody = await getResponse.transform(utf8.decoder).join();
-    print('Get addresses status: ${getResponse.statusCode}');
-    print('Get addresses body: $getResponseBody');
+    debugPrint('Get addresses status: ${getResponse.statusCode}');
+    debugPrint('Get addresses body: $getResponseBody');
     
   } catch (e) {
-    print('Error: $e');
+    debugPrint('Error: $e');
   } finally {
     client.close();
   }

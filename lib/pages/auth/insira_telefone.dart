@@ -1,3 +1,5 @@
+import 'dart:core';
+
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +23,7 @@ class _InsiraTelefoneState extends State<InsiraTelefone> {
   final TextEditingController _telefoneController = TextEditingController();
 
   bool _numeroValido = false;
-  bool _isLoading = false;
+  final bool  _isLoading = false;
 
   final maskFormatter = MaskTextInputFormatter(
     mask: '(##) #####-####',
