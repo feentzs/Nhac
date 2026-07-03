@@ -15,8 +15,14 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
-        connectTimeout: const Duration(seconds: 40),
-        receiveTimeout: const Duration(seconds: 40),
+        // Render free tier "dorme" após inatividade — o primeiro request
+        // após esse período pode levar 50-60s até o serviço acordar.
+        // 40s era curto demais e causava timeout intermitente sem motivo
+        // aparente. 70s dá folga pro cold-start sem travar o app pra sempre
+        // em caso de falha de rede real.
+        connectTimeout: const Duration(seconds: 70),
+        receiveTimeout: const Duration(seconds: 70),
+        sendTimeout: const Duration(seconds: 70),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

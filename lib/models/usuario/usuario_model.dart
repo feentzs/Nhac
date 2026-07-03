@@ -3,7 +3,8 @@ class UsuarioModel {
   final String nome;
   final String email;
   final String telefone;
-  final String? imagemUrl; 
+  final String? imagemUrl;
+  final String? senha;
 
   UsuarioModel({
     required this.id,
@@ -11,6 +12,7 @@ class UsuarioModel {
     required this.email,
     required this.telefone,
     this.imagemUrl,
+    this.senha,
   });
 
   factory UsuarioModel.fromMap(Map<String, dynamic> map) {
@@ -20,6 +22,9 @@ class UsuarioModel {
       email: map['email']?.toString() ?? '',
       telefone: map['telefone']?.toString() ?? '',
       imagemUrl: map['imagemUrl']?.toString(),
+      // 'senha' nunca vem do backend nas respostas (nunca é serializada
+      // de volta), então não há o que ler aqui — só existe no toMap()
+      // para o payload de criação.
     );
   }
 
@@ -30,6 +35,7 @@ class UsuarioModel {
       'email': email,
       'telefone': telefone,
       'imagemUrl': imagemUrl,
+      'senha': senha,
     };
   }
 }
