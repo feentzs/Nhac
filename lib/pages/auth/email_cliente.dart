@@ -5,9 +5,7 @@ import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
-import 'package:nhac/globals/ui_utils.dart';
 
 
 import 'package:nhac/components/nhac_input_field.dart';
@@ -32,7 +30,6 @@ class _EmailClienteState extends State<EmailCliente> {
   bool _emailValido = false;
   String? _erroEmail;
   bool _isLoading = false;
-  bool _isGoogleLoading = false;
 
   final List<String> _dominios = [
     '@gmail.com',

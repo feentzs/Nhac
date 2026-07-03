@@ -2,13 +2,8 @@ import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:nhac/services/auth_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:nhac/controllers/cadastro_controller.dart'; 
 
-import 'package:nhac/globals/ui_utils.dart';
 
 @NowaGenerated()
 class InsiraTelefone extends StatefulWidget {

@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nhac/components/seta_voltar.dart';
-import 'package:nhac/controllers/cadastro_controller.dart';
-import 'package:nhac/services/auth_service.dart';
 import 'dart:async';
 import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:go_router/go_router.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
 
-import 'package:nhac/components/loading_nhac.dart';
 import 'package:nhac/globals/ui_utils.dart';
 
 @NowaGenerated()
