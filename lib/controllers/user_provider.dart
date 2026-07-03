@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nhac/globals/router.dart';
 import 'package:nhac/models/usuario/usuario_model.dart';
 import 'package:nhac/repositories/user_repository.dart';
@@ -56,6 +57,13 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
 
       final storage = FirebaseStorage.instanceFor(app: Firebase.app());
+
+      // Ver comentário equivalente em editar_foto_page.dart: o Storage
+      // exige request.auth != null, mas o app não usa mais Firebase Auth
+      // para login. Login anônimo satisfaz a regra sem exigir conta.
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+      }
       final ref = storage.ref().child('usuarios').child(usuarioId).child('perfil.jpg');
 
       await ref.putFile(

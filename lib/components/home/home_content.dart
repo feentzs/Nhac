@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:nhac/components/home/home_category_chips.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
@@ -44,6 +45,7 @@ class _HomeContentState extends State<HomeContent> {
   bool _isLoadingLojas = false;
   bool _hasMoreLojas = true;
   bool _errorLojas = false;
+  String _mensagemErroLojas = 'Ocorreu um erro ao carregar os restaurantes.';
 
   late final LojaRepository _lojaRepository;
   late final ProdutoRepository _produtoRepository;
@@ -171,12 +173,27 @@ class _HomeContentState extends State<HomeContent> {
           _isLoadingLojas = false;
         });
       }
+    } on DioException catch (e) {
+      final isTimeout = e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout;
+      debugPrint("Erro ao buscar lojas da API REST: ${e.type} | status=${e.response?.statusCode} | ${e.message}");
+      if (mounted) {
+        setState(() {
+          _isLoadingLojas = false;
+          _errorLojas = true;
+          _mensagemErroLojas = isTimeout
+              ? 'O servidor está iniciando, isso pode levar até 1 minuto na primeira vez. Tente novamente.'
+              : 'Ocorreu um erro ao carregar os restaurantes.';
+        });
+      }
     } catch (e) {
       debugPrint("Erro ao buscar lojas da API REST: $e");
       if (mounted) {
         setState(() {
           _isLoadingLojas = false;
           _errorLojas = true;
+          _mensagemErroLojas = 'Ocorreu um erro ao carregar os restaurantes.';
         });
       }
     }
@@ -197,7 +214,7 @@ class _HomeContentState extends State<HomeContent> {
                 color: const Color(0xFFFF6961), size: 48.r),
             SizedBox(height: 16.h),
             Text(
-              'Ocorreu um erro ao carregar os restaurantes.',
+              _mensagemErroLojas,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 14.sp),
             ),
