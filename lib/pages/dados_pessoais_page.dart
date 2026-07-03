@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+ï»¿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lottie/lottie.dart';
 import 'package:nhac/components/nhac_menu_tile.dart';
+
 
 class DadosPessoaisPage extends StatelessWidget {
   final bool? isGoogleUserOverride;
@@ -78,7 +79,7 @@ class DadosPessoaisPage extends StatelessWidget {
             ),
             NhacMenuTile(
               titulo: 'Senha', 
-              subtitulo: hasPassword ? '**************' : 'Não cadastrada', 
+              subtitulo: hasPassword ? '**************' : 'Nï¿½o cadastrada', 
               onTap: () {},
             ),
           ],
