@@ -11,25 +11,19 @@ on:
       - main
   workflow_dispatch:
 
-# Cancela execuções antigas da mesma branch quando um novo push chega,
-# evitando gastar minutos de CI com builds já obsoletos.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Privilégio mínimo por padrão; o job de release eleva para "write" só onde precisa.
 permissions:
-  contents: read
+  contents: write
 
 env:
   FLUTTER_VERSION: '3.44.4'
 
 jobs:
 
-  # ── Qualidade (analyze + test) — roda em todo push/PR, em qualquer branch ──
-  # Isto é o gate que faltava: hoje um build quebrado ou um teste falhando só
-  # é percebido quando alguém tenta gerar o APK manualmente. Os outros dois
-  # jobs dependem deste (`needs: quality`) e não rodam se ele falhar.
+  # ── Qualidade (analyze + test) ──
   quality:
     name: Analyze & Test
     runs-on: ubuntu-latest
@@ -61,7 +55,7 @@ jobs:
 
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
-        continue-on-error: true # não bloqueia o build ainda; remova esta linha quando o time estiver com o código formatado
+        continue-on-error: true
 
       - name: Static analysis
         run: flutter analyze
@@ -77,11 +71,14 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-  # ── Build DEBUG (branch: eu-e-tu) ────────────────────────────────────────
+  # ── Build DEBUG (branches: eu-e-tu e context-ia-migration) ──
   build-debug:
     name: Build Debug APK
     needs: quality
-    if: github.ref == 'refs/heads/eu-e-tu' && github.event_name == 'push'
+    # Agora o job é executado se a branch atual OU a branch de destino do PR for 'eu-e-tu' OU 'context-ia-migration'
+    if: |
+      github.ref_name == 'eu-e-tu' || github.base_ref == 'eu-e-tu' ||
+      github.ref_name == 'context-ia-migration' || github.base_ref == 'context-ia-migration'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -125,15 +122,13 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
 
-  # ── Build RELEASE (branch: main) ─────────────────────────────────────────
+  # ── Build RELEASE ──
   build-release:
     name: Build Release APK
     needs: quality
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref_name == 'main' || github.base_ref == 'main') && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
