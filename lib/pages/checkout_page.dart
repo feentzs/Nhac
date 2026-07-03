@@ -608,7 +608,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       usuarioId: uid,
       lojaId: cartProvider.lojaId,
       valorTotal: total,
-      taxaFrete: 5.0, // Garantir consistência
+      taxaFrete: 5.0, 
       formaPagamento: _formaPagamento,
       observacao: cartProvider.observacao,
       enderecoEntrega: enderecoisPadrao,

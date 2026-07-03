@@ -351,7 +351,6 @@ class _LojaPageState extends State<LojaPage>
         ),
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
-          // 🔴 3. Mudámos de StreamBuilder para FutureBuilder
           sliver: FutureBuilder<List<ProdutosModel>>(
             future: _produtosFuture,
             builder: (context, snapshot) {
@@ -361,7 +360,6 @@ class _LojaPageState extends State<LojaPage>
                         child: CircularProgressIndicator(
                             color: Color(0xFFFF6961))));
               }
-              // 🔴 4. A validação agora checa diretamente se a lista está vazia
               if (snapshot.hasError ||
                   !snapshot.hasData ||
                   snapshot.data!.isEmpty) {
@@ -376,7 +374,6 @@ class _LojaPageState extends State<LojaPage>
                 );
               }
               
-              // 🔴 5. Já não precisamos do ".docs.map". O Repositório já devolve a Lista pronta!
               final produtos = snapshot.data!;
               
               return SliverGrid(

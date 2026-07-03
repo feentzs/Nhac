@@ -10,7 +10,7 @@ class AuthService with ChangeNotifier {
 
   String? _usuarioId;
   String? _nome;
-  bool _carregado = false; // true assim que a sessão local já foi lida do storage
+  bool _carregado = false; 
 
   bool get isAuthenticated => _usuarioId != null;
   bool get carregado => _carregado;
@@ -33,8 +33,7 @@ class AuthService with ChangeNotifier {
       final response = await _dio.post('/auth/login', data: {'email': email, 'senha': senha});
       await _salvarSessaoDaResposta(response.data);
     } catch (e) {
-      // 401 (corpo vazio) e 500 (email não encontrado) devem virar a MESMA mensagem
-      // genérica para o usuário -- é uma inconsistência conhecida do backend.
+     
       throw AuthException('E-mail ou senha inválidos.');
     }
   }
