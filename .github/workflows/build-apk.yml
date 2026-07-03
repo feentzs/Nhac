@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 env:
-  FLUTTER_VERSION: '3.35.5' # fixo (não "stable") para builds reprodutíveis — ajuste para a versão que o time usa localmente
+  FLUTTER_VERSION: '3.44.4'
 
 jobs:
 
