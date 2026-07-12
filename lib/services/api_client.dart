@@ -41,7 +41,7 @@ class ApiClient {
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          debugPrint('✅ [RES HTTP] ${response.statusCode} ${response.requestOptions.path}');
+          debugPrint('✅ [RES HTTP] ${response.statusCode} ${response.requestOptions.uri}');
           return handler.next(response);
         },
         onError: (DioException e, handler) async {

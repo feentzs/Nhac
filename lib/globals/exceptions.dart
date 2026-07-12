@@ -23,7 +23,7 @@ AppException mapException(Object error) {
   if (error is DioException) {
     if (error.response?.data != null && error.response!.data is Map) {
       final data = error.response!.data as Map<String, dynamic>;
-      if (data.containsKey('message')) {
+      if (data.containsKey('message') && data['message'] != null) {
         return AppException(data['message'].toString());
       }
     }
@@ -34,11 +34,22 @@ AppException mapException(Object error) {
     
     if (error.type == DioExceptionType.connectionTimeout || 
         error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
         error.type == DioExceptionType.connectionError) {
       return NetworkException('Sem conexão com a internet.');
     }
     
-    return AppException('Ocorreu um erro no servidor: ${error.response?.statusCode ?? error.message}');
+    // BUG CORRIGIDO: quando error.response é null (nenhuma resposta HTTP
+    // chegou) e o tipo não é nenhum dos tratados acima, tanto
+    // error.response?.statusCode quanto error.message podiam ser null,
+    // resultando na mensagem inútil "Ocorreu um erro no servidor: null"
+    // sem nenhuma pista real do que aconteceu. Agora sempre mostra o tipo
+    // do erro Dio e, se existir, a exceção original capturada por trás.
+    final detalhe = error.response?.statusCode?.toString() ??
+        error.message ??
+        error.error?.toString() ??
+        error.type.toString();
+    return AppException('Ocorreu um erro no servidor: $detalhe');
   }
 
   if (error is FirebaseAuthException) {

@@ -49,6 +49,13 @@ class _EditarNomePreferenciaPageState extends State<EditarNomePreferenciaPage> {
   }
 
   void renameName() async {
+    // Guarda síncrona: sem isso, um duplo toque rápido antes do primeiro
+    // setState() ser aplicado podia disparar renameName() duas vezes,
+    // resultando em dois context.pop() em sequência — o que navegava de
+    // volta duas telas (ou reabria/pulava telas de forma inesperada) em vez
+    // de só uma.
+    if (_isLoading) return;
+
     final localContext = context;
     try {
       setState(() => _isLoading = true);
@@ -58,8 +65,9 @@ class _EditarNomePreferenciaPageState extends State<EditarNomePreferenciaPage> {
       await authService.updateUserName(userName: _nameController.text);
 
       if (!localContext.mounted) return;
-      localContext.read<UserProvider>().carregarDadosUsuario();
-      
+      await localContext.read<UserProvider>().carregarDadosUsuario();
+
+      if (!localContext.mounted) return;
       localContext.showSuccess('Nome atualizado com sucesso!');
       localContext.pop();
     } catch (e){

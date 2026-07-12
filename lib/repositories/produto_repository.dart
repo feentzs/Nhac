@@ -27,14 +27,14 @@ class ProdutoRepository {
   }
 
   Future<List<ProdutosModel>> buscarPorCategoria(String categoria) async {
-    try {
-      final response = await _dio.get('/produtos', queryParameters: {'categoriaMenu': categoria, 'size': 10});
-      final List<dynamic> conteudo = response.data['content'] ?? response.data;
-      return conteudo.map((map) => ProdutosModel.fromMap(map)).toList();
-    } catch (e) {
-      debugPrint("Erro ao buscar por categoria: $e");
-      return [];
-    }
+    // BUG CORRIGIDO: erros aqui eram engolidos e viravam uma lista vazia
+    // "bem-sucedida" — a busca por categoria então parecia simplesmente
+    // "não achar nada" mesmo quando o problema real era outro (erro de
+    // rede, erro do servidor etc.), tornando impossível diagnosticar por
+    // que "categorias não funcionam". Agora o erro sobe até a tela.
+    final response = await _dio.get('/produtos', queryParameters: {'categoriaMenu': categoria, 'size': 10});
+    final List<dynamic> conteudo = response.data['content'] ?? response.data;
+    return conteudo.map((map) => ProdutosModel.fromMap(map)).toList();
   }
 
   Future<List<ProdutosModel>> buscarPorLoja(String lojaId) async {

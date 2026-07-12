@@ -151,7 +151,7 @@ final GoRouter appRouter = GoRouter(
       path: '/home-page',
       pageBuilder: (context, state) => _buildSlideRightToLeftPage(
         key: state.pageKey,
-        child: const HomePage(),
+        child: HomePage(resetSignal: state.extra),
       ),
     ),
     GoRoute(

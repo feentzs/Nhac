@@ -13,7 +13,17 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  // BUG CORRIGIDO: "depois de finalizar pedido, app fica na tela de
+  // carrinho sem navbar". context.go('/home-page') reaproveitava a MESMA
+  // instância de HomePage que já existia por baixo do CheckoutPage (em
+  // vez de criar uma nova), preservando _selectedIndex (ainda 1, aba do
+  // Carrinho) e _isScrolledDown (ainda true, de quando o carrinho foi
+  // rolado antes do checkout) — fazendo a navbar aparecer "colapsada"
+  // (só o ícone da aba atual) e presa na aba errada. Passar um valor
+  // diferente aqui a cada navegação de volta força o reset via
+  // didUpdateWidget, mesmo quando o Widget/Element é reaproveitado.
+  final Object? resetSignal;
+  const HomePage({super.key, this.resetSignal});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -21,12 +31,35 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _selectedIndex = 0;
+  // BUG CORRIGIDO: "segundo botão de finalizar pedido piscando por cima".
+  // _selectedIndex muda instantaneamente no toque, mas o PageView leva
+  // 400ms pra terminar de deslizar visualmente — a barra flutuante
+  // (baseada direto em _selectedIndex) reaparecia na hora, sobrepondo o
+  // botão do CarrinhoPage que ainda estava saindo de tela. Este índice só
+  // atualiza depois que a transição realmente termina.
+  int _indiceVisivelBarraFlutuante = 0;
   late PageController _pageController;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledDown = false;
   late final AnimationController _cartBarController;
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Ver comentário no widget HomePage sobre por que isso é necessário —
+    // resolve o app ficar preso na aba do Carrinho com a navbar colapsada
+    // depois de finalizar um pedido.
+    if (widget.resetSignal != null && widget.resetSignal != oldWidget.resetSignal) {
+      setState(() {
+        _selectedIndex = 0;
+        _indiceVisivelBarraFlutuante = 0;
+        _isScrolledDown = false;
+      });
+      _pageController.jumpToPage(0);
+    }
+  }
 
   @override
   void initState() {
@@ -86,6 +119,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _scrollToTop() {
+    // Como nenhuma aba usa mais o PrimaryScrollController compartilhado
+    // (ver comentário no PageView acima), este controller pode não estar
+    // conectado a nenhum ScrollView. Chamar animateTo() sem essa checagem
+    // lançaria uma exceção.
+    if (!_scrollController.hasClients) return;
     _scrollController.animateTo(
       0.0,
       duration: const Duration(milliseconds: 600),
@@ -143,11 +181,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     _selectedIndex = index;
                   });
                 },
+                // BUG CORRIGIDO (2ª tentativa): a primeira correção trocava
+                // o TIPO do widget em cada slot dependendo da aba ativa
+                // (HomeContent vs PrimaryScrollController.none(HomeContent)).
+                // Quando o tipo de um widget no mesmo slot muda, o Flutter
+                // não atualiza — ele DESTRÓI a subtree inteira e RECONSTRÓI
+                // do zero (dispose + initState de novo em tudo). Trocar de
+                // aba disparava isso a cada troca, o que é caro e arriscado
+                // o suficiente pra explicar instabilidade nativa.
+                // Agora a estrutura é sempre a mesma (todas as abas usam
+                // PrimaryScrollController.none, nunca competem pelo
+                // controller compartilhado) — isso tem o preço de perder o
+                // "tocar no ícone de novo rola pro topo", mas é infinitamente
+                // preferível a um app que quebra ao trocar de aba.
                 children: [
-                  const HomeContent(),
-                  CarrinhoPage(isActive: _selectedIndex == 1),
-                  _buildPlaceholderContent(2),
-                  const ProfileContent(),
+                  PrimaryScrollController.none(
+                      child: HomeContent(scrollController: _scrollController)),
+                  PrimaryScrollController.none(
+                      child: CarrinhoPage(isActive: _selectedIndex == 1, dentroDaHome: true)),
+                  PrimaryScrollController.none(child: _buildPlaceholderContent(2)),
+                  const PrimaryScrollController.none(child: ProfileContent()),
                 ],
               ),
               Positioned(
@@ -234,6 +287,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   final opacity = t.clamp(0.0, 1.0);
 
                   if (t == 0) return const SizedBox.shrink();
+                  // BUG CORRIGIDO: "dois botões de finalizar pedido quase
+                  // um em cima do outro". Esta barra flutuante nunca
+                  // verificava se a aba ativa já era o Carrinho — ela
+                  // continuava aparecendo por cima do próprio botão
+                  // "Finalizar Pedido" que já existe dentro do
+                  // CarrinhoPage, duplicando visualmente a ação.
+                  // Esconde instantaneamente ao ENTRAR na aba do carrinho
+                  // (_selectedIndex, sem delay) e só reaparece quando a
+                  // transição de SAÍDA realmente terminar
+                  // (_indiceVisivelBarraFlutuante, com delay de 400ms).
+                  if (_selectedIndex == 1 || _indiceVisivelBarraFlutuante == 1) {
+                    return const SizedBox.shrink();
+                  }
 
                   return Positioned(
                     bottom: interpolatedBottom,
@@ -426,6 +492,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           duration: const Duration(milliseconds: 400),
           curve: Curves.fastOutSlowIn,
         );
+
+        // Só libera a barra flutuante pra reaparecer (se for o caso)
+        // depois que a transição de 400ms do PageView realmente terminar
+        // — senão ela sobrepõe o botão do CarrinhoPage enquanto ele ainda
+        // está deslizando pra fora da tela.
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted && _selectedIndex == index) {
+            setState(() => _indiceVisivelBarraFlutuante = index);
+          }
+        });
 
         if (index == 1) {
           final cart = context.read<CartProvider>();

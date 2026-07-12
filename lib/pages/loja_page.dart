@@ -208,6 +208,28 @@ class _LojaPageState extends State<LojaPage>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    // BUG CORRIGIDO: "loja fechada deve explicitar que tá
+                    // fechada e não permitir colocar itens no carrinho".
+                    // Antes o usuário só descobria que a loja estava
+                    // fechada no 404 ao tentar finalizar o pedido, depois
+                    // de já ter escolhido endereço, forma de pagamento etc.
+                    if (!widget.loja.isAberto)
+                      Container(
+                        margin: EdgeInsets.only(top: 4.h),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade700,
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        child: Text(
+                          'FECHADA NO MOMENTO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     SizedBox(height: 4.h),
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
@@ -408,6 +430,7 @@ class _LojaPageState extends State<LojaPage>
                       ),
                       child: ProductCard(
                        produto: produto,
+                       lojaFechada: !widget.loja.isAberto,
                       ),
                     );
                   },

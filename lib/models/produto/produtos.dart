@@ -7,6 +7,11 @@ class ProdutosModel {
   final String imagemUrl;   
   final int percentualDesconto;
   final String lojaId;
+  final String lojaNome;
+  // BUG CORRIGIDO: produtos de lojas fechadas apareciam na Home/busca
+  // podendo ser adicionados direto pelo "+" sem o usuário nunca ver que a
+  // loja estava fechada — nada informava esse status por produto antes.
+  final bool lojaAberta;
 
   ProdutosModel({
     required this.id,
@@ -17,6 +22,8 @@ class ProdutosModel {
     this.imagemUrl = '',
     this.percentualDesconto = 0,
     this.lojaId = '',
+    this.lojaNome = '',
+    this.lojaAberta = true,
   });
 
   factory ProdutosModel.fromMap(Map<String, dynamic> map) {
@@ -29,6 +36,8 @@ class ProdutosModel {
       imagemUrl: map['imagemUrl']?.toString() ?? '',
       percentualDesconto: map['percentualDesconto'] ?? 0,
       lojaId: map['lojaId']?.toString() ?? '',
+      lojaNome: map['lojaNome']?.toString() ?? '',
+      lojaAberta: map['lojaAberta'] ?? true,
     );
   }
 
@@ -43,6 +52,8 @@ class ProdutosModel {
       'imagemUrl': imagemUrl,
       'percentualDesconto': percentualDesconto,
       'lojaId': lojaId,
+      'lojaNome': lojaNome,
+      'lojaAberta': lojaAberta,
     };
   }
 }

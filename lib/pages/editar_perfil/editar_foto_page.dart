@@ -3,12 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:nhac/controllers/user_provider.dart';
-import 'package:nhac/services/auth_service.dart';
-import 'package:nhac/repositories/user_repository.dart';
 import 'package:provider/provider.dart';
 
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
@@ -82,45 +77,14 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
 
     setState(() => _isLoading = true);
     try {
-      final authService = context.read<AuthService>();
-      final uid = authService.usuarioId;
-      debugPrint("UID obtido para upload: $uid");
-
-      if (uid == null) {
-        throw Exception("Usuário não autenticado.");
-      }
-
-      final storage = FirebaseStorage.instanceFor(app: Firebase.app());
-
-      // O login do app não usa mais o Firebase Auth (é feito via JWT próprio
-      // da API). O Firebase Storage, porém, ainda depende de uma sessão do
-      // Firebase Auth para liberar leitura/escrita conforme as Security Rules
-      // (request.auth != null). Sem isso, o upload falha com "permission
-      // denied" silenciosamente. Login anônimo resolve sem exigir conta.
-      if (FirebaseAuth.instance.currentUser == null) {
-        await FirebaseAuth.instance.signInAnonymously();
-      }
-
-      final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
-
-      await ref.putFile(
-        _image!,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-
-      final url = await ref.getDownloadURL();
-
-      if (!mounted) return;
+      // Delega para o UserProvider, que faz o mesmo upload + gravação via
+      // API e já trata o erro de Anonymous Auth desabilitado no Firebase
+      // Console. Evita manter a mesma lógica duplicada em dois lugares.
       final userProvider = context.read<UserProvider>();
-      
-      await UserRepository().atualizarDadosUsuario(uid, {
-        'imagemUrl': url,
-      });
-
-      await userProvider.carregarDadosUsuario();
+      await userProvider.atualizarFotoPerfil(_image!);
 
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto de perfil atualizada com sucesso!')),
       );
@@ -130,7 +94,7 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
       if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao atualizar foto: $e')),
+        SnackBar(content: Text('Erro ao atualizar foto: ${e.toString().replaceAll('Exception: ', '')}')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
