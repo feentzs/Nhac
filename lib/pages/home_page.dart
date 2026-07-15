@@ -245,37 +245,38 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                bottom: _isScrolledDown
-                    ? (bottomPadding + 101.h) 
-                    : (bottomPadding + 22.5.h),
-                right: 24.w + 12.5.w, 
-                child: GestureDetector(
-                  onTap: _isScrolledDown ? _scrollToTop : null,
-                  child: Container(
-                    width: 50.w,
-                    height: 50.w,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6961),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF6961).withValues(alpha: 0.3),
-                          blurRadius: 10.r,
-                          offset: Offset(0, 4.h),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.arrow_upward_rounded,
-                      color: Colors.white,
-                      size: 24.sp,
+              if (_selectedIndex != 1 && _selectedIndex != 3)
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  bottom: _isScrolledDown
+                      ? (bottomPadding + 101.h) 
+                      : (bottomPadding + 22.5.h),
+                  right: 24.w + 12.5.w, 
+                  child: GestureDetector(
+                    onTap: _isScrolledDown ? _scrollToTop : null,
+                    child: Container(
+                      width: 50.w,
+                      height: 50.w,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF6961),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF6961).withValues(alpha: 0.3),
+                            blurRadius: 10.r,
+                            offset: Offset(0, 4.h),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.arrow_upward_rounded,
+                        color: Colors.white,
+                        size: 24.sp,
+                      ),
                     ),
                   ),
                 ),
-              ),
               AnimatedBuilder(
                 animation: _cartBarController,
                 builder: (context, child) {

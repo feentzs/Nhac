@@ -23,6 +23,7 @@ import 'package:nhac/pages/enderecos_page.dart';
 import 'package:nhac/pages/formas_pagamento_page.dart';
 import 'package:nhac/pages/cupons_page.dart';
 import 'package:nhac/pages/search_page.dart';
+import 'package:nhac/pages/meus_pedidos_page.dart';
 
 class _SlideRightToLeftPageRoute<T> extends PageRoute<T>
     with MaterialRouteTransitionMixin<T> {
@@ -269,6 +270,13 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _buildSlideRightToLeftPage(
         key: state.pageKey,
         child: const CuponsPage(),
+      ),
+    ),
+    GoRoute(
+      path: '/meus-pedidos',
+      pageBuilder: (context, state) => _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: const MeusPedidosPage(),
       ),
     ),
     GoRoute(

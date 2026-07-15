@@ -340,7 +340,7 @@ class _ProfileContentState extends State<ProfileContent> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildStatItem('3', 'Pedidos'),
+                      GestureDetector(onTap: () => context.push('/meus-pedidos'), child: _buildStatItem('3', 'Pedidos')),
                       Container(height: 30.h, width: 1.w, color: Colors.grey.shade300),
                       _buildStatItem('1', 'Avaliações'),
                       Container(height: 30.h, width: 1.w, color: Colors.grey.shade300),

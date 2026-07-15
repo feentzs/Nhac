@@ -34,4 +34,32 @@ class PedidoRepository {
       throw Exception("Erro inesperado: $e");
     }
   }
+
+  /// Lista os pedidos do usuário logado, do mais recente pro mais antigo.
+  /// NOVO — precisa que o backend exponha GET /pedidos (ver contrato no
+  /// final da conversa). usuarioId vem implícito do token, igual em
+  /// POST /pedidos.
+  Future<List<PedidoModel>> buscarMeusPedidos({int page = 0, int size = 20}) async {
+    try {
+      final response = await _dio.get(
+        '/pedidos',
+        queryParameters: {'page': page, 'size': size},
+      );
+      final List<dynamic> conteudo = response.data['content'];
+      return conteudo.map((map) => PedidoModel.fromMap(map)).toList();
+    } on DioException catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  /// Detalhe completo de um pedido, incluindo a linha do tempo de status.
+  /// NOVO — precisa que o backend exponha GET /pedidos/{id}.
+  Future<PedidoModel> buscarPedidoPorId(String pedidoId) async {
+    try {
+      final response = await _dio.get('/pedidos/$pedidoId');
+      return PedidoModel.fromMap(response.data);
+    } on DioException catch (e) {
+      throw mapException(e);
+    }
+  }
 }
