@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:lottie/lottie.dart';
 import 'package:nhac/components/nhac_menu_tile.dart';
 
+
 class DadosPessoaisPage extends StatelessWidget {
   final bool? isGoogleUserOverride;
 
@@ -58,7 +59,7 @@ class DadosPessoaisPage extends StatelessWidget {
             const SizedBox(height: 16.0),
             NhacMenuTile(
               titulo: 'Foto de Perfil',
-              subtitulo: usuario.fotoUrl.isNotEmpty ? 'Alterar foto' : 'Adicionar foto',
+              subtitulo: usuario.temFotoDePerfil ? 'Alterar foto' : 'Adicionar foto',
               onTap: () => context.push('/editar-foto'),
             ),
             NhacMenuTile(
@@ -78,7 +79,7 @@ class DadosPessoaisPage extends StatelessWidget {
             ),
             NhacMenuTile(
               titulo: 'Senha', 
-              subtitulo: hasPassword ? '**************' : 'Não cadastrada', 
+              subtitulo: hasPassword ? '**************' : 'N�o cadastrada', 
               onTap: () {},
             ),
           ],

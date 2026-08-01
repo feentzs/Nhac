@@ -30,7 +30,7 @@ class _ProfileContentState extends State<ProfileContent> {
     final carrinho = context.read<CartProvider>();
     Navigator.pop(context);
     userProvider.limparUsuario();
-    carrinho.limparCarrinhoLocal();
+    carrinho.esvaziarCarrinho();
     await authService.signOut();
     if (!context.mounted) return;
     context.go('/bem-vindo');
@@ -182,10 +182,10 @@ class _ProfileContentState extends State<ProfileContent> {
     final userProvider = context.watch<UserProvider>();
     final usuario = userProvider.usuario;
     final enderecoProvider = context.watch<EnderecoProvider>();
-    final enderecoPadrao = enderecoProvider.enderecos.where((e) => e.padrao).firstOrNull;
-    final String textoEndereco = enderecoPadrao != null
-        ? '${enderecoPadrao.rua}, ${enderecoPadrao.numero}${enderecoPadrao.complemento.isNotEmpty ? ' - ${enderecoPadrao.complemento}' : ''}'
-        : 'Nenhum endereço cadastrado';
+    final enderecoisPadrao = enderecoProvider.enderecos.where((e) => e.isPadrao).firstOrNull;
+    final String textoEndereco = enderecoisPadrao != null
+    ? '${enderecoisPadrao.rua}, ${enderecoisPadrao.numero}${(enderecoisPadrao.complemento?.isNotEmpty ?? false) ? ' - ${enderecoisPadrao.complemento}' : ''}'
+    : 'Nenhum endereço selecionado';
 
     if (usuario == null) {
       return Container(
@@ -257,7 +257,7 @@ class _ProfileContentState extends State<ProfileContent> {
                       Stack(
                         children: [
                           GestureDetector(
-                            onLongPress: () => _mostrarPreviewFoto(context, usuario.fotoUrl),
+                            onLongPress: () => _mostrarPreviewFoto(context, usuario.imagemUrl),
                             onLongPressUp: () => Navigator.of(context).pop(),
                             child: Container(
                               width: 80.w,
@@ -271,7 +271,7 @@ class _ProfileContentState extends State<ProfileContent> {
                                   ? Center(child: Lottie.asset('assets/animations/loading_nhac.json', width: 40.w, height: 40.h))
                                   : ClipOval(
                                       child: CachedNetworkImage(
-                                        imageUrl: usuario.fotoUrl,
+                                        imageUrl: usuario.imagemUrl ?? '',
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                         errorWidget: (context, url, error) => Icon(Icons.person, size: 48.r, color: Colors.grey.shade400),
@@ -340,7 +340,7 @@ class _ProfileContentState extends State<ProfileContent> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildStatItem('3', 'Pedidos'),
+                      GestureDetector(onTap: () => context.push('/meus-pedidos'), child: _buildStatItem('3', 'Pedidos')),
                       Container(height: 30.h, width: 1.w, color: Colors.grey.shade300),
                       _buildStatItem('1', 'Avaliações'),
                       Container(height: 30.h, width: 1.w, color: Colors.grey.shade300),

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/loja/lojas.dart';
 import '../models/produto/produtos.dart';
 import '../components/product_card.dart';
 import '../components/seta_voltar.dart';
 import '../pages/produto_detalhes_page.dart';
+import '../repositories/produto_repository.dart';
 
 class LojaPage extends StatefulWidget {
   final LojasModel loja;
@@ -19,17 +19,17 @@ class LojaPage extends StatefulWidget {
 class _LojaPageState extends State<LojaPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late Stream<QuerySnapshot> _produtosStream;
+  
+  late Future<List<ProdutosModel>> _produtosFuture;
+  
+  final ProdutoRepository _produtoRepository = ProdutoRepository();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _produtosStream = FirebaseFirestore.instance
-        .collection('produtos')
-        .where('loja_id', isEqualTo: widget.loja.uid)
-        .where('is_ativo', isEqualTo: true)
-        .snapshots();
+    
+    _produtosFuture = _produtoRepository.buscarPorLoja(widget.loja.id);
   }
 
   @override
@@ -208,6 +208,28 @@ class _LojaPageState extends State<LojaPage>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    // BUG CORRIGIDO: "loja fechada deve explicitar que tá
+                    // fechada e não permitir colocar itens no carrinho".
+                    // Antes o usuário só descobria que a loja estava
+                    // fechada no 404 ao tentar finalizar o pedido, depois
+                    // de já ter escolhido endereço, forma de pagamento etc.
+                    if (!widget.loja.isAberto)
+                      Container(
+                        margin: EdgeInsets.only(top: 4.h),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade700,
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        child: Text(
+                          'FECHADA NO MOMENTO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     SizedBox(height: 4.h),
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
@@ -299,11 +321,11 @@ class _LojaPageState extends State<LojaPage>
           children: [
             _buildStatItem(
                 "Avaliação",
-                widget.loja.dadosOperacionais.avaliacaoMedia.toStringAsFixed(1),
+                (widget.loja.dadosOperacionais?.avaliacaoMedia ?? 0.0).toStringAsFixed(1),
                 "Excelente",
                 const Color(0xFF5D201C)),
             Container(width: 1, height: 40.h, color: Colors.grey.shade200),
-            _buildStatItem("Avaliações", "${widget.loja.dadosOperacionais.totalAvaliacoes}",
+            _buildStatItem("Avaliações", "${widget.loja.dadosOperacionais?.totalAvaliacoes ?? 0}",
                 "Total", const Color(0xFFFF6961)),
             Container(width: 1, height: 40.h, color: Colors.grey.shade200),
             _buildStatItem("Produtos", "100%", "Positivo", Colors.black87),
@@ -351,8 +373,8 @@ class _LojaPageState extends State<LojaPage>
         ),
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
-          sliver: StreamBuilder<QuerySnapshot>(
-            stream: _produtosStream,
+          sliver: FutureBuilder<List<ProdutosModel>>(
+            future: _produtosFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const SliverToBoxAdapter(
@@ -362,7 +384,7 @@ class _LojaPageState extends State<LojaPage>
               }
               if (snapshot.hasError ||
                   !snapshot.hasData ||
-                  snapshot.data!.docs.isEmpty) {
+                  snapshot.data!.isEmpty) {
                 return SliverToBoxAdapter(
                   child: Center(
                     child: Padding(
@@ -373,10 +395,9 @@ class _LojaPageState extends State<LojaPage>
                   ),
                 );
               }
-              final produtos = snapshot.data!.docs
-                  .map((doc) => ProdutosModel.fromMap(
-                      doc.data() as Map<String, dynamic>, doc.id))
-                  .toList();
+              
+              final produtos = snapshot.data!;
+              
               return SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
@@ -408,13 +429,8 @@ class _LojaPageState extends State<LojaPage>
                         ),
                       ),
                       child: ProductCard(
-                        idProduto: produto.uid,
-                        imageUrl: produto.imagemUrl.isNotEmpty
-                            ? produto.imagemUrl
-                            : 'https://via.placeholder.com/150',
-                        name: produto.nome,
-                        weight: '',
-                        price: produto.preco,
+                       produto: produto,
+                       lojaFechada: !widget.loja.isAberto,
                       ),
                     );
                   },

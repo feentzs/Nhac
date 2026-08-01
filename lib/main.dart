@@ -1,4 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nhac/repositories/loja_repository.dart';
+import 'package:nhac/repositories/produto_repository.dart';
+import 'package:nhac/repositories/pedido_repository.dart';
+import 'package:nhac/pages/no_internet_page.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
@@ -39,36 +43,27 @@ main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await FirebaseAppCheck.instance
-      // ignore: deprecated_member_use
-      .activate(androidProvider: AndroidProvider.debug);
+  // Inicialização corrigida do App Check
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
+  );
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  final pushService = PushNotificationService();
+  final pushService = PushNotificationService(authServiceRoteador);
   await pushService.initialize();
 
   sharedPrefs = await SharedPreferences.getInstance();
-
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-  );
 
   await SentryFlutter.init(
     (options) {
       options.dsn =
           'https://426ab5d997cbcb45965278b6b9cc5a32@o4511393718272000.ingest.us.sentry.io/4511393743896577';
-      // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-      // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
-      // The sampling rate for profiling is relative to tracesSampleRate
-      // Setting to 1.0 will profile 100% of sampled transactions:
-      //options.profilesSampleRate = 1.0;
     },
     appRunner: () => runApp(SentryWidget(child: const MyApp())),
   );
-  await Sentry.captureException(Exception('This is a sample exception.'));
 }
 
 @NowaGenerated({'visibleInNowa': false})
@@ -80,10 +75,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      
       providers: [
         ChangeNotifierProvider<AppState>(create: (context) => AppState()),
-        ChangeNotifierProvider<AuthService>(create: (context) => AuthService()),
+        ChangeNotifierProvider<AuthService>.value(value: authServiceRoteador),
         ChangeNotifierProvider<CadastroController>(
             create: (context) => CadastroController()),
         ChangeNotifierProvider<UserProvider>(
@@ -92,13 +86,15 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EnderecoProvider()),
         ChangeNotifierProvider<ConnectivityService>(
             create: (context) => ConnectivityService()),
+        Provider<LojaRepository>(create: (_) => LojaRepository()),
+        Provider<ProdutoRepository>(create: (_) => ProdutoRepository()),
+        Provider<PedidoRepository>(create: (_) => PedidoRepository()),
       ],
       builder: (context, child) {
         return Consumer<ConnectivityService>(
           builder: (context, connectivity, child) {
             return ScreenUtilInit(
-              designSize:
-                  const Size(390, 844), // Tamanho base do seu design no Figma
+              designSize: const Size(390, 844),
               minTextAdapt: true,
               splitScreenMode: true,
               builder: (context, child) {
@@ -107,9 +103,9 @@ class MyApp extends StatelessWidget {
                   theme: AppState.of(context).theme,
                   routerConfig: appRouter,
                   builder: (context, navigator) {
-                    // if (!connectivity.isOnline) {
-                    //   return const NoInternetPage();
-                    // }
+                    if (!connectivity.isOnline) {
+                      return const NoInternetPage();
+                    }
                     return navigator!;
                   },
                 );

@@ -217,11 +217,11 @@ class _SenhaState extends State<Senha> {
       final authService = localContext.read<AuthService>();
       final cadastroData = localContext.read<CadastroController>();
 
-      await authService.createAccount(
-        email: cadastroData.email, 
-        password: _senhaController.text, 
+      await authService.registrar(
         nome: cadastroData.nome,
-        telefone: cadastroData.telefone
+        email: cadastroData.email,
+        telefone: cadastroData.telefone,
+        senha: _senhaController.text,
       );
 
       if (!localContext.mounted) return;

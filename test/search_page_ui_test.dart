@@ -18,7 +18,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Procurar'), findsOneWidget);
+    expect(find.text('Pesquisar produtos...'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'Pizza');
     expect(find.text('Pizza'), findsOneWidget);

@@ -2,21 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nhac/models/usuario/usuario_model.dart';
 
 void main() {
-  test('Deve converter UserModel para Map (Formato Firebase) sem erros', () {
-    
-    final usuarioDaTela = UsuarioModel(
-      uid: 'id-secreto-123',
-      nome: 'Matheus',
-      email: 'matheus@teste.com',
-      fotoUrl: '',
-      telefone: '11999999999',
-    );
+  group('UsuarioModel Unit Tests (Refactored for REST)', () {
+    test('fromMap com dados completos deve mapear corretamente', () {
+      final mockMap = {
+        'id': 'u-1',
+        'nome': 'João',
+        'email': 'joao@test.com',
+        'telefone': '123456789',
+      };
 
-    final pacoteParaFirebase = usuarioDaTela.toMap();
+      final usuario = UsuarioModel.fromMap(mockMap);
 
-    expect(pacoteParaFirebase['nome'], 'Matheus');
-    expect(pacoteParaFirebase['email'], 'matheus@teste.com');
-    expect(pacoteParaFirebase['telefone'], '11999999999');
-    expect(pacoteParaFirebase['criado_em'], isNotNull); 
+      expect(usuario.id, 'u-1');
+      expect(usuario.nome, 'João');
+    });
   });
 }

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nhac/models/pedido_model.dart';
+import 'package:nhac/repositories/pedido_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
+import 'package:nhac/models/loja/lojas.dart';
+import 'package:nhac/repositories/loja_repository.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
+import 'package:nhac/services/auth_service.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -18,36 +23,70 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   String _formaPagamento = 'Dinheiro';
   final TextEditingController _trocoController = TextEditingController();
-  bool _mostrarCampoTroco = false;
+  bool _mostrarCampoTroco = true;
+  // BUG CORRIGIDO: "Precisa de troco só aparece depois de trocar e voltar
+  // pra Dinheiro". _formaPagamento já começa como 'Dinheiro' (acima), mas
+  // _mostrarCampoTroco começava sempre 'false' — ela só era sincronizada
+  // dentro do onTap de uma opção de pagamento, que exige uma interação
+  // explícita do usuário. Como 'Dinheiro' já vem pré-selecionado sem
+  // nenhum toque, o campo nunca aparecia até você trocar de opção (o que
+  // aciona o onTap pela primeira vez) e voltar. Inicializar já em sincronia
+  // com o valor padrão resolve isso.
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   bool _isLoading = true;
+  LojasModel? _loja;
+  final LojaRepository _lojaRepository = LojaRepository();
+
+  /// Taxa de entrega real da loja (definida por ela no cadastro). Cai para
+  /// R$ 5,00 apenas enquanto a loja ainda não carregou ou não tem o valor
+  /// configurado — o mesmo fallback que o backend usa.
+  double get _taxaEntrega =>
+      _loja?.dadosOperacionais?.taxaEntregaBase ?? 5.0;
 
   @override
   void initState() {
     super.initState();
     _verificarNumeroEndereco();
+    _carregarLoja();
+  }
+
+  Future<void> _carregarLoja() async {
+    final cartProvider = context.read<CartProvider>();
+    if (cartProvider.lojaId.isEmpty) return;
+    try {
+      final loja = await _lojaRepository.buscarLoja(cartProvider.lojaId);
+      if (mounted) setState(() => _loja = loja);
+    } catch (e) {
+      // Mantemos o fallback de R$ 5,00 silenciosamente; isto é só para
+      // exibição, o valor real é sempre recalculado pelo servidor.
+      debugPrint('Não foi possível carregar a taxa de entrega da loja: $e');
+    }
   }
 
   Future<void> _verificarNumeroEndereco() async {
     await Future.delayed(Duration.zero); 
     if (!mounted) return;
     final enderecoProvider = context.read<EnderecoProvider>();
-    final enderecoPadrao = enderecoProvider.enderecos.firstWhere(
-      (e) => e.padrao,
-      orElse: () => EnderecoModel(
-        idDocumento: '',
-        bairro: '',
-        cep: '',
-        cidade: '',
-        estado: '',
-        numero: '',
-        rua: '',
-      ),
-    );
-    if (enderecoPadrao.idDocumento.isNotEmpty &&
-        enderecoPadrao.numero.isEmpty) {
-      await _pedirNumeroEndereco(enderecoPadrao);
+    final EnderecoModel? enderecoisPadrao = enderecoProvider.enderecos.isEmpty
+        ? null
+        : enderecoProvider.enderecos.firstWhere(
+            (e) => e.isPadrao,
+            orElse: () => EnderecoModel(
+              id: '', 
+              bairro: '',
+              cep: '',
+              cidade: '',
+              estado: '',
+              numero: '',
+              rua: '',
+            ),
+          );
+    if (enderecoisPadrao != null &&
+        enderecoisPadrao.id.isNotEmpty &&
+        enderecoisPadrao.numero.isEmpty) {
+        
+      await _pedirNumeroEndereco(enderecoisPadrao);
     }
     if (mounted) setState(() => _isLoading = false);
   }
@@ -109,18 +148,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child:
                 Text('Cancelar', style: TextStyle(color: Colors.grey.shade600)),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final numero = numeroController.text.trim();
-                final enderecoAtualizado = endereco.copyWith(numero: numero);
-                await context
-                    .read<EnderecoProvider>()
-                    .atualizarEndereco(enderecoAtualizado);
-                if (!mounted) return;
-                Navigator.pop(context);
-              }
-            },
+         ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final numero = numeroController.text.trim();
+                  final enderecoAtualizado = endereco.copyWith(numero: numero);
+                  
+                  await context
+                      .read<EnderecoProvider>()
+                      .atualizarEndereco(enderecoAtualizado.id, enderecoAtualizado);
+                      
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                }
+              },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFE645C),
               shape: RoundedRectangleBorder(
@@ -151,19 +192,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
     }
 
-    final EnderecoModel? enderecoPadrao = enderecoProvider.enderecos.isEmpty
+    final EnderecoModel? enderecoisPadrao = enderecoProvider.enderecos.isEmpty
         ? null
         : enderecoProvider.enderecos.firstWhere(
-            (e) => e.padrao,
+            (e) => e.isPadrao,
             orElse: () => enderecoProvider.enderecos.first,
           );
 
     final subtotal = cartProvider.valorTotal;
-    final frete = 0.0;
+    // BUG CORRIGIDO: antes fixo em 5.0 para qualquer loja. O backend agora
+    // usa loja.dadosOperacionais.taxaEntregaBase para calcular o frete de
+    // verdade, então exibimos o mesmo valor aqui em vez de um número fixo
+    // que não batia com o que era realmente cobrado.
+    final frete = _taxaEntrega;
     final total = subtotal + frete;
     final tempoEntrega = '30 - 50 min';
     final podeFinalizar =
-        enderecoPadrao != null && enderecoPadrao.numero.isNotEmpty;
+        enderecoisPadrao != null && enderecoisPadrao.numero.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFE7E5),
@@ -213,8 +258,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          enderecoPadrao != null
-                              ? '${enderecoPadrao.rua}, ${enderecoPadrao.numero}'
+                          enderecoisPadrao != null
+                              ? '${enderecoisPadrao.rua}, ${enderecoisPadrao.numero}'
                               : 'Nenhum endereço selecionado',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -222,10 +267,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             color: const Color(0xFF5D201C),
                           ),
                         ),
-                        if (enderecoPadrao != null) ...[
+                        if (enderecoisPadrao != null) ...[
                           SizedBox(height: 4.h),
                           Text(
-                            '${enderecoPadrao.bairro} - ${enderecoPadrao.cidade}/${enderecoPadrao.estado}',
+                            '${enderecoisPadrao.bairro} - ${enderecoisPadrao.cidade}/${enderecoisPadrao.estado}',
                             style: TextStyle(
                                 color: Colors.grey.shade600, fontSize: 12.sp),
                           ),
@@ -369,11 +414,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           style: TextStyle(
                               color: Colors.grey.shade700, fontSize: 14.sp)),
                       Text(
-                        frete == 0 ? 'Grátis' : currencyFormat.format(frete),
+                        currencyFormat.format(frete),
                         style: TextStyle(
-                          color: frete == 0 ? Colors.green : Colors.black87,
-                          fontWeight:
-                              frete == 0 ? FontWeight.w600 : FontWeight.normal,
+                          color: Colors.black87,
                           fontSize: 14.sp,
                         ),
                       ),
@@ -517,7 +560,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AddressSelectionSheet(enderecos: enderecos),
     );
-    await enderecoProvider.iniciarEscutaEnderecos();
+    await enderecoProvider.buscarEnderecos();
     setState(() {});
   }
 
@@ -575,46 +618,109 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  void _confirmarPedido(
-      BuildContext context, double total, CartProvider cartProvider) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-        backgroundColor: Colors.white,
-        title: Text(
-          'Pedido confirmado!',
-          style: TextStyle(
-              fontSize: 22.sp,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF5D201C)),
-        ),
-        content: Text(
-          'Seu pedido no valor de ${currencyFormat.format(total)} foi recebido.\n'
-          'Acompanhe o status pelo app.',
-          style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              cartProvider.esvaziarCarrinho();
-              cartProvider.setObservacao('');
-              Navigator.pop(context);
-              context.go('/home-page');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFE645C),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50.r)),
-            ),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+  Future<void> _confirmarPedido(
+      BuildContext context, double total, CartProvider cartProvider) async {
+    
+    final enderecoProvider = context.read<EnderecoProvider>();
+    final enderecoisPadrao = enderecoProvider.enderecos.firstWhere(
+      (e) => e.isPadrao,
+      orElse: () => enderecoProvider.enderecos.first,
     );
+
+    final authService = context.read<AuthService>();
+    final uid = authService.usuarioId;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão expirada. Faça login novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      context.go('/bem-vindo');
+      return;
+    }
+
+    // BUG CORRIGIDO: o valor de troco digitado pelo cliente nunca era
+    // enviado no pedido (o controller era lido só para exibir o campo).
+    // Aceita tanto vírgula quanto ponto como separador decimal.
+    double? trocoPara;
+    final trocoTexto = _trocoController.text.trim();
+    if (_formaPagamento == 'Dinheiro' && trocoTexto.isNotEmpty) {
+      trocoPara = trocoTexto.contains(',')
+          ? double.tryParse(trocoTexto.replaceAll('.', '').replaceAll(',', '.'))
+          : double.tryParse(trocoTexto);
+    }
+
+    final pedido = PedidoModel(
+      usuarioId: uid,
+      lojaId: cartProvider.lojaId,
+      valorTotal: total,
+      taxaFrete: _taxaEntrega,
+      formaPagamento: _formaPagamento,
+      observacao: cartProvider.observacao,
+      enderecoEntrega: enderecoisPadrao,
+      itens: cartProvider.itens.values.toList(),
+      trocoPara: trocoPara,
+    );
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFFFF6961))),
+      );
+
+      final idGerado = await PedidoRepository().finalizarPedido(pedido);
+      
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          backgroundColor: Colors.white,
+          title: Text(
+            'Pedido confirmado!',
+            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
+          ),
+          content: Text(
+            'O seu pedido foi recebido com sucesso!\n\nID do Pedido: $idGerado',
+            style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                cartProvider.esvaziarCarrinho();
+                Navigator.pop(context); 
+                // BUG CORRIGIDO: 'resetSignal' força a HomePage a resetar
+                // _selectedIndex/_isScrolledDown mesmo quando context.go()
+                // reaproveita a instância existente (ver home_page.dart).
+                context.go('/home-page', extra: DateTime.now().millisecondsSinceEpoch);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFE645C),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
+              ),
+              child: const Text('Voltar ao Início', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); 
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 }
 
@@ -670,7 +776,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                   onTap: () async {
                     await context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.idDocumento);
+                        .definirComoPadrao(endereco.id);
                     if (context.mounted) Navigator.pop(context);
                   },
                   leading: Container(
@@ -681,9 +787,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                     ),
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
-                              endereco.complemento
-                                  .toLowerCase()
-                                  .contains('trabalho')
+                             (endereco.complemento ?? '').toLowerCase().contains('trabalho')
                           ? Icons.work_outline
                           : Icons.home_outlined,
                       color: const Color(0xFFFF6961),
@@ -696,12 +800,12 @@ class _AddressSelectionSheet extends StatelessWidget {
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
                   ),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${endereco.temComplemento ? ' - ${endereco.complementoOuVazio}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),
                   ),
-                  trailing: endereco.padrao
+                  trailing: endereco.isPadrao
                       ? Icon(Icons.check_circle,
                           color: const Color(0xFFFF6961), size: 22.r)
                       : null,

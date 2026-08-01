@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:nhac/components/home/home_product_section.dart';
 import 'package:nhac/controllers/cart_provider.dart';
@@ -10,6 +9,8 @@ import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/pages/loja_page.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/repositories/produto_repository.dart';
+import 'package:nhac/repositories/loja_repository.dart';
 
 class ProdutoDetalhesPage extends StatefulWidget {
   final ProdutosModel produto;
@@ -22,35 +23,26 @@ class ProdutoDetalhesPage extends StatefulWidget {
 
 class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   int _quantidade = 1;
-  late Future<QuerySnapshot> _produtosRelacionadosFuture;
-  Future<DocumentSnapshot?>? _lojaFuture;
-  Future<QuerySnapshot>? _produtosDaLojaFuture;
+  
+  late Future<List<ProdutosModel>> _produtosRelacionadosFuture;
+  Future<LojasModel?>? _lojaFuture;
+  Future<List<ProdutosModel>>? _produtosDaLojaFuture;
+
+  final _produtoRepository = ProdutoRepository();
+  final _lojaRepository = LojaRepository();
 
   @override
   void initState() {
     super.initState();
-    _produtosRelacionadosFuture = FirebaseFirestore.instance
-        .collection('produtos')
-        .where('categoria_menu', isEqualTo: widget.produto.categoriaMenu)
-        .where('loja_is_aberto', isEqualTo: true)
-        .limit(6)
-        .get();
+    
+    _produtosRelacionadosFuture = _produtoRepository.buscarPorCategoria(widget.produto.categoriaMenu);
 
-    if (widget.produto.lojaId.isNotEmpty) {
-      _lojaFuture = FirebaseFirestore.instance
-          .collection('lojas')
-          .doc(widget.produto.lojaId)
-          .get();
-      _produtosDaLojaFuture = FirebaseFirestore.instance
-          .collection('produtos')
-          .where('loja_id', isEqualTo: widget.produto.lojaId)
-          .where('loja_is_aberto', isEqualTo: true)
-          .limit(10)
-          .get();
-    } else {
-      _lojaFuture = Future.value(null);
-      _produtosDaLojaFuture = null;
-    }
+    // BUG CORRIGIDO: estava fixado em Future.value(null), então a loja de
+    // verdade nunca era buscada — por isso sempre aparecia "Loja Parceira"
+    // (o texto de fallback) e o toque em "Vendido por" nunca abria o perfil
+    // da loja, já que _abrirLojaProfile também depende deste future.
+    _lojaFuture = _lojaRepository.buscarLoja(widget.produto.lojaId);
+    _produtosDaLojaFuture = _produtoRepository.buscarPorLoja(widget.produto.lojaId);
   }
 
   void _incrementarQuantidade() {
@@ -72,13 +64,8 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   void _abrirLojaProfile() async {
     if (_isNavigatingToLoja || _lojaFuture == null) return;
     
-    final snapshot = await _lojaFuture;
-    if (snapshot == null || !snapshot.exists) return;
-
-    final lojaData = snapshot.data() as Map<String, dynamic>?;
-    if (lojaData == null) return;
-
-    final loja = LojasModel.fromMap(lojaData, snapshot.id);
+    final loja = await _lojaFuture;
+    if (loja == null) return;
 
     setState(() {
       _isNavigatingToLoja = true;
@@ -152,8 +139,8 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         icon: Icon(Icons.share_outlined,
                             color: const Color(0xFF5D201C), size: 20.r),
                         onPressed: () {
-                          final link =
-                              'https://nhac.app/produto/${widget.produto.uid}';
+                          // Mudou de uid para id
+                          final link = 'https://nhac.app/produto/${widget.produto.id}';
                           Share.share(
                             'Confira este produto no Nhac!\n\n'
                             '${widget.produto.nome}\n'
@@ -182,7 +169,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Hero(
-                    tag: 'produto_${widget.produto.uid}',
+                    tag: 'produto_${widget.produto.id}', // Mudou de uid para id
                     child: widget.produto.imagemUrl.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: widget.produto.imagemUrl,
@@ -293,26 +280,18 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                 child: const Divider(
                                     height: 1, color: Color(0xFFEEEEEE)),
                               ),
-                              FutureBuilder<DocumentSnapshot?>(
-                                future: _lojaFuture,
-                                builder: (context, snapshot) {
-                                  String nomeLoja = 'Loja Parceira';
-                                  if (snapshot.connectionState ==
-                                          ConnectionState.done &&
-                                      snapshot.hasData &&
-                                      snapshot.data != null &&
-                                      snapshot.data!.exists) {
-                                    final data = snapshot.data!.data()
-                                        as Map<String, dynamic>?;
-                                    if (data != null && data['nome'] != null) {
-                                      nomeLoja = data['nome'];
-                                    }
-                                  }
-                                  return _buildServiceRow(
-                                      Icons.storefront_outlined,
-                                      'Vendido por: $nomeLoja');
-                                },
-                              ),
+                              // BUG CORRIGIDO: usar _lojaFuture aqui dependia
+                              // de GET /lojas/{id}, que só devolve a loja se
+                              // ela estiver ABERTA no momento — por isso
+                              // "alguns" produtos ficavam presos no
+                              // fallback "Loja Parceira" (o produto tinha
+                              // loja de verdade, só que fechada naquele
+                              // instante). widget.produto.lojaNome vem
+                              // direto do próprio produto e não depende do
+                              // status da loja.
+                              _buildServiceRow(
+                                  Icons.storefront_outlined,
+                                  'Vendido por: ${widget.produto.lojaNome.isNotEmpty ? widget.produto.lojaNome : "Loja Parceira"}'),
                             ],
                           ),
                         ),
@@ -410,7 +389,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: FutureBuilder<QuerySnapshot>(
+                        child: FutureBuilder<List<ProdutosModel>>(
                           future: _produtosRelacionadosFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
@@ -418,21 +397,13 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                               return const SizedBox.shrink();
                             }
 
-                            if (snapshot.hasError) {
-                              debugPrint('Erro ao carregar produtos relacionados: ${snapshot.error}');
+                            if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
                               return const SizedBox.shrink();
                             }
 
-                            if (!snapshot.hasData ||
-                                snapshot.data!.docs.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-
-                            final produtosRelacionados = snapshot.data!.docs
-                                .map((doc) => ProdutosModel.fromMap(
-                                    doc.data() as Map<String, dynamic>,
-                                    doc.id))
-                                .where((p) => p.uid != widget.produto.uid)
+                            // Filtramos o produto atual para ele não aparecer na própria lista
+                            final produtosRelacionados = snapshot.data!
+                                .where((p) => p.id != widget.produto.id)
                                 .take(5)
                                 .toList();
 
@@ -444,7 +415,8 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                               title: 'Produtos Relacionados',
                               products: produtosRelacionados,
                               onSeeAll: () {},
-                            );                          },
+                            );                          
+                          },
                         ),
                       ),
 
@@ -484,39 +456,70 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   _buildIconAction(Icons.chat_bubble_outline, 'Chat', ''),
                   SizedBox(width: 24.w),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-  try {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
-    await cartProvider.adicionarItemComQuantidade(
-      idProduto: widget.produto.uid,
-      nome: widget.produto.nome,
-      preco: widget.produto.preco,
-      imagemUrl: widget.produto.imagemUrl,
-      quantidade: _quantidade,
-    );
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          duration: const Duration(seconds: 4),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-},style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6961),
+                    child: FutureBuilder<LojasModel?>(
+                      // BUG CORRIGIDO: "loja fechada deve explicitar e não
+                      // permitir colocar itens no carrinho". GET /lojas/{id}
+                      // só devolve a loja se ela estiver aberta — então se
+                      // _lojaFuture resolver com null/erro, a loja está
+                      // fechada (ou não existe), e bloqueamos a compra aqui
+                      // em vez de deixar o usuário descobrir só no 404 ao
+                      // finalizar o pedido.
+                      future: _lojaFuture,
+                      builder: (context, lojaSnapshot) {
+                        final carregando = lojaSnapshot.connectionState == ConnectionState.waiting;
+                        final lojaFechada = !carregando &&
+                            (!lojaSnapshot.hasData || lojaSnapshot.data == null);
+
+                        return ElevatedButton(
+                      onPressed: (carregando || lojaFechada) ? null : () async {
+                        try {
+                          final cartProvider = Provider.of<CartProvider>(context, listen: false);
+                          final success = await cartProvider.adicionarItemComQuantidade(
+                            idProduto: widget.produto.id, 
+                            nome: widget.produto.nome,
+                            preco: widget.produto.preco,
+                            imagemUrl: widget.produto.imagemUrl,
+                            lojaId: widget.produto.lojaId,
+                            quantidade: _quantidade,
+                          );
+                          if (context.mounted) {
+                            // BUG CORRIGIDO: o retorno bool era ignorado —
+                            // quando o item era de uma loja diferente da que
+                            // já estava no carrinho (retorna false, item NÃO
+                            // adicionado), o usuário via a mesma mensagem
+                            // verde de sucesso mesmo sem nada ter mudado.
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
+                                  duration: const Duration(seconds: 2),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Você já possui itens de outra loja no carrinho!'),
+                                  duration: Duration(seconds: 3),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString().replaceAll('Exception: ', '')),
+                                duration: const Duration(seconds: 4),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: lojaFechada ? Colors.grey.shade400 : const Color(0xFFFF6961),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -525,12 +528,16 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         ),
                       ),
                       child: Text(
-                        'Adicionar  ${currencyFormat.format(widget.produto.preco * _quantidade)}',
+                        lojaFechada
+                            ? 'Loja fechada no momento'
+                            : 'Adicionar  ${currencyFormat.format(widget.produto.preco * _quantidade)}',
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -538,10 +545,10 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
             ),
           ),
           Positioned(
-            right: 25.w, // Afasta da borda para evitar conflito com gesto do OS
+            right: 25.w, 
             top: 0,
             bottom: 0,
-            width: 150.w, // Aumenta a área de detecção
+            width: 150.w,
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onHorizontalDragEnd: (details) {
@@ -629,17 +636,15 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
               ),
             ],
           ),
-          FutureBuilder<DocumentSnapshot?>(
+          FutureBuilder<LojasModel?>(
             future: _lojaFuture,
             builder: (context, snapshot) {
               double rating = 5.0;
               int total = 120;
-              if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
-                final data = snapshot.data!.data() as Map<String, dynamic>?;
-                if (data != null && data['dados_operacionais'] != null) {
-                  rating = num.tryParse(data['dados_operacionais']['avaliacao_media']?.toString() ?? '0')?.toDouble() ?? 5.0;
-                  total = int.tryParse(data['dados_operacionais']['total_avaliacoes']?.toString() ?? '0') ?? 120;
-                }
+              if (snapshot.hasData && snapshot.data != null) {
+                final loja = snapshot.data!;
+                rating = loja.dadosOperacionais?.avaliacaoMedia ?? 5.0;
+                total = loja.dadosOperacionais?.totalAvaliacoes ?? 120;
               }
               return _buildRatingSummary(rating, total);
             }
@@ -662,24 +667,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
             review: 'Avaliação positiva.\nÓtimo vendedor~',
             date: '1 mês atrás',
             location: 'São Paulo',
-            tag: 'Positiva',
-          ),
-          _buildReviewItem(
-            name: 'Usuário Anônimo',
-            avatarColor: Colors.brown.shade300,
-            avatarIcon: Icons.pets,
-            review: 'Descrição real, fluído, não é ruim.\ngood',
-            date: '1 mês atrás',
-            location: 'Rio de Janeiro',
-            tag: 'Positiva',
-          ),
-          _buildReviewItem(
-            name: 'Usuário Anônimo',
-            avatarColor: Colors.green.shade400,
-            avatarIcon: Icons.sentiment_very_satisfied,
-            review: 'Sem problemas.\nProduto sem problemas',
-            date: '2 meses atrás',
-            location: 'Minas Gerais',
             tag: 'Positiva',
           ),
         ],
@@ -793,17 +780,14 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   Widget _buildStoreProfileSection() {
     if (_lojaFuture == null) return const SizedBox.shrink();
 
-    return FutureBuilder<DocumentSnapshot?>(
+    return FutureBuilder<LojasModel?>(
       future: _lojaFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null || !snapshot.data!.exists) {
+        if (!snapshot.hasData || snapshot.data == null) {
           return const SizedBox.shrink();
         }
 
-        final lojaData = snapshot.data!.data() as Map<String, dynamic>?;
-        if (lojaData == null) return const SizedBox.shrink();
-
-        final loja = LojasModel.fromMap(lojaData, snapshot.data!.id);
+        final loja = snapshot.data!;
 
         return Container(
           margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
@@ -883,7 +867,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   Icon(Icons.star, size: 14.r, color: const Color(0xFF5D201C)),
                   SizedBox(width: 4.w),
                   Text(
-                    '${loja.dadosOperacionais.avaliacaoMedia.toStringAsFixed(1)} • Total de avaliações: ${loja.dadosOperacionais.totalAvaliacoes}',
+                    '${(loja.dadosOperacionais?.avaliacaoMedia ?? 0.0).toStringAsFixed(1)} • Total de avaliações: ${loja.dadosOperacionais?.totalAvaliacoes ?? 0}',
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w500,
@@ -894,17 +878,15 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
               ),
               if (_produtosDaLojaFuture != null) ...[
                 SizedBox(height: 16.h),
-                FutureBuilder<QuerySnapshot>(
+                FutureBuilder<List<ProdutosModel>>(
                   future: _produtosDaLojaFuture,
                   builder: (context, prodSnapshot) {
-                    if (!prodSnapshot.hasData || prodSnapshot.data!.docs.isEmpty) {
+                    if (!prodSnapshot.hasData || prodSnapshot.data!.isEmpty) {
                       return const SizedBox.shrink();
                     }
 
-                    final produtosLoja = prodSnapshot.data!.docs
-                        .map((doc) => ProdutosModel.fromMap(
-                            doc.data() as Map<String, dynamic>, doc.id))
-                        .where((p) => p.uid != widget.produto.uid)
+                    final produtosLoja = prodSnapshot.data!
+                        .where((p) => p.id != widget.produto.id)
                         .take(10)
                         .toList();
 

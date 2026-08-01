@@ -23,6 +23,7 @@ import 'package:nhac/pages/enderecos_page.dart';
 import 'package:nhac/pages/formas_pagamento_page.dart';
 import 'package:nhac/pages/cupons_page.dart';
 import 'package:nhac/pages/search_page.dart';
+import 'package:nhac/pages/meus_pedidos_page.dart';
 
 class _SlideRightToLeftPageRoute<T> extends PageRoute<T>
     with MaterialRouteTransitionMixin<T> {
@@ -116,8 +117,11 @@ final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   refreshListenable: authServiceRoteador,
  redirect: (BuildContext context, GoRouterState state) {
-    final bool estaAutenticado = authServiceRoteador.currentUser != null;
-    final bool usuarioExisteNoBanco = authServiceRoteador.userExists;
+    if (!authServiceRoteador.carregado) {
+      return '/splash';
+    }
+
+    final bool estaAutenticado = authServiceRoteador.isAuthenticated;
 
     final bool telaPublica = state.matchedLocation == '/' ||
         state.matchedLocation == '/splash' ||
@@ -136,32 +140,19 @@ final GoRouter appRouter = GoRouter(
       return '/bem-vindo';
     }
 
-    
-    if (estaAutenticado && !usuarioExisteNoBanco && !noMeioDoCadastro) {
-       
-       return null; 
-    }
-
-    if (estaAutenticado && usuarioExisteNoBanco && telaPublica && state.matchedLocation != '/splash' && !noMeioDoCadastro) {
+    if (estaAutenticado && telaPublica && state.matchedLocation != '/splash' && !noMeioDoCadastro) {
       return '/home-page';
     }
 
     return null; 
   },
   routes: [
-    GoRoute(
-      path: '/',
-      pageBuilder: (context, state) => _buildSlideRightToLeftPage(
-        key: state.pageKey,
-        child: const HomePage(),
-      ),
-    ),
     GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
     GoRoute(
       path: '/home-page',
       pageBuilder: (context, state) => _buildSlideRightToLeftPage(
         key: state.pageKey,
-        child: const HomePage(),
+        child: HomePage(resetSignal: state.extra),
       ),
     ),
     GoRoute(
@@ -279,6 +270,13 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _buildSlideRightToLeftPage(
         key: state.pageKey,
         child: const CuponsPage(),
+      ),
+    ),
+    GoRoute(
+      path: '/meus-pedidos',
+      pageBuilder: (context, state) => _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: const MeusPedidosPage(),
       ),
     ),
     GoRoute(

@@ -11,7 +11,15 @@ import 'package:flutter/services.dart';
 
 class CarrinhoPage extends StatefulWidget {
   final bool isActive;
-  const CarrinhoPage({super.key, this.isActive = true});
+  // BUG CORRIGIDO: "barra de finalizar pedido atrás da navbar". Quando o
+  // CarrinhoPage é usado como aba dentro do PageView da HomePage, existe
+  // uma navbar customizada flutuante (Positioned) por cima do conteúdo
+  // (Scaffold da Home usa extendBody: true) — sem saber disso, esta
+  // página não tinha como compensar aquele espaço. Quando usado como rota
+  // independente (push('/carrinho')), não existe essa navbar, então o
+  // padding extra não deve ser aplicado.
+  final bool dentroDaHome;
+  const CarrinhoPage({super.key, this.isActive = true, this.dentroDaHome = false});
 
   @override
   State<CarrinhoPage> createState() => _CarrinhoPageState();
@@ -34,6 +42,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     _observacaoController.dispose();
     super.dispose();
   }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +74,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           final defaultAddress = enderecoProvider.enderecos.isEmpty
               ? null
               : enderecoProvider.enderecos.firstWhere(
-                  (e) => e.padrao,
+                  (e) => e.isPadrao,
                   orElse: () => enderecoProvider.enderecos.first,
                 );
 
@@ -93,11 +103,15 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                       child: _buildAddressSection(context, defaultAddress),
                     ),
                     SizedBox(height: 24.h),
-                    ...cartProvider.itens.values.toList().asMap().entries.map((entry) {
+                    ...cartProvider.itens.values
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((entry) {
                       final index = entry.key;
                       final item = entry.value;
                       return TweenAnimationBuilder<double>(
-                        key: ValueKey('anim_${item.idProduto}'),
+                        key: ValueKey('anim_${item.produtoId}'),
                         duration: const Duration(milliseconds: 800),
                         tween: Tween(begin: 0.0, end: 1.0),
                         curve: Interval(
@@ -122,9 +136,102 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   ],
                 ),
               ),
+              _buildCheckoutBar(context, cartProvider, defaultAddress),
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// BUG CORRIGIDO: esta tela não tinha nenhum botão/CTA para avançar ao
+  /// checkout, nem exibia o total. A única forma de chegar ao checkout
+  /// dependia de uma barra flutuante que vive na árvore de widgets da
+  /// HomePage; ao acessar esta página como rota independente (push
+  /// '/carrinho' vindo de qualquer aba que não seja a do carrinho), essa
+  /// barra não existe e o usuário ficava sem saída. Este rodapé cobre os
+  /// dois casos.
+  Widget _buildCheckoutBar(
+    BuildContext context,
+    CartProvider cartProvider,
+    EnderecoModel? defaultAddress,
+  ) {
+    final podeAvancar = defaultAddress != null;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5D201C).withValues(alpha: 0.08),
+            blurRadius: 12.r,
+            offset: Offset(0, -4.h),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        // A navbar customizada da Home ocupa bottomPadding + 10.h (offset)
+        // + 75.h (altura) — replicamos essa mesma conta aqui só quando
+        // esta página está dentro da Home, senão o SafeArea normal basta.
+        bottom: !widget.dentroDaHome,
+        child: Padding(
+          padding: widget.dentroDaHome
+              ? EdgeInsets.only(bottom: 75.h + 10.h + 8.h)
+              : EdgeInsets.zero,
+          child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Total',
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                  ),
+                  Text(
+                    currencyFormat.format(cartProvider.valorTotal),
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF5D201C),
+                    ),
+                  ),
+                  if (!podeAvancar)
+                    Padding(
+                      padding: EdgeInsets.only(top: 2.h),
+                      child: Text(
+                        'Adicione um endereço para continuar',
+                        style: TextStyle(fontSize: 11.sp, color: Colors.red[700]),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(width: 12.w),
+            ElevatedButton(
+              onPressed: podeAvancar
+                  ? () => context.push('/checkout')
+                  : () => context.push('/enderecos-salvos'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              child: Text(
+                podeAvancar ? 'Finalizar Pedido' : 'Adicionar endereço',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+          ),
+        ),
       ),
     );
   }
@@ -148,6 +255,8 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       ),
     );
   }
+
+  
 
   Widget _buildAddressSection(BuildContext context, EnderecoModel? address) {
     return Container(
@@ -252,7 +361,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AddressSelectionSheet(enderecos: enderecos),
     );
-    await enderecoProvider.iniciarEscutaEnderecos();
+    await enderecoProvider.buscarEnderecos();
     setState(() {});
   }
 
@@ -298,8 +407,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
     );
   }
 
-
-  Widget _buildCartItem(CarrinhoModel item, CartProvider cartProvider) {
+  Widget _buildCartItem(CartItemModel item, CartProvider cartProvider) {
     double swipeProgress = 0.0;
     bool hasVibrated = false;
     bool isProgrammaticDeleting = false;
@@ -312,7 +420,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
           tween: Tween(begin: 0.0, end: isProgrammaticDeleting ? 1.0 : 0.0),
           onEnd: () {
             if (isProgrammaticDeleting) {
-              cartProvider.excluirItemDoCarrinho(item.idProduto);
+              cartProvider.excluirItemDoCarrinho(item.produtoId);
             }
           },
           builder: (context, t, child) {
@@ -351,7 +459,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                       offset: Offset(
                           -slideValue * MediaQuery.of(context).size.width, 0),
                       child: Dismissible(
-                        key: Key(item.idProduto),
+                        key: Key(item.produtoId),
                         direction: isProgrammaticDeleting
                             ? DismissDirection.none
                             : DismissDirection.endToStart,
@@ -362,12 +470,12 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                           if (details.reached && !hasVibrated) {
                             HapticFeedback.mediumImpact();
                             hasVibrated = true;
-                          // ignore: curly_braces_in_flow_control_structures
+                            // ignore: curly_braces_in_flow_control_structures
                           } else if (!details.reached) hasVibrated = false;
                         },
                         onDismissed: (direction) {
                           if (!isProgrammaticDeleting) {
-                            cartProvider.excluirItemDoCarrinho(item.idProduto);
+                            cartProvider.excluirItemDoCarrinho(item.produtoId);
                           }
                         },
                         background: Container(
@@ -491,7 +599,7 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                               onPressed: () =>
                                                                   cartProvider
                                                                       .removerItem(
-                                                                          item.idProduto),
+                                                                          item.produtoId),
                                                             ),
                                                             Text(
                                                               item.quantidade
@@ -514,17 +622,14 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                               icon: Icon(
                                                                   Icons.add,
                                                                   size: 16.r),
-                                                              onPressed: () =>
-                                                                  cartProvider
-                                                                      .adicionarItem(
-                                                                idProduto: item
-                                                                    .idProduto,
-                                                                nome: item.nome,
-                                                                preco:
-                                                                    item.preco,
-                                                                imagemUrl: item
-                                                                    .imagemUrl,
-                                                              ),
+                                                           onPressed: () => cartProvider.adicionarItemComQuantidade(
+  idProduto: item.produtoId, 
+  nome: item.nome,
+  preco: item.preco,
+  imagemUrl: item.imagemUrl,
+  lojaId: item.lojaId,
+  quantidade: 1, 
+),
                                                             ),
                                                           ],
                                                         ),
@@ -646,7 +751,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                   onTap: () async {
                     await context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.idDocumento);
+                        .definirComoPadrao(endereco.id);
                     if (context.mounted) Navigator.pop(context);
                   },
                   leading: Container(
@@ -657,7 +762,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                     ),
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
-                              endereco.complemento
+                              endereco.complementoOuVazio
                                   .toLowerCase()
                                   .contains('trabalho')
                           ? Icons.work_outline
@@ -670,12 +775,12 @@ class _AddressSelectionSheet extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 15.sp)),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${endereco.temComplemento ? ' - ${endereco.complementoOuVazio}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),
                   ),
-                  trailing: endereco.padrao
+                  trailing: endereco.isPadrao
                       ? Icon(Icons.check_circle,
                           color: const Color(0xFFFF6961), size: 22.r)
                       : null,
@@ -717,4 +822,6 @@ class _AddressSelectionSheet extends StatelessWidget {
       ),
     );
   }
+
+  
 }

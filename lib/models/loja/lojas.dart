@@ -1,72 +1,72 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class LojasModel {
-  final String uid;
+  final String id; 
   final String nome;
   final String categoria;
-  final bool isAberto;
   final String descricao;
   final String imagemUrl;
-  final Map<String, String> horarios;
-  final Timestamp? criadoEm;
+  
+  final bool isAberto; 
 
-  final DadosOperacionais dadosOperacionais;
-  final EnderecoLoja endereco;
-  final Geolocalizacao geolocalizacao;
+  final DadosOperacionais? dadosOperacionais;
+  final EnderecoLoja? endereco;
+  final HorariosLoja? horarios; 
 
   LojasModel({
-    required this.uid,
+    required this.id,
     required this.nome,
     required this.categoria,
-    required this.isAberto,
     this.descricao = '',
     this.imagemUrl = '',
-    required this.horarios,
-    this.criadoEm,
-    required this.dadosOperacionais,
-    required this.endereco,
-    required this.geolocalizacao,
+    this.isAberto = true,
+    this.dadosOperacionais,
+    this.endereco,
+    this.horarios,
   });
 
-  factory LojasModel.fromMap(Map<String, dynamic> map, String uid) {
+  factory LojasModel.fromMap(Map<String, dynamic> map) {
     return LojasModel(
-      uid: uid,
+      id: map['id']?.toString() ?? '',
       nome: map['nome']?.toString() ?? '',
       categoria: map['categoria']?.toString() ?? '',
-      isAberto: map['is_aberto'] == true,
       descricao: map['descricao']?.toString() ?? '',
-      imagemUrl: map['imagem_url']?.toString() ?? '',
-      horarios: Map<String, String>.from(map['horarios'] ?? {}),
-      criadoEm: map['criado_em'] as Timestamp?,
-      dadosOperacionais: DadosOperacionais.fromMap(map['dados_operacionais'] ?? {}),
-      endereco: EnderecoLoja.fromMap(map['endereco'] ?? {}),
-      geolocalizacao: Geolocalizacao.fromMap(map['geolocalizacao'] ?? {}),
+      imagemUrl: map['imagemUrl']?.toString() ?? '',
+      isAberto: map['isAberto'] ?? true, 
+      
+      dadosOperacionais: map['dadosOperacionais'] != null 
+          ? DadosOperacionais.fromMap(map['dadosOperacionais']) 
+          : null,
+      endereco: map['endereco'] != null 
+          ? EnderecoLoja.fromMap(map['endereco']) 
+          : null,
+      horarios: map['horarios'] != null 
+          ? HorariosLoja.fromMap(map['horarios']) 
+          : null,
     );
   }
 }
 
 class DadosOperacionais {
+  final double avaliacaoMedia;
   final double taxaEntregaBase;
   final int tempoEntregaMin;
   final int tempoEntregaMax;
-  final double avaliacaoMedia;
   final int totalAvaliacoes;
 
   DadosOperacionais({
+    required this.avaliacaoMedia,
     required this.taxaEntregaBase,
     required this.tempoEntregaMin,
     required this.tempoEntregaMax,
-    required this.avaliacaoMedia,
     required this.totalAvaliacoes,
   });
 
   factory DadosOperacionais.fromMap(Map<String, dynamic> map) {
     return DadosOperacionais(
-      taxaEntregaBase: num.tryParse(map['taxa_entrega_base']?.toString() ?? '0')?.toDouble() ?? 0.0,
-      tempoEntregaMin: int.tryParse(map['tempo_entrega_min']?.toString() ?? '0') ?? 0,
-      tempoEntregaMax: int.tryParse(map['tempo_entrega_max']?.toString() ?? '0') ?? 0,
-      avaliacaoMedia: num.tryParse(map['avaliacao_media']?.toString() ?? '0')?.toDouble() ?? 0.0,
-      totalAvaliacoes: int.tryParse(map['total_avaliacoes']?.toString() ?? '0') ?? 0,
+      avaliacaoMedia: num.tryParse(map['avaliacaoMedia']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      taxaEntregaBase: num.tryParse(map['taxaEntregaBase']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      tempoEntregaMin: map['tempoEntregaMin'] ?? 0,
+      tempoEntregaMax: map['tempoEntregaMax'] ?? 0,
+      totalAvaliacoes: map['totalAvaliacoes'] ?? 0,
     );
   }
 }
@@ -97,22 +97,34 @@ class EnderecoLoja {
   }
 }
 
-class Geolocalizacao {
-  final double lat;
-  final double lng;
-  final String geohash;
+class HorariosLoja {
+  final String domingo;
+  final String segunda;
+  final String terca;
+  final String quarta;
+  final String quinta;
+  final String sexta;
+  final String sabado;
 
-  Geolocalizacao({
-    required this.lat,
-    required this.lng,
-    required this.geohash,
+  HorariosLoja({
+    this.domingo = 'Fechado',
+    this.segunda = 'Fechado',
+    this.terca = 'Fechado',
+    this.quarta = 'Fechado',
+    this.quinta = 'Fechado',
+    this.sexta = 'Fechado',
+    this.sabado = 'Fechado',
   });
 
-  factory Geolocalizacao.fromMap(Map<String, dynamic> map) {
-    return Geolocalizacao(
-      lat: num.tryParse(map['lat']?.toString() ?? '0')?.toDouble() ?? 0.0,
-      lng: num.tryParse(map['lng']?.toString() ?? '0')?.toDouble() ?? 0.0,
-      geohash: map['geohash']?.toString() ?? '',
+  factory HorariosLoja.fromMap(Map<String, dynamic> map) {
+    return HorariosLoja(
+      domingo: map['domingo']?.toString() ?? 'Fechado',
+      segunda: map['segunda']?.toString() ?? 'Fechado',
+      terca: map['terca']?.toString() ?? 'Fechado',
+      quarta: map['quarta']?.toString() ?? 'Fechado',
+      quinta: map['quinta']?.toString() ?? 'Fechado',
+      sexta: map['sexta']?.toString() ?? 'Fechado',
+      sabado: map['sabado']?.toString() ?? 'Fechado',
     );
   }
 }

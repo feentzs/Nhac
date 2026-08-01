@@ -1,99 +1,104 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-class ItemPedidoModel {
-  final String idProduto;
-  final String nome;
-  final String imagemUrl;
-  final double precoHistorico; 
-  final int quantidade;
-
-  ItemPedidoModel({
-    required this.idProduto,
-    required this.nome,
-    required this.imagemUrl,
-    required this.precoHistorico,
-    required this.quantidade,
-  });
-
-  factory ItemPedidoModel.fromMap(Map<String, dynamic> map) {
-    return ItemPedidoModel(
-      idProduto: map['idProduto'] ?? '',
-      nome: map['nome'] ?? '',
-      imagemUrl: map['imagemUrl'] ?? '',
-      precoHistorico: (map['precoHistorico'] ?? 0).toDouble(),
-      quantidade: map['quantidade'] ?? 1,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'idProduto': idProduto,
-      'nome': nome,
-      'imagemUrl': imagemUrl,
-      'precoHistorico': precoHistorico,
-      'quantidade': quantidade,
-    };
-  }
-}
+import 'package:nhac/models/usuario/endereco_model.dart';
+import 'package:nhac/models/usuario/carrinho_model.dart';
 
 class PedidoModel {
-  final String idPedido;
+  final String? id; 
   final String usuarioId;
   final String lojaId;
-  final List<ItemPedidoModel> itens;
+  final String? lojaNome;
   final double valorTotal;
   final double taxaFrete;
   final String formaPagamento;
-  final Map<String, dynamic> enderecoEntrega; 
-  final String observacao;
-  final String status; 
-  final Timestamp? criadoEm;
+  final String? observacao;
+  final EnderecoModel enderecoEntrega;
+  final List<CartItemModel> itens;
+
+  /// Valor em dinheiro que o cliente vai usar para pagar (para calcular o
+  /// troco). Só relevante quando formaPagamento == 'Dinheiro'.
+  final double? trocoPara;
+  
+  final String? status; 
+  final String? criadoEm;
+  final List<HistoricoStatusModel>? historicoStatus;
 
   PedidoModel({
-    required this.idPedido,
+    this.id,
     required this.usuarioId,
     required this.lojaId,
-    required this.itens,
+    this.lojaNome,
     required this.valorTotal,
-    this.taxaFrete = 0.0,
+    required this.taxaFrete,
     required this.formaPagamento,
+    this.observacao,
     required this.enderecoEntrega,
-    this.observacao = '',
-    this.status = 'pendente', 
+    required this.itens,
+    this.trocoPara,
+    this.status,
     this.criadoEm,
+    this.historicoStatus,
   });
-
-  factory PedidoModel.fromMap(Map<String, dynamic> map, String id) {
-    return PedidoModel(
-      idPedido: id,
-      usuarioId: map['usuarioId'] ?? '',
-      lojaId: map['lojaId'] ?? '',
-      itens: (map['itens'] as List<dynamic>?)
-              ?.map((item) => ItemPedidoModel.fromMap(item as Map<String, dynamic>))
-              .toList() ??
-          [],
-      valorTotal: (map['valorTotal'] ?? 0).toDouble(),
-      taxaFrete: (map['taxaFrete'] ?? 0).toDouble(),
-      formaPagamento: map['formaPagamento'] ?? '',
-      enderecoEntrega: map['enderecoEntrega'] ?? {},
-      observacao: map['observacao'] ?? '',
-      status: map['status'] ?? 'pendente',
-      criadoEm: map['criadoEm'] as Timestamp?,
-    );
-  }
 
   Map<String, dynamic> toMap() {
     return {
       'usuarioId': usuarioId,
       'lojaId': lojaId,
-      'itens': itens.map((item) => item.toMap()).toList(),
       'valorTotal': valorTotal,
       'taxaFrete': taxaFrete,
       'formaPagamento': formaPagamento,
-      'enderecoEntrega': enderecoEntrega,
       'observacao': observacao,
-      'status': status,
-      'criadoEm': criadoEm ?? FieldValue.serverTimestamp(),
+      'trocoPara': trocoPara,
+      'enderecoEntrega': enderecoEntrega.toMap(), 
+      'itens': itens.map((item) => item.toMap()).toList(), 
     };
+  }
+
+  factory PedidoModel.fromMap(Map<String, dynamic> map) {
+    return PedidoModel(
+      id: map['id'],
+      usuarioId: map['usuarioId'] ?? '',
+      lojaId: map['lojaId'] ?? '',
+      lojaNome: map['lojaNome'],
+      valorTotal: num.tryParse(map['valorTotal']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      taxaFrete: num.tryParse(map['taxaFrete']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      formaPagamento: map['formaPagamento'] ?? '',
+      observacao: map['observacao'],
+      trocoPara: map['trocoPara'] == null
+          ? null
+          : num.tryParse(map['trocoPara'].toString())?.toDouble(),
+      enderecoEntrega: EnderecoModel.fromMap(map['enderecoEntrega'] ?? {}),
+      itens: List<CartItemModel>.from(
+        (map['itens'] ?? []).map((x) => CartItemModel.fromMap(x)),
+      ),
+      status: map['status'],
+      criadoEm: map['criadoEm'],
+      historicoStatus: map['historicoStatus'] == null
+          ? null
+          : List<HistoricoStatusModel>.from(
+              (map['historicoStatus'] as List).map((x) => HistoricoStatusModel.fromMap(x)),
+            ),
+    );
+  }
+}
+
+/// Uma entrada da linha do tempo do pedido (tabela
+/// tb_pedidos_status_historico, já criada no banco via trigger — só falta
+/// o backend expor isso em algum endpoint de leitura).
+class HistoricoStatusModel {
+  final String statusAnterior;
+  final String statusNovo;
+  final String alteradoEm;
+
+  HistoricoStatusModel({
+    required this.statusAnterior,
+    required this.statusNovo,
+    required this.alteradoEm,
+  });
+
+  factory HistoricoStatusModel.fromMap(Map<String, dynamic> map) {
+    return HistoricoStatusModel(
+      statusAnterior: map['statusAnterior'] ?? '',
+      statusNovo: map['statusNovo'] ?? '',
+      alteradoEm: map['alteradoEm'] ?? '',
+    );
   }
 }

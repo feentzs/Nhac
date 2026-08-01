@@ -81,14 +81,9 @@ class HomeProductSection extends StatelessWidget {
                       );
                     },
                     child: ProductCard(
-                      idProduto: item.uid,
-                      imageUrl: item.imagemUrl,
-                      name: item.nome,
-                      weight: item.peso ?? '',
-                      price: item.preco,
+                        produto: item,
                     ),
                   ),
-                  if (item.percentualDesconto != null)
                     Positioned(
                       top: 8.h,
                       left: 8.w,

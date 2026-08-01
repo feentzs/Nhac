@@ -1,12 +1,16 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nhac/repositories/user_repository.dart';
+import 'package:nhac/services/auth_service.dart';
 
 class PushNotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final AuthService _authService;
+  final UserRepository _userRepository = UserRepository();
+
+  PushNotificationService(this._authService);
 
   final AndroidNotificationChannel _androidChannel = const AndroidNotificationChannel(
     'nhac_high_importance_channel', 
@@ -22,7 +26,7 @@ class PushNotificationService {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('Permissão de notificações concedida!');
-      
+
       String? token = await _fcm.getToken();
       if (token != null) {
         debugPrint('MEU FCM TOKEN: $token');
@@ -39,7 +43,7 @@ class PushNotificationService {
 
       const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const InitializationSettings initSettings = InitializationSettings(android: androidInit);
-      
+
       await _localNotifications.initialize(
         settings: initSettings, 
       );
@@ -50,10 +54,14 @@ class PushNotificationService {
 
         if (notification != null && android != null) {
           _localNotifications.show(
-            id: notification.hashCode,
-            title: notification.title,
-            body: notification.body,
-            notificationDetails: NotificationDetails(
+            id:
+            notification.hashCode,
+            title:
+            notification.title,
+            body:
+            notification.body,
+            notificationDetails: 
+            NotificationDetails(
               android: AndroidNotificationDetails(
                 _androidChannel.id,
                 _androidChannel.name,
@@ -70,21 +78,21 @@ class PushNotificationService {
   }
 
   Future<void> _guardarTokenNoBancoDeDados(String token) async {
-
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    String? userId = _authService.usuarioId;
 
     if (userId != null) {
       try {
-        await FirebaseFirestore.instance
-            .collection('usuarios') 
-            .doc(userId)
-            .set({
-              'fcmToken': token,
-            }, SetOptions(merge: true)); 
+        // BUG CORRIGIDO: o token era gravado só no Firestore, que este
+        // backend nunca leu (nem existe mais ligação com Firestore para
+        // dados de usuário). Agora vai para a API REST, no mesmo registro
+        // que o resto do app já usa (PATCH /usuarios/{id}).
+        await _userRepository.atualizarDadosUsuario(userId, {
+          'fcmToken': token,
+        });
 
-        debugPrint('✅ FCM Token atualizado no Firestore com sucesso!');
+        debugPrint('✅ FCM Token atualizado via API com sucesso!');
       } catch (e) {
-        debugPrint('❌ Erro ao guardar o token no Firestore: $e');
+        debugPrint('❌ Erro ao guardar o token via API: $e');
       }
     } else {
       debugPrint('Nenhum utilizador logado. O token não foi guardado na base de dados.');

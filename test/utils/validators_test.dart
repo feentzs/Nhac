@@ -31,7 +31,6 @@ void main() {
       expect(Validators.validarCPF(''), 'CPF obrigatório');
       expect(Validators.validarCPF('123'), 'O CPF deve ter 11 dígitos');
       expect(Validators.validarCPF('11111111111'), 'CPF inválido');
-      // CPF válido gerado para teste: 52998224725
       expect(Validators.validarCPF('52998224725'), null);
       expect(Validators.validarCPF('529.982.247-25'), null);
     });

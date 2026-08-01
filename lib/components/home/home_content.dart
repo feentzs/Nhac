@@ -1,8 +1,11 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
+import 'package:nhac/components/home/home_category_chips.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/loja_page.dart';
+import 'package:nhac/repositories/loja_repository.dart';
+import 'package:nhac/repositories/produto_repository.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -20,12 +23,22 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:nhac/controllers/user_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 @NowaGenerated()
 class HomeContent extends StatefulWidget {
+  // BUG CORRIGIDO: "animação de subir toda a tela na home parou de
+  // funcionar". HomeContent tinha seu PRÓPRIO ScrollController interno,
+  // completamente desconectado do controller que HomePage._scrollToTop()
+  // usava — então tocar no botão de "subir" chamava .animateTo() num
+  // controller órfão (sem nenhum ScrollView anexado), e o guard de
+  // hasClients simplesmente não fazia nada, silenciosamente. Agora
+  // HomePage pode injetar o controller de verdade.
+  final ScrollController? scrollController;
+
   @NowaGenerated({'loader': 'auto-constructor'})
-  const HomeContent({super.key});
+  const HomeContent({super.key, this.scrollController});
 
   @override
   State<HomeContent> createState() => _HomeContentState();
@@ -37,12 +50,15 @@ class _HomeContentState extends State<HomeContent> {
   late bool _isLoading;
   Timer? _loadingTimer;
 
-
   final List<LojasModel> _lojas = [];
-  DocumentSnapshot? _lastLojaDoc;
+  int _currentPageLojas = 0;
   bool _isLoadingLojas = false;
   bool _hasMoreLojas = true;
   bool _errorLojas = false;
+  String _mensagemErroLojas = 'Ocorreu um erro ao carregar os restaurantes.';
+
+  final LojaRepository _lojaRepository = LojaRepository();
+  final ProdutoRepository _produtoRepository = ProdutoRepository();
 
   final List<ProdutosModel> _produtosNecessidades = [];
   bool _isLoadingProdutosNecessidades = true;
@@ -50,14 +66,13 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-@override
+  @override
   void initState() {
     super.initState();
     _isLoading = !_jaCarregouUmaVez;
 
     _carregarDadosIniciais();
     _carregarGpsComCache();
-
 
     if (_isLoading) {
       _loadingTimer = Timer(const Duration(seconds: 2), () {
@@ -74,25 +89,45 @@ class _HomeContentState extends State<HomeContent> {
   @override
   void dispose() {
     _loadingTimer?.cancel();
+    _scrollController.removeListener(_onScrollForPagination);
+    if (_controllerEhProprio) {
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
   bool _listenerAttached = false;
+  // BUG CORRIGIDO: usava PrimaryScrollController.of(context), que exige um
+  // controller ambiente disponível na árvore. Isso funcionava por acaso
+  // enquanto a Home sempre herdava o controller compartilhado do PageView
+  // em home_page.dart — mas quebrava (ou lançava assertion) sempre que
+  // essa aba passava a rodar dentro de um escopo PrimaryScrollController.none
+  // (necessário pra evitar o bug de "ScrollController attached to multiple
+  // scroll views"). Agora HomeContent tem seu próprio controller, não
+  // depende de nada ambiente.
+  late final ScrollController _scrollController =
+      widget.scrollController ?? ScrollController();
+  // Só fazemos dispose do controller se fomos nós que o criamos — um
+  // controller injetado de fora (por HomePage) é responsabilidade de quem
+  // o criou, não nossa.
+  bool get _controllerEhProprio => widget.scrollController == null;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_listenerAttached) {
-      final primaryController = PrimaryScrollController.of(context);
-      primaryController.addListener(() {
-        if (primaryController.position.pixels >= primaryController.position.maxScrollExtent - 200) {
-          _fetchLojas();
-        }
-      });
+      _scrollController.addListener(_onScrollForPagination);
       _listenerAttached = true;
     }
   }
 
+  void _onScrollForPagination() {
+    final controller = _scrollController;
+    if (!controller.hasClients) return;
+    if (controller.position.pixels >= controller.position.maxScrollExtent - 200) {
+      _fetchLojas();
+    }
+  }
 
   Future<void> _carregarDadosIniciais() async {
     await Future.wait([
@@ -104,54 +139,39 @@ class _HomeContentState extends State<HomeContent> {
 
   Future<void> _fetchProdutosNecessidades() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('produtos')
-          .where('loja_is_aberto', isEqualTo: true)
-          .limit(10)
-          .get();
-
+      final produtos = await _produtoRepository.buscarNecessidades();
       if (mounted) {
         setState(() {
           _produtosNecessidades.clear();
-          _produtosNecessidades.addAll(snapshot.docs.map((doc) =>
-              ProdutosModel.fromMap(
-                  doc.data(), doc.id)));
+          _produtosNecessidades.addAll(produtos);
           _isLoadingProdutosNecessidades = false;
         });
       }
     } catch (e) {
-      debugPrint("Erro ao buscar produtos necessidades: $e");
+      debugPrint("Erro ao buscar necessidades da API: $e");
       if (mounted) setState(() => _isLoadingProdutosNecessidades = false);
     }
   }
 
   Future<void> _fetchProdutosPromocao() async {
     try {
-
-      final snapshot = await FirebaseFirestore.instance
-          .collection('produtos')
-          .where('loja_is_aberto', isEqualTo: true)
-          .where('preco', isLessThanOrEqualTo: 20.0)
-          .limit(10)
-          .get();
-
+      final promocoes = await _produtoRepository.buscarPromocoes();
       if (mounted) {
         setState(() {
           _produtosPromocao.clear();
-          _produtosPromocao.addAll(snapshot.docs.map((doc) =>
-              ProdutosModel.fromMap(
-                  doc.data(), doc.id)));
+          _produtosPromocao.addAll(promocoes);
           _isLoadingProdutosPromocao = false;
         });
       }
     } catch (e) {
-      debugPrint("Erro ao buscar produtos promoção: $e");
+      debugPrint("Erro ao buscar promoções da API: $e");
       if (mounted) setState(() => _isLoadingProdutosPromocao = false);
     }
   }
 
   Future<void> _fetchLojas() async {
     if (_isLoadingLojas || !_hasMoreLojas) return;
+    if (!mounted) return;
 
     setState(() {
       _isLoadingLojas = true;
@@ -159,19 +179,10 @@ class _HomeContentState extends State<HomeContent> {
     });
 
     try {
-      Query query = FirebaseFirestore.instance
-          .collection('lojas')
-          .orderBy('is_aberto', descending: true)
-          .orderBy('nome')
-          .limit(10);
+      final novasLojas =
+          await _lojaRepository.buscarLojas(page: _currentPageLojas, size: 10);
 
-      if (_lastLojaDoc != null) {
-        query = query.startAfterDocument(_lastLojaDoc!);
-      }
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isEmpty) {
+      if (novasLojas.isEmpty) {
         if (mounted) {
           setState(() {
             _hasMoreLojas = false;
@@ -181,29 +192,39 @@ class _HomeContentState extends State<HomeContent> {
         return;
       }
 
-      final novasLojas = snapshot.docs.map((doc) {
-        return LojasModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
-
       if (mounted) {
         setState(() {
           _lojas.addAll(novasLojas);
-          _lastLojaDoc = snapshot.docs.last;
+          _currentPageLojas++;
+
+          if (novasLojas.length < 10) {
+            _hasMoreLojas = false;
+          }
+
           _isLoadingLojas = false;
         });
       }
-    } catch (e) {
-      if (e.toString().contains('failed-precondition')) {
-        debugPrint(
-            "ERRO DE ÍNDICE: Clique no link acima para criar o índice composto no Firebase: $e");
-      } else {
-        debugPrint("Erro ao buscar lojas: $e");
-      }
-
+    } on DioException catch (e) {
+      final isTimeout = e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout;
+      debugPrint("Erro ao buscar lojas da API REST: ${e.type} | status=${e.response?.statusCode} | ${e.message}");
       if (mounted) {
         setState(() {
           _isLoadingLojas = false;
           _errorLojas = true;
+          _mensagemErroLojas = isTimeout
+              ? 'O servidor está iniciando, isso pode levar até 1 minuto na primeira vez. Tente novamente.'
+              : 'Ocorreu um erro ao carregar os restaurantes.';
+        });
+      }
+    } catch (e) {
+      debugPrint("Erro ao buscar lojas da API REST: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingLojas = false;
+          _errorLojas = true;
+          _mensagemErroLojas = 'Ocorreu um erro ao carregar os restaurantes.';
         });
       }
     }
@@ -220,10 +241,11 @@ class _HomeContentState extends State<HomeContent> {
         ),
         child: Column(
           children: [
-            Icon(Icons.error_outline, color: const Color(0xFFFF6961), size: 48.r),
+            Icon(Icons.error_outline,
+                color: const Color(0xFFFF6961), size: 48.r),
             SizedBox(height: 16.h),
             Text(
-              'Ocorreu um erro ao carregar os restaurantes.',
+              _mensagemErroLojas,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 14.sp),
             ),
@@ -408,7 +430,7 @@ class _HomeContentState extends State<HomeContent> {
                                             color: Colors.amber, size: 16.r),
                                         SizedBox(width: 4.w),
                                         Text(
-                                          loja.dadosOperacionais.avaliacaoMedia
+                                          loja.dadosOperacionais!.avaliacaoMedia
                                               .toStringAsFixed(1),
                                           style: TextStyle(
                                             color: Colors.amber,
@@ -431,7 +453,7 @@ class _HomeContentState extends State<HomeContent> {
                                 Row(
                                   children: [
                                     Text(
-                                      '${loja.dadosOperacionais.tempoEntregaMin}-${loja.dadosOperacionais.tempoEntregaMax} min',
+                                      '${loja.dadosOperacionais?.tempoEntregaMin}-${loja.dadosOperacionais?.tempoEntregaMax} min',
                                       style: TextStyle(
                                           color: Colors.grey.shade600,
                                           fontSize: 12.sp),
@@ -444,18 +466,18 @@ class _HomeContentState extends State<HomeContent> {
                                               color: Colors.grey.shade400)),
                                     ),
                                     Text(
-                                      loja.dadosOperacionais.taxaEntregaBase ==
+                                      loja.dadosOperacionais?.taxaEntregaBase ==
                                               0
                                           ? 'Entrega Grátis'
-                                          : 'R\$ ${loja.dadosOperacionais.taxaEntregaBase.toStringAsFixed(2)}',
+                                          : 'R\$ ${loja.dadosOperacionais?.taxaEntregaBase.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         color: loja.dadosOperacionais
-                                                    .taxaEntregaBase ==
+                                                    ?.taxaEntregaBase ==
                                                 0
                                             ? Colors.green
                                             : Colors.grey.shade600,
                                         fontWeight: loja.dadosOperacionais
-                                                    .taxaEntregaBase ==
+                                                    ?.taxaEntregaBase ==
                                                 0
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -536,18 +558,60 @@ class _HomeContentState extends State<HomeContent> {
         if (!mounted) return;
         final enderecoProvider = context.read<EnderecoProvider>();
         if (enderecoProvider.enderecos.isEmpty) {
-          final novoEndereco = EnderecoModel(
-            idDocumento: '',
-            rua: place.street ?? '',
-            numero: '',
-            bairro: place.subLocality ?? '',
-            cidade: place.locality ?? '',
-            estado: place.administrativeArea ?? '',
-            cep: place.postalCode ?? '',
-            complemento: '',
-            padrao: true,
-          );
-          await enderecoProvider.adicionarEndereco(novoEndereco);
+          // BUG CORRIGIDO (2ª rodada): o log real mostrou que o backend
+          // rejeitava (422) com "cidade obrigatória", "estado deve ter 2
+          // caracteres" e "número obrigatório". Causas:
+          // - numero: aqui nunca passava pelo formulário de complemento
+          //   (que só existe no fluxo de busca manual) — ia sempre vazio.
+          // - estado: place.administrativeArea (plugin `geocoding` nativo)
+          //   devolve o nome completo ("São Paulo"), não a sigla ("SP")
+          //   que o backend exige.
+          // - cidade: o geocoder nativo às vezes não resolve locality.
+          // A Geocoding API do Google resolve os três de forma muito mais
+          // confiável (short_name já vem como sigla certa), então agora
+          // ela é a fonte primária; o Placemark nativo só serve de
+          // fallback complementar. numero vira 'S/N' (mesma convenção do
+          // formulário manual) já que o GPS não tem como saber o número
+          // da casa — o usuário pode completar depois em Endereços Salvos.
+          final enderecoGoogle = await _buscarEnderecoViaGoogle(
+              position.latitude, position.longitude);
+
+          final cep = enderecoGoogle['cep']?.isNotEmpty == true
+              ? enderecoGoogle['cep']!
+              : _formatarCep(place.postalCode ?? '');
+          final cidade = enderecoGoogle['cidade']?.isNotEmpty == true
+              ? enderecoGoogle['cidade']!
+              : (place.locality ?? '');
+          final estado = enderecoGoogle['estado']?.isNotEmpty == true
+              ? enderecoGoogle['estado']!
+              : '';
+          final bairro = enderecoGoogle['bairro']?.isNotEmpty == true
+              ? enderecoGoogle['bairro']!
+              : (place.subLocality ?? '');
+          final rua = enderecoGoogle['rua']?.isNotEmpty == true
+              ? enderecoGoogle['rua']!
+              : (place.street ?? '');
+
+          // Só cria automaticamente se TODOS os campos obrigatórios pelo
+          // backend (@NotBlank em rua/cidade/estado/cep) realmente vieram
+          // preenchidos — senão fica só o texto cosmético na Home e o
+          // usuário completa manualmente em Endereços Salvos.
+          if (cep.isNotEmpty && cidade.isNotEmpty && estado.length == 2 && rua.isNotEmpty && bairro.isNotEmpty) {
+            final novoEndereco = EnderecoModel(
+              id: '',
+              rua: rua,
+              numero: (enderecoGoogle['numero']?.isNotEmpty == true)
+                  ? enderecoGoogle['numero']!
+                  : 'S/N',
+              bairro: bairro,
+              cidade: cidade,
+              estado: estado,
+              cep: cep,
+              complemento: '',
+              isPadrao: true,
+            );
+            await enderecoProvider.adicionarEndereco(novoEndereco);
+          }
         }
       }
     } catch (e) {
@@ -555,8 +619,83 @@ class _HomeContentState extends State<HomeContent> {
     }
   }
 
-  Future<void> _onRefresh() async {
-    _lastLojaDoc = null;
+  /// Normaliza qualquer CEP (com ou sem traço, com espaços etc.) para o
+  /// formato XXXXX-XXX exigido pelo backend. Devolve '' se não tiver
+  /// exatamente 8 dígitos (CEP inválido/incompleto/ausente).
+  String _formatarCep(String cepBruto) {
+    final digitos = cepBruto.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitos.length != 8) return '';
+    return '${digitos.substring(0, 5)}-${digitos.substring(5)}';
+  }
+
+  /// Fonte primária pro endereço automático da Home. Mais confiável que o
+  /// plugin `geocoding` nativo pra endereços brasileiros: 'short_name' do
+  /// Google já vem como sigla de estado correta ("SP"), e resolve cidade
+  /// mesmo quando o geocoder nativo não consegue.
+  Future<Map<String, String>> _buscarEnderecoViaGoogle(double lat, double lng) async {
+    final apiKey = dotenv.env['GOOGLE_API_KEY'] ?? '';
+    if (apiKey.isEmpty) return {};
+
+    try {
+      final dio = Dio();
+      final response = await dio.get(
+        'https://maps.googleapis.com/maps/api/geocode/json',
+        queryParameters: {
+          'latlng': '$lat,$lng',
+          'key': apiKey,
+          'language': 'pt-BR',
+        },
+      );
+
+      final data = response.data;
+      if (data['status'] != 'OK') return {};
+
+      final results = data['results'] as List;
+      if (results.isEmpty) return {};
+
+      final components = results.first['address_components'] as List;
+
+      String rua = '', numero = '', bairro = '', cidade = '', estado = '', cep = '';
+      for (final c in components) {
+        final types = c['types'] as List;
+        if (types.contains('route')) rua = c['long_name'];
+        // BUG CORRIGIDO: "não puxa o número de casa pelo endereço
+        // automático". Quando o GPS tem precisão suficiente (rooftop-level),
+        // o Google às vezes devolve o número exato via 'street_number' —
+        // antes isso nunca era extraído, e o endereço automático sempre
+        // caía direto no placeholder 'S/N', mesmo quando o número real
+        // estava disponível.
+        if (types.contains('street_number')) numero = c['long_name'];
+        if (types.contains('sublocality') ||
+            types.contains('sublocality_level_1') ||
+            types.contains('neighborhood')) {
+          bairro = c['long_name'];
+        }
+        // No Brasil, o "município"/cidade às vezes vem como locality,
+        // às vezes como administrative_area_level_2 — checamos os dois,
+        // dando prioridade a locality (mais comum em capitais).
+        if (types.contains('locality') && cidade.isEmpty) {
+          cidade = c['long_name'];
+        }
+        if (types.contains('administrative_area_level_2') && cidade.isEmpty) {
+          cidade = c['long_name'];
+        }
+        if (types.contains('administrative_area_level_1')) {
+          estado = c['short_name']; // sigla, ex: "SP"
+        }
+        if (types.contains('postal_code')) {
+          cep = _formatarCep(c['long_name'].toString());
+        }
+      }
+
+      return {'rua': rua, 'numero': numero, 'bairro': bairro, 'cidade': cidade, 'estado': estado, 'cep': cep};
+    } catch (e) {
+      debugPrint('Erro ao buscar endereço via Google Geocoding: $e');
+      return {};
+    }
+  }
+
+  Future<void> _onRefresh() async {    _currentPageLojas = 0;
     _hasMoreLojas = true;
     _lojas.clear();
     await Future.wait([
@@ -577,20 +716,21 @@ class _HomeContentState extends State<HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    final enderecoPadrao = context.select<EnderecoProvider, EnderecoModel?>(
-      (p) => p.enderecos.where((e) => e.padrao).firstOrNull,
+    final enderecoisPadrao = context.select<EnderecoProvider, EnderecoModel?>(
+      (p) => p.enderecos.where((e) => e.isPadrao).firstOrNull,
     );
 
     String enderecoTopo = _currentAddress;
-    if (enderecoPadrao != null) {
-      enderecoTopo = '${enderecoPadrao.rua}, ${enderecoPadrao.numero}';
-      if (enderecoPadrao.complemento.isNotEmpty) {
-        enderecoTopo += ' - ${enderecoPadrao.complemento}';
+    if (enderecoisPadrao != null) {
+      enderecoTopo = '${enderecoisPadrao.rua}, ${enderecoisPadrao.numero}';
+      if ((enderecoisPadrao.complemento ?? '').isNotEmpty) {
+        enderecoTopo += ' - ${enderecoisPadrao.complemento}';
       }
     }
 
     return CustomScrollView(
-     physics: const AlwaysScrollableScrollPhysics(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
       slivers: [
@@ -837,7 +977,7 @@ class _HomeContentState extends State<HomeContent> {
                     ),
                   );
                 },
-                child: _buildCategoriasRapidas(),
+                child: const HomeCategoryChips(),
               ),
               SizedBox(height: 28.h),
               TweenAnimationBuilder<double>(
@@ -931,74 +1071,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _buildCategoriasRapidas() {
-    final categorias = [
-      {'nome': 'Mercado', 'icon': Icons.shopping_basket},
-      {'nome': 'Lanches', 'icon': Icons.fastfood},
-      {'nome': 'Pizza', 'icon': Icons.local_pizza},
-      {'nome': 'Saudável', 'icon': Icons.eco},
-      {'nome': 'Doces', 'icon': Icons.icecream},
-    ];
-
-    return SizedBox(
-      height: 100.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categorias.length,
-        itemBuilder: (context, index) {
-          final cat = categorias[index];
-          return GestureDetector(
-           onTap: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      SearchPage(initialCategory: cat['nome'] as String),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-                  transitionDuration: const Duration(milliseconds: 300),
-                ),
-              );
-            },
-            child: Container(
-              width: 80.w,
-              margin: EdgeInsets.only(right: 16.w),
-              child: Column(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF5D201C).withValues(alpha: 0.05),
-                          blurRadius: 10.r,
-                          offset: const Offset(0.0, 4.0),
-                        ),
-                      ],
-                    ),
-                    child: Icon(cat['icon'] as IconData,
-                        color: const Color(0xFFFF6961), size: 30.r),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    cat['nome'] as String,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF5D201C),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Widget _buildBoxSkeleton(
       {double? width, double? height, double borderRadius = 8}) {
@@ -1150,7 +1222,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                   onTap: () {
                     context
                         .read<EnderecoProvider>()
-                        .definirComoPadrao(endereco.idDocumento);
+                        .definirComoPadrao(endereco.id);
                     Navigator.pop(context);
                   },
                   leading: Container(
@@ -1161,7 +1233,7 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                     ),
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
-                              endereco.complemento
+                              (endereco.complemento ?? '')
                                   .toLowerCase()
                                   .contains('trabalho')
                           ? Icons.work_outline
@@ -1178,12 +1250,12 @@ class _SelecaoEnderecoBottomSheet extends StatelessWidget {
                     ),
                   ),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${(endereco.complemento ?? '').isNotEmpty ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),
                   ),
-                  trailing: endereco.padrao
+                  trailing: endereco.isPadrao
                       ? Icon(Icons.check_circle,
                           color: const Color(0xFFFF6961), size: 22.r)
                       : null,
