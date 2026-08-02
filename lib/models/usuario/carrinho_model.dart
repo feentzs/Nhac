@@ -1,56 +1,39 @@
-class CarrinhoModel {
-  final String idDocumento;
-  final String idProduto;
-  final String imagemUrl;
+class CartItemModel {
+  final String produtoId;
   final String nome;
+  final String imagemUrl;
   final double preco;
-  final int quantidade;
+  final String lojaId;   
+  int quantidade;
 
-  CarrinhoModel({
-    required this.idDocumento,
-    required this.idProduto,
-    required this.imagemUrl,
+  CartItemModel({
+    required this.produtoId,
     required this.nome,
+    required this.imagemUrl,
     required this.preco,
-    required this.quantidade,
+    required this.lojaId,  
+    this.quantidade = 1,
   });
 
-
-  factory CarrinhoModel.fromMap(Map<String, dynamic> map, String docId){
-    return CarrinhoModel(
-      idDocumento: docId,
-      idProduto: map['id_produto'] ?? '',
-      imagemUrl: map['imagem_url'] ?? '',
-      nome: map['nome'] ?? '',
-      preco: map['preco']?.toDouble() ?? 0.0,
-      quantidade: map['quantidade'] ?? 0,
-    );
-  }
-
-  CarrinhoModel copyWith({
-    String? idDocumento,
-    String? idProduto,
-    String? imagemUrl,
-    String? nome,
-    double? preco,
-    int? quantidade,
-  }) =>
-      CarrinhoModel(
-        idDocumento: idDocumento ?? this.idDocumento,
-        idProduto: idProduto ?? this.idProduto,
-        imagemUrl: imagemUrl ?? this.imagemUrl,
-        nome: nome ?? this.nome,
-        preco: preco ?? this.preco,
-        quantidade: quantidade ?? this.quantidade,
-      );
-
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
-      'id_produto': idProduto,
-      'imagem_url': imagemUrl,
+      'produtoId': produtoId,
       'nome': nome,
-      'preco': preco,
+      'imagemUrl': imagemUrl,
+      'precoHistorico': preco,
+      'lojaId': lojaId,      
       'quantidade': quantidade,
     };
+  }
+
+  factory CartItemModel.fromMap(Map<String, dynamic> map) {
+    return CartItemModel(
+      produtoId: map['produtoId'] ?? '',
+      nome: map['nome'] ?? '',
+      imagemUrl: map['imagemUrl'] ?? '',
+      preco: num.tryParse(map['precoHistorico']?.toString() ?? '0')?.toDouble() ?? 0.0,
+      lojaId: map['lojaId']?.toString() ?? '',  
+      quantidade: map['quantidade'] ?? 1,
+    );
   }
 }

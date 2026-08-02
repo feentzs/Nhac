@@ -1,10 +1,10 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lottie/lottie.dart';
 import 'package:nhac/components/nhac_menu_tile.dart';
+
 
 class DadosPessoaisPage extends StatelessWidget {
   final bool? isGoogleUserOverride;
@@ -29,9 +29,8 @@ class DadosPessoaisPage extends StatelessWidget {
       );
     }
 
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final isGoogleUser = currentUser?.providerData.any((info) => info.providerId == 'google.com') ?? false;
-    final hasPassword = currentUser?.providerData.any((info) => info.providerId == 'password') ?? false;
+    final isGoogleUser = isGoogleUserOverride ?? userProvider.isGoogleUser;
+    final hasPassword = userProvider.hasPassword;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFE7E5),
@@ -60,7 +59,7 @@ class DadosPessoaisPage extends StatelessWidget {
             const SizedBox(height: 16.0),
             NhacMenuTile(
               titulo: 'Foto de Perfil',
-              subtitulo: usuario.fotoUrl.isNotEmpty ? 'Alterar foto' : 'Adicionar foto',
+              subtitulo: usuario.temFotoDePerfil ? 'Alterar foto' : 'Adicionar foto',
               onTap: () => context.push('/editar-foto'),
             ),
             NhacMenuTile(
@@ -80,7 +79,7 @@ class DadosPessoaisPage extends StatelessWidget {
             ),
             NhacMenuTile(
               titulo: 'Senha', 
-              subtitulo: hasPassword ? '**************' : 'Não cadastrada', 
+              subtitulo: hasPassword ? '**************' : 'N�o cadastrada', 
               onTap: () {},
             ),
           ],

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
-import 'package:nhac/services/auth_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +26,7 @@ class Nome extends StatefulWidget {
 @NowaGenerated()
 class _NomeState extends State<Nome> {
   bool _nomeValido = false;
-  bool _isLoading = false;
+  final bool  _isLoading = false;
   String? _erroNome;
 
   final TextEditingController _nomeController = TextEditingController();
@@ -114,30 +113,13 @@ class _NomeState extends State<Nome> {
                       if (cadastroData.email.isNotEmpty) {
                           localContext.push('/cadastro/telefone'); 
                         } else {
-                           final authService = localContext.read<AuthService>(); 
-
-                           try {
-                             setState(() => _isLoading = true);
-
-                             await authService.finalizarCadastroTelefone(
-                               nome: cadastroData.nome,
-                               telefone: cadastroData.telefone,
-                             );
-                             
-                             if (!localContext.mounted) return;
-                             cadastroData.limparDados();
-                             localContext.showSuccess('Cadastro finalizado!');
-                             localContext.go('/home-page');
-                             
-                           } catch (e) {
-                             if (localContext.mounted) {
-                               localContext.showError(e.toString());
-                             }
-                           } finally {
-                             if (localContext.mounted) {
-                               setState(() => _isLoading = false);
-                             }
-                           }
+                           // Cadastro por telefone não é suportado pelo backend
+                           // atual (apenas e-mail + senha via /auth/registrar).
+                           // TODO(backend): reabilitar quando existir verificação
+                           // de telefone/SMS integrada à API.
+                           localContext.showError(
+                             'Cadastro por telefone está temporariamente indisponível. Use seu e-mail.',
+                           );
                         }
                       }
                     : null,

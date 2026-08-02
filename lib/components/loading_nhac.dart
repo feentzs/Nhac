@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 
 class LoadingNhac extends StatelessWidget {
@@ -20,27 +21,27 @@ class LoadingNhac extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          width: tamanho,
-          height: tamanho,
+          width: tamanho.w,
+          height: tamanho.h,
           child: Lottie.asset(
             'assets/animations/nhac-intro.json',
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
-              return const Center(
+              return Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xFFFE645C),
+                  color: const Color(0xFFFE645C),
                 ),
               );
             },
           ),
         ),
         if (mensagem != null) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             mensagem!,
-            style: const TextStyle(
-              color: Color(0xFF5D201C),
-              fontSize: 16,
+            style: TextStyle(
+              color: const Color(0xFF5D201C),
+              fontSize: 16.sp,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -54,7 +55,7 @@ class LoadingNhac extends StatelessWidget {
         backgroundColor: const Color(0xFFFFE7E5),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
             child: loadingContent,
           ),
         ),

@@ -1,51 +1,49 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class MetodosPagamentoModel {
-  final String idDocumento;
+  final String id;
   final String bandeira;
-  final Timestamp? criadoEm;
+  final String? criadoEm;
   final String nomeCartao;
-  final bool padrao;
+  final bool isPadrao;
   final String tipo;
   final String ultimosDigitos;
 
   MetodosPagamentoModel({
-    required this.idDocumento,
+    required this.id,
     required this.bandeira,
     this.criadoEm,
     required this.nomeCartao,
-    this.padrao = false,
+    this.isPadrao = false,
     required this.tipo,
     required this.ultimosDigitos,
   });
 
-  factory MetodosPagamentoModel.fromMap(Map<String, dynamic> map, String docId) {
+  factory MetodosPagamentoModel.fromMap(Map<String, dynamic> map) {
     return MetodosPagamentoModel(
-      idDocumento: docId,
+      id: map['id']?.toString() ?? '',
       bandeira: map['bandeira'] ?? '',
-      criadoEm: map['criado_em'] as Timestamp?, 
-      nomeCartao: map['nome_cartao'] ?? '',
-      padrao: map['padrao'] ?? false,
+      criadoEm: map['criadoEm']?.toString(), 
+      nomeCartao: map['nomeCartao'] ?? '',
+      isPadrao: map['isPadrao'] ?? false,
       tipo: map['tipo'] ?? '',
-      ultimosDigitos: map['ultimos_digitos'] ?? '',
+      ultimosDigitos: map['ultimosDigitos'] ?? '',
     );
   }
 
   MetodosPagamentoModel copyWith({
-    String? idDocumento,
+    String? id,
     String? bandeira,
-    Timestamp? criadoEm,
+    String? criadoEm,
     String? nomeCartao,
-    bool? padrao,
+    bool? isPadrao,
     String? tipo,
     String? ultimosDigitos,
   }) =>
       MetodosPagamentoModel(
-        idDocumento: idDocumento ?? this.idDocumento,
+        id: id ?? this.id,
         bandeira: bandeira ?? this.bandeira,
         criadoEm: criadoEm ?? this.criadoEm,
         nomeCartao: nomeCartao ?? this.nomeCartao,
-        padrao: padrao ?? this.padrao,
+        isPadrao: isPadrao ?? this.isPadrao,
         tipo: tipo ?? this.tipo,
         ultimosDigitos: ultimosDigitos ?? this.ultimosDigitos,
       );
@@ -53,11 +51,11 @@ class MetodosPagamentoModel {
   Map<String, dynamic> toMap() {
     return {
       'bandeira': bandeira,
-      'criado_em': criadoEm ?? FieldValue.serverTimestamp(),
-      'nome_cartao': nomeCartao,
-      'padrao': padrao,
+      'criadoEm': criadoEm ?? DateTime.now().toIso8601String(),
+      'nomeCartao': nomeCartao,
+      'isPadrao': isPadrao,
       'tipo': tipo,
-      'ultimos_digitos': ultimosDigitos,
+      'ultimosDigitos': ultimosDigitos,
     };
   }
 }

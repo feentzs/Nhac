@@ -1,14 +1,11 @@
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'dart:core';
+
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:nhac/services/auth_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:nhac/controllers/cadastro_controller.dart'; 
 
-import 'package:nhac/globals/ui_utils.dart';
 
 @NowaGenerated()
 class InsiraTelefone extends StatefulWidget {
@@ -26,7 +23,7 @@ class _InsiraTelefoneState extends State<InsiraTelefone> {
   final TextEditingController _telefoneController = TextEditingController();
 
   bool _numeroValido = false;
-  bool _isLoading = false;
+  final bool  _isLoading = false;
 
   final maskFormatter = MaskTextInputFormatter(
     mask: '(##) #####-####',
@@ -134,41 +131,14 @@ class _InsiraTelefoneState extends State<InsiraTelefone> {
                 texto: 'Continuar', 
                 carregando: _isLoading,
                  onPressed: _numeroValido
-                      ? () async {
-                          final localContext = context;
-                          final authService = localContext.read<AuthService>();
-                          final cadastroData = localContext.read<CadastroController>();
-                          
-                          final telefoneLimpo = maskFormatter.getUnmaskedText();
-                          cadastroData.setTelefone(telefoneLimpo); 
-
-                          try {
-                            setState(() => _isLoading = true);
-
-                            await authService.enviarSmsDeVerificacao(
-                              telefone: telefoneLimpo,
-                              onCodeSent: (String verId) {
-                                if (localContext.mounted) {
-                                  setState(() => _isLoading = false);
-                                }
-                                cadastroData.setVerificationId(verId);
-                                if (localContext.mounted) {
-                                  localContext.push('/verificacao_numero', extra: _telefoneController.text);
-                                }
-                              },
-                              onFailed: (String erro) {
-                                if (localContext.mounted) {
-                                  setState(() => _isLoading = false);
-                                  localContext.showError('Erro ao enviar SMS: $erro');
-                                }
-                              },
-                            );
-                          } catch (e) {
-                             if (localContext.mounted) {
-                                setState(() => _isLoading = false);
-                                localContext.showError(e.toString());
-                             }
-                          }
+                      ? () {
+                          // Cadastro/login por telefone não é suportado pelo
+                          // backend atual (apenas e-mail + senha).
+                          // TODO(backend): reabilitar quando existir verificação
+                          // de telefone/SMS integrada à API.
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Login por telefone estará disponível em breve.')),
+                          );
                         }
                       : null,
               ),

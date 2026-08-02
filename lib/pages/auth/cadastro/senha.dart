@@ -1,6 +1,6 @@
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:flutter/material.dart';
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
@@ -217,11 +217,11 @@ class _SenhaState extends State<Senha> {
       final authService = localContext.read<AuthService>();
       final cadastroData = localContext.read<CadastroController>();
 
-      await authService.createAccount(
-        email: cadastroData.email, 
-        password: _senhaController.text, 
+      await authService.registrar(
         nome: cadastroData.nome,
-        telefone: cadastroData.telefone
+        email: cadastroData.email,
+        telefone: cadastroData.telefone,
+        senha: _senhaController.text,
       );
 
       if (!localContext.mounted) return;

@@ -2,54 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nhac/models/produto/produtos.dart';
 
 void main() {
-  group('ProductsModel Tests', () {
-    test('Deve converter um Map do Firebase para ProductsModel corretamente', () {
+  group('ProdutosModel Unit Tests (Refactored for REST)', () {
+    test('fromMap com dados completos deve mapear corretamente', () {
       final mockMap = {
-        'categoria': 'Hambúrguer',
-        'descricao': 'Pão artesanal, carne dupla e queijo cheddar',
-        'disponivel': true,
-        'imagem_url': 'http://site.com/hamburguer.jpg',
-        'loja_id': 'loja-123',
-        'media_avaliacao': 4.9,
-        'nome': 'Super Nhac Bacon',
-        'preco': 35.90,
-        'total_avaliacoes': 150,
+        'id': 'p-1',
+        'nome': 'Hamburguer',
+        'preco': 20.0,
+        'categoriaMenu': 'Lanches',
       };
 
-      final produto = ProdutosModel.fromMap(mockMap, 'produto-456');
+      final produto = ProdutosModel.fromMap(mockMap);
 
-      expect(produto.uid, 'produto-456');
-      expect(produto.nome, 'Super Nhac Bacon');
-      expect(produto.preco, 35.90);
-      expect(produto.disponivel, true);
-      expect(produto.lojaId, 'loja-123');
-    });
-
-    test('Deve usar valores por defeito quando o Map estiver incompleto', () {
-      final produtoVazio = ProdutosModel.fromMap(const {}, 'id-vazio');
-
-      expect(produtoVazio.nome, '');
-      expect(produtoVazio.preco, 0.0);
-      expect(produtoVazio.disponivel, false);
-      expect(produtoVazio.totalAvaliacoes, 0);
-    });
-
-    test('Deve converter ProductsModel para Map corretamente', () {
-      final produto = ProdutosModel(
-        uid: 'produto-456',
-        categoria: 'Hambúrguer',
-        disponivel: true,
-        lojaId: 'loja-123',
-        nome: 'Super Nhac Bacon',
-        preco: 35.90,
-      );
-
-      final map = produto.toMap();
-
-      expect(map['nome'], 'Super Nhac Bacon');
-      expect(map['preco'], 35.90);
-      expect(map['disponivel'], true);
-      expect(map.containsKey('uid'), false); 
+      expect(produto.id, 'p-1');
+      expect(produto.preco, 20.0);
     });
   });
 }

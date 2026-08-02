@@ -1,210 +1,273 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../models/produto/produtos.dart';
+import '../models/loja/lojas.dart';
+import '../components/product_card.dart';
+import '../repositories/produto_repository.dart';
+import '../repositories/loja_repository.dart';
+import 'produto_detalhes_page.dart';
+import 'loja_page.dart';
+
+enum _FiltroBusca { tudo, produtos, lojas }
+
+class _ResultadoBusca {
+  final List<ProdutosModel> produtos;
+  final List<LojasModel> lojas;
+  _ResultadoBusca({required this.produtos, required this.lojas});
+
+  bool get vazio => produtos.isEmpty && lojas.isEmpty;
+}
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final String? initialCategory;
+
+  const SearchPage({super.key, this.initialCategory});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateMixin {
+class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  late AnimationController _animationController;
+  final ProdutoRepository _produtoRepository = ProdutoRepository();
+  final LojaRepository _lojaRepository = LojaRepository();
+
+  Future<_ResultadoBusca>? _searchFuture;
+  _FiltroBusca _filtro = _FiltroBusca.tudo;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _animationController.forward();
+    if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
+      _searchController.text = widget.initialCategory!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _buscarPorCategoriaInicial(widget.initialCategory!);
+      });
+    }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Widget _buildAnimatedItem(Widget child, int index) {
-    final animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Interval(
-          (index * 0.1).clamp(0.0, 1.0),
-          (index * 0.1 + 0.5).clamp(0.0, 1.0),
-          curve: Curves.easeOutCubic,
-        ),
+  void _buscarPorCategoriaInicial(String categoria) {
+    if (categoria.isEmpty) return;
+    setState(() {
+      _searchFuture = _produtoRepository
+          .buscarPorCategoria(categoria)
+          .then((produtos) => _ResultadoBusca(produtos: produtos, lojas: const []));
+    });
+  }
+
+  /// Busca unificada: produtos por NOME + produtos por CATEGORIA (mesclados,
+  /// sem duplicar) + lojas por NOME — tudo a partir do mesmo termo digitado.
+  void _iniciarBusca(String termo) {
+    if (termo.isEmpty) return;
+    setState(() {
+      _searchFuture = _buscarTudo(termo);
+    });
+  }
+
+  Future<_ResultadoBusca> _buscarTudo(String termo) async {
+    final resultados = await Future.wait([
+      _produtoRepository.buscarProdutosPorNome(termo),
+      _produtoRepository.buscarPorCategoria(termo),
+      _lojaRepository.buscarLojasPorNome(termo),
+    ]);
+
+    final produtosPorNome = resultados[0] as List<ProdutosModel>;
+    final produtosPorCategoria = resultados[1] as List<ProdutosModel>;
+    final lojas = resultados[2] as List<LojasModel>;
+
+    final produtosUnicos = <String, ProdutosModel>{};
+    for (final p in [...produtosPorNome, ...produtosPorCategoria]) {
+      produtosUnicos[p.id] = p;
+    }
+
+    return _ResultadoBusca(produtos: produtosUnicos.values.toList(), lojas: lojas);
+  }
+
+  void _abrirProduto(ProdutosModel produto) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ProdutoDetalhesPage(produto: produto),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(position: animation.drive(tween), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
       ),
     );
+  }
 
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        return Opacity(
-          opacity: animation.value,
-          child: Transform.translate(
-            offset: Offset(0, 15 * (1 - animation.value)),
-            child: child,
-          ),
-        );
-      },
-      child: child,
+  void _abrirLoja(LojasModel loja) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => LojaPage(loja: loja),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(position: animation.drive(tween), child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0, left: 24.0, right: 24.0, bottom: 24.0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF5D201C).withValues(alpha: 0.05),
-                            blurRadius: 10.0,
-                            offset: const Offset(0.0, 4.0),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Color(0xFF5D201C),
-                        size: 20.0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16.0),
-                  Expanded(
-                    child: Hero(
-                      tag: 'search_bar',
-                      child: Material(
-                        color: Colors.transparent,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 4.0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(50.0),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF5D201C).withValues(alpha: 0.05),
-                                blurRadius: 10.0,
-                                offset: const Offset(0.0, 4.0),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.search, color: Colors.grey),
-                              const SizedBox(width: 8.0),
-                              Expanded(
-                                child: TextField(
-                                  controller: _searchController,
-                                  autofocus: true,
-                                  decoration: InputDecoration(
-                                    hintText: 'Procurar',
-                                    hintStyle: TextStyle(color: Colors.grey.shade400),
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                              const Icon(Icons.tune, color: Colors.grey),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                children: [
-                  _buildAnimatedItem(
-                    const Text(
-                      'Sugestões',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF5D201C),
-                      ),
-                    ),
-                    0,
-                  ),
-                  const SizedBox(height: 16.0),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Pãozinho'), 1),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.history, 'Coxinha'), 2),
-                  const SizedBox(height: 24.0),
-                  _buildAnimatedItem(
-                    const Text(
-                      'Em alta',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF5D201C),
-                      ),
-                    ),
-                    3,
-                  ),
-                  const SizedBox(height: 16.0),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.trending_up, 'Refrigerante Viver', isTrending: true), 4),
-                  _buildAnimatedItem(_buildSuggestionItem(Icons.trending_up, 'Carne', isTrending: true), 5),
-                ],
-              ),
-            ),
-          ],
+      appBar: AppBar(
+        title: TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: "Pesquisar produtos ou lojas..."),
+          onSubmitted: _iniciarBusca,
         ),
+      ),
+      body: Column(
+        children: [
+          if (_searchFuture != null) _buildFiltros(),
+          Expanded(
+            child: _searchFuture == null
+                ? const Center(child: Text("Digite algo para pesquisar"))
+                : FutureBuilder<_ResultadoBusca>(
+                    future: _searchFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              'Erro ao buscar: ${snapshot.error}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        );
+                      }
+                      if (!snapshot.hasData || snapshot.data!.vazio) {
+                        return const Center(child: Text("Nada encontrado."));
+                      }
+
+                      final resultado = snapshot.data!;
+                      return _buildResultados(resultado);
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSuggestionItem(IconData icon, String text, {bool isTrending = false}) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8.0),
-        decoration: BoxDecoration(
-          color: isTrending ? const Color(0xFFFF6961).withValues(alpha: 0.1) : Colors.grey.shade100,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          color: isTrending ? const Color(0xFFFF6961) : Colors.grey,
-          size: 20.0,
-        ),
+  Widget _buildFiltros() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      child: Row(
+        children: [
+          _chipFiltro('Tudo', _FiltroBusca.tudo),
+          SizedBox(width: 8.w),
+          _chipFiltro('Produtos', _FiltroBusca.produtos),
+          SizedBox(width: 8.w),
+          _chipFiltro('Lojas', _FiltroBusca.lojas),
+        ],
       ),
-      title: Text(
-        text,
-        style: TextStyle(
-          color: isTrending ? const Color(0xFF5D201C) : Colors.black87,
-          fontWeight: isTrending ? FontWeight.w600 : FontWeight.normal,
-          fontSize: 15.0,
+    );
+  }
+
+  Widget _chipFiltro(String label, _FiltroBusca valor) {
+    final selecionado = _filtro == valor;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selecionado,
+      onSelected: (_) => setState(() => _filtro = valor),
+    );
+  }
+
+  Widget _buildResultados(_ResultadoBusca resultado) {
+    final mostrarLojas = _filtro != _FiltroBusca.produtos && resultado.lojas.isNotEmpty;
+    final mostrarProdutos = _filtro != _FiltroBusca.lojas && resultado.produtos.isNotEmpty;
+
+    if (!mostrarLojas && !mostrarProdutos) {
+      return Center(
+        child: Text(_filtro == _FiltroBusca.lojas
+            ? 'Nenhuma loja encontrada.'
+            : 'Nenhum produto encontrado.'),
+      );
+    }
+
+    return ListView(
+      padding: EdgeInsets.all(16.w),
+      children: [
+        if (mostrarLojas) ...[
+          Text('Lojas', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8.h),
+          ...resultado.lojas.map((loja) => _buildLojaTile(loja)),
+          SizedBox(height: 16.h),
+        ],
+        if (mostrarProdutos) ...[
+          Text('Produtos', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8.h),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12.w,
+              mainAxisSpacing: 12.h,
+              childAspectRatio: 0.70,
+            ),
+            itemCount: resultado.produtos.length,
+            itemBuilder: (context, index) {
+              final produto = resultado.produtos[index];
+              return GestureDetector(
+                onTap: () => _abrirProduto(produto),
+                child: ProductCard(produto: produto),
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildLojaTile(LojasModel loja) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 8.h),
+      child: ListTile(
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8.r),
+          child: CachedNetworkImage(
+            imageUrl: loja.imagemUrl,
+            width: 48.w,
+            height: 48.w,
+            fit: BoxFit.cover,
+            errorWidget: (context, url, error) => Container(
+              width: 48.w,
+              height: 48.w,
+              color: Colors.grey.shade200,
+              child: const Icon(Icons.storefront_outlined),
+            ),
+          ),
         ),
+        title: Text(loja.nome),
+        subtitle: Text(loja.isAberto ? loja.categoria : 'Fechada no momento'),
+        onTap: () => _abrirLoja(loja),
       ),
-      trailing: const Icon(Icons.north_west, color: Colors.grey, size: 16.0),
-      contentPadding: const EdgeInsets.only(bottom: 8.0),
-      onTap: () {
-        _searchController.text = text;
-      },
     );
   }
 }

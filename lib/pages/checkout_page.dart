@@ -1,0 +1,852 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nhac/models/pedido_model.dart';
+import 'package:nhac/repositories/pedido_repository.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:nhac/controllers/cart_provider.dart';
+import 'package:nhac/controllers/endereco_provider.dart';
+import 'package:nhac/models/usuario/endereco_model.dart';
+import 'package:nhac/models/loja/lojas.dart';
+import 'package:nhac/repositories/loja_repository.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
+import 'package:nhac/services/auth_service.dart';
+
+class CheckoutPage extends StatefulWidget {
+  const CheckoutPage({super.key});
+
+  @override
+  State<CheckoutPage> createState() => _CheckoutPageState();
+}
+
+class _CheckoutPageState extends State<CheckoutPage> {
+  String _formaPagamento = 'Dinheiro';
+  final TextEditingController _trocoController = TextEditingController();
+  bool _mostrarCampoTroco = true;
+  // BUG CORRIGIDO: "Precisa de troco só aparece depois de trocar e voltar
+  // pra Dinheiro". _formaPagamento já começa como 'Dinheiro' (acima), mas
+  // _mostrarCampoTroco começava sempre 'false' — ela só era sincronizada
+  // dentro do onTap de uma opção de pagamento, que exige uma interação
+  // explícita do usuário. Como 'Dinheiro' já vem pré-selecionado sem
+  // nenhum toque, o campo nunca aparecia até você trocar de opção (o que
+  // aciona o onTap pela primeira vez) e voltar. Inicializar já em sincronia
+  // com o valor padrão resolve isso.
+  final NumberFormat currencyFormat =
+      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  bool _isLoading = true;
+  LojasModel? _loja;
+  final LojaRepository _lojaRepository = LojaRepository();
+
+  /// Taxa de entrega real da loja (definida por ela no cadastro). Cai para
+  /// R$ 5,00 apenas enquanto a loja ainda não carregou ou não tem o valor
+  /// configurado — o mesmo fallback que o backend usa.
+  double get _taxaEntrega =>
+      _loja?.dadosOperacionais?.taxaEntregaBase ?? 5.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarNumeroEndereco();
+    _carregarLoja();
+  }
+
+  Future<void> _carregarLoja() async {
+    final cartProvider = context.read<CartProvider>();
+    if (cartProvider.lojaId.isEmpty) return;
+    try {
+      final loja = await _lojaRepository.buscarLoja(cartProvider.lojaId);
+      if (mounted) setState(() => _loja = loja);
+    } catch (e) {
+      // Mantemos o fallback de R$ 5,00 silenciosamente; isto é só para
+      // exibição, o valor real é sempre recalculado pelo servidor.
+      debugPrint('Não foi possível carregar a taxa de entrega da loja: $e');
+    }
+  }
+
+  Future<void> _verificarNumeroEndereco() async {
+    await Future.delayed(Duration.zero); 
+    if (!mounted) return;
+    final enderecoProvider = context.read<EnderecoProvider>();
+    final EnderecoModel? enderecoisPadrao = enderecoProvider.enderecos.isEmpty
+        ? null
+        : enderecoProvider.enderecos.firstWhere(
+            (e) => e.isPadrao,
+            orElse: () => EnderecoModel(
+              id: '', 
+              bairro: '',
+              cep: '',
+              cidade: '',
+              estado: '',
+              numero: '',
+              rua: '',
+            ),
+          );
+    if (enderecoisPadrao != null &&
+        enderecoisPadrao.id.isNotEmpty &&
+        enderecoisPadrao.numero.isEmpty) {
+        
+      await _pedirNumeroEndereco(enderecoisPadrao);
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _pedirNumeroEndereco(EnderecoModel endereco) async {
+    final TextEditingController numeroController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Icon(Icons.home, color: const Color(0xFFFF6961), size: 28.r),
+            SizedBox(width: 12.w),
+            Text(
+              'Número da casa',
+              style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF5D201C)),
+            ),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Para completar seu endereço, informe o número da casa.',
+                style:
+                    TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
+              ),
+              SizedBox(height: 16.h),
+              TextFormField(
+                controller: numeroController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Número (ex: 123, S/N)',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r)),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                ),
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Campo obrigatório'
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:
+                Text('Cancelar', style: TextStyle(color: Colors.grey.shade600)),
+          ),
+         ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final numero = numeroController.text.trim();
+                  final enderecoAtualizado = endereco.copyWith(numero: numero);
+                  
+                  await context
+                      .read<EnderecoProvider>()
+                      .atualizarEndereco(enderecoAtualizado.id, enderecoAtualizado);
+                      
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                }
+              },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFE645C),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50.r)),
+            ),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _trocoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context);
+    final enderecoProvider = Provider.of<EnderecoProvider>(context);
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFE7E5),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final EnderecoModel? enderecoisPadrao = enderecoProvider.enderecos.isEmpty
+        ? null
+        : enderecoProvider.enderecos.firstWhere(
+            (e) => e.isPadrao,
+            orElse: () => enderecoProvider.enderecos.first,
+          );
+
+    final subtotal = cartProvider.valorTotal;
+    // BUG CORRIGIDO: antes fixo em 5.0 para qualquer loja. O backend agora
+    // usa loja.dadosOperacionais.taxaEntregaBase para calcular o frete de
+    // verdade, então exibimos o mesmo valor aqui em vez de um número fixo
+    // que não batia com o que era realmente cobrado.
+    final frete = _taxaEntrega;
+    final total = subtotal + frete;
+    final tempoEntrega = '30 - 50 min';
+    final podeFinalizar =
+        enderecoisPadrao != null && enderecoisPadrao.numero.isNotEmpty;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFE7E5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFE7E5),
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: const Color(0xFF5D201C), size: 20.r),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Finalizar Pedido',
+          style: TextStyle(
+            color: const Color(0xFF5D201C),
+            fontWeight: FontWeight.bold,
+            fontSize: 18.sp,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.all(24.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('Endereço de entrega'),
+            SizedBox(height: 8.h),
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: _cardDecoration(),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6961).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.location_on_outlined,
+                        color: const Color(0xFFFF6961), size: 20.r),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          enderecoisPadrao != null
+                              ? '${enderecoisPadrao.rua}, ${enderecoisPadrao.numero}'
+                              : 'Nenhum endereço selecionado',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.sp,
+                            color: const Color(0xFF5D201C),
+                          ),
+                        ),
+                        if (enderecoisPadrao != null) ...[
+                          SizedBox(height: 4.h),
+                          Text(
+                            '${enderecoisPadrao.bairro} - ${enderecoisPadrao.cidade}/${enderecoisPadrao.estado}',
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 12.sp),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => _selecionarEndereco(context),
+                    child: Text(
+                      'Alterar',
+                      style: TextStyle(
+                          color: const Color(0xFFFF6961),
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 24.h),
+            _buildSectionTitle('Forma de pagamento'),
+            SizedBox(height: 8.h),
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: _cardDecoration(),
+              child: Column(
+                children: [
+                  _buildPaymentOption('Dinheiro', Icons.money),
+                  _buildPaymentOption('Cartão de crédito', Icons.credit_card),
+                  _buildPaymentOption('PIX', Icons.pix),
+                ],
+              ),
+            ),
+            if (_mostrarCampoTroco) ...[
+              SizedBox(height: 16.h),
+              Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: _cardDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Precisa de troco?',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.sp,
+                          color: const Color(0xFF5D201C)),
+                    ),
+                    SizedBox(height: 8.h),
+                    TextField(
+                      controller: _trocoController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Valor para troco (ex: 50,00)',
+                        hintStyle: TextStyle(
+                            color: Colors.grey.shade400, fontSize: 14.sp),
+                        prefixIcon: Icon(Icons.money,
+                            size: 20.r, color: Colors.grey.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(height: 24.h),
+            _buildSectionTitle('Resumo do pedido'),
+            SizedBox(height: 8.h),
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: _cardDecoration(),
+              child: Column(
+                children: [
+                  ...cartProvider.itens.values.map((item) => Padding(
+                        padding: EdgeInsets.only(bottom: 12.h),
+                        child: Row(
+                          children: [
+                            Text(
+                              '${item.quantidade}x',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 14.sp),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Text(
+                                item.nome,
+                                style: TextStyle(
+                                    fontSize: 14.sp, color: Colors.black87),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              currencyFormat
+                                  .format(item.preco * item.quantidade),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 14.sp),
+                            ),
+                          ],
+                        ),
+                      )),
+                  if (cartProvider.observacao.isNotEmpty) ...[
+                    Divider(height: 24.h, color: Colors.grey.shade200),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.note_outlined,
+                            size: 18.r, color: Colors.grey.shade600),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            'Observações: ${cartProvider.observacao}',
+                            style: TextStyle(
+                                fontSize: 13.sp, color: Colors.grey.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  Divider(height: 24.h, color: Colors.grey.shade200),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Subtotal',
+                          style: TextStyle(
+                              color: Colors.grey.shade700, fontSize: 14.sp)),
+                      Text(currencyFormat.format(subtotal),
+                          style: TextStyle(fontSize: 14.sp)),
+                    ],
+                  ),
+                  SizedBox(height: 8.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Frete',
+                          style: TextStyle(
+                              color: Colors.grey.shade700, fontSize: 14.sp)),
+                      Text(
+                        currencyFormat.format(frete),
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                            color: const Color(0xFF5D201C)),
+                      ),
+                      Text(
+                        currencyFormat.format(total),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18.sp,
+                            color: const Color(0xFFFF6961)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 24.h),
+            _buildSectionTitle('Previsão de entrega'),
+            SizedBox(height: 8.h),
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: _cardDecoration(),
+              child: Row(
+                children: [
+                  Icon(Icons.timer_outlined,
+                      color: const Color(0xFFFF6961), size: 24.r),
+                  SizedBox(width: 12.w),
+                  Text(
+                    tempoEntrega,
+                    style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF5D201C)),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 40.h),
+            BotaoLargoNhac(
+              texto: 'Confirmar pedido',
+              onPressed: podeFinalizar
+                  ? () => _confirmarPedido(context, total, cartProvider)
+                  : null,
+            ),
+            SizedBox(height: 32.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18.sp,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF5D201C),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16.r),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 10.r,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentOption(String title, IconData icon) {
+    final isSelected = _formaPagamento == title;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _formaPagamento = title;
+          _mostrarCampoTroco = (title == 'Dinheiro');
+          if (!_mostrarCampoTroco) _trocoController.clear();
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        child: Row(
+          children: [
+            Icon(icon,
+                size: 24.r,
+                color: isSelected
+                    ? const Color(0xFFFF6961)
+                    : Colors.grey.shade500),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? const Color(0xFFFF6961) : Colors.black87,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle,
+                  color: const Color(0xFFFF6961), size: 20.r),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selecionarEndereco(BuildContext context) async {
+    final enderecoProvider = context.read<EnderecoProvider>();
+    final enderecos = enderecoProvider.enderecos;
+
+    if (enderecos.isEmpty) {
+      _mostrarDialogEnderecoVazio(context);
+      return;
+    }
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _AddressSelectionSheet(enderecos: enderecos),
+    );
+    await enderecoProvider.buscarEnderecos();
+    setState(() {});
+  }
+
+  void _mostrarDialogEnderecoVazio(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Icon(Icons.location_off_outlined,
+                color: const Color(0xFFFF6961), size: 28.r),
+            SizedBox(width: 12.w),
+            Text(
+              'Sem endereço',
+              style: TextStyle(
+                fontSize: 20.sp,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF5D201C),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Você precisa adicionar um endereço de entrega antes de finalizar o pedido.',
+          style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                  color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); 
+              context.push('/enderecos-salvos');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFE645C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50.r)),
+            ),
+            child: const Text('Adicionar endereço'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmarPedido(
+      BuildContext context, double total, CartProvider cartProvider) async {
+    
+    final enderecoProvider = context.read<EnderecoProvider>();
+    final enderecoisPadrao = enderecoProvider.enderecos.firstWhere(
+      (e) => e.isPadrao,
+      orElse: () => enderecoProvider.enderecos.first,
+    );
+
+    final authService = context.read<AuthService>();
+    final uid = authService.usuarioId;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão expirada. Faça login novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      context.go('/bem-vindo');
+      return;
+    }
+
+    // BUG CORRIGIDO: o valor de troco digitado pelo cliente nunca era
+    // enviado no pedido (o controller era lido só para exibir o campo).
+    // Aceita tanto vírgula quanto ponto como separador decimal.
+    double? trocoPara;
+    final trocoTexto = _trocoController.text.trim();
+    if (_formaPagamento == 'Dinheiro' && trocoTexto.isNotEmpty) {
+      trocoPara = trocoTexto.contains(',')
+          ? double.tryParse(trocoTexto.replaceAll('.', '').replaceAll(',', '.'))
+          : double.tryParse(trocoTexto);
+    }
+
+    final pedido = PedidoModel(
+      usuarioId: uid,
+      lojaId: cartProvider.lojaId,
+      valorTotal: total,
+      taxaFrete: _taxaEntrega,
+      formaPagamento: _formaPagamento,
+      observacao: cartProvider.observacao,
+      enderecoEntrega: enderecoisPadrao,
+      itens: cartProvider.itens.values.toList(),
+      trocoPara: trocoPara,
+    );
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFFFF6961))),
+      );
+
+      final idGerado = await PedidoRepository().finalizarPedido(pedido);
+      
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          backgroundColor: Colors.white,
+          title: Text(
+            'Pedido confirmado!',
+            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
+          ),
+          content: Text(
+            'O seu pedido foi recebido com sucesso!\n\nID do Pedido: $idGerado',
+            style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                cartProvider.esvaziarCarrinho();
+                Navigator.pop(context); 
+                // BUG CORRIGIDO: 'resetSignal' força a HomePage a resetar
+                // _selectedIndex/_isScrolledDown mesmo quando context.go()
+                // reaproveita a instância existente (ver home_page.dart).
+                context.go('/home-page', extra: DateTime.now().millisecondsSinceEpoch);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFE645C),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
+              ),
+              child: const Text('Voltar ao Início', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); 
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+}
+
+class _AddressSelectionSheet extends StatelessWidget {
+  final List<EnderecoModel> enderecos;
+  const _AddressSelectionSheet({required this.enderecos});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+      ),
+      padding: EdgeInsets.only(top: 16.h, bottom: 32.h),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40.w,
+            height: 4.h,
+            decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2.r)),
+          ),
+          SizedBox(height: 24.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Selecione o endereço de entrega',
+                style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF5D201C)),
+              ),
+            ),
+          ),
+          SizedBox(height: 16.h),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5),
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              itemCount: enderecos.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final endereco = enderecos[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () async {
+                    await context
+                        .read<EnderecoProvider>()
+                        .definirComoPadrao(endereco.id);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  leading: Container(
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6961).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      endereco.bairro.toLowerCase().contains('trabalho') ||
+                             (endereco.complemento ?? '').toLowerCase().contains('trabalho')
+                          ? Icons.work_outline
+                          : Icons.home_outlined,
+                      color: const Color(0xFFFF6961),
+                      size: 20.r,
+                    ),
+                  ),
+                  title: Text(
+                    '${endereco.rua}, ${endereco.numero}',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
+                  ),
+                  subtitle: Text(
+                    '${endereco.bairro}${endereco.temComplemento ? ' - ${endereco.complementoOuVazio}' : ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13.sp),
+                  ),
+                  trailing: endereco.isPadrao
+                      ? Icon(Icons.check_circle,
+                          color: const Color(0xFFFF6961), size: 22.r)
+                      : null,
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: const Divider(height: 32),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: InkWell(
+              onTap: () => context.push('/enderecos-salvos'),
+              borderRadius: BorderRadius.circular(12.r),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8.w),
+                      decoration: BoxDecoration(
+                          color: Colors.grey.shade100, shape: BoxShape.circle),
+                      child: Icon(Icons.add, color: Colors.grey, size: 20.r),
+                    ),
+                    SizedBox(width: 16.w),
+                    Text(
+                      'Adicionar novo endereço',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15.sp,
+                          color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

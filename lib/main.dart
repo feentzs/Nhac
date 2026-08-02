@@ -1,4 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:nhac/repositories/loja_repository.dart';
+import 'package:nhac/repositories/produto_repository.dart';
+import 'package:nhac/repositories/pedido_repository.dart';
+import 'package:nhac/pages/no_internet_page.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
@@ -13,9 +17,18 @@ import 'package:nhac/globals/app_state.dart';
 import 'package:nhac/globals/router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import './firebase_options.dart';
-
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:nhac/services/push_notification_service.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("Notificação em background recebida!");
+}
 
 @NowaGenerated()
 late final SharedPreferences sharedPrefs;
@@ -23,51 +36,79 @@ late final SharedPreferences sharedPrefs;
 @NowaGenerated()
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await dotenv.load(fileName: ".env");
-  
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  sharedPrefs = await SharedPreferences.getInstance();
-
-   FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED, 
+  // Inicialização corrigida do App Check
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
   );
 
-  runApp(const MyApp());
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  final pushService = PushNotificationService(authServiceRoteador);
+  await pushService.initialize();
+
+  sharedPrefs = await SharedPreferences.getInstance();
+
+  await SentryFlutter.init(
+    (options) {
+      options.dsn =
+          'https://426ab5d997cbcb45965278b6b9cc5a32@o4511393718272000.ingest.us.sentry.io/4511393743896577';
+      options.tracesSampleRate = 1.0;
+    },
+    appRunner: () => runApp(SentryWidget(child: const MyApp())),
+  );
 }
 
 @NowaGenerated({'visibleInNowa': false})
 class MyApp extends StatelessWidget {
+  
   @NowaGenerated({'loader': 'auto-constructor'})
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AppState>(create: (context) => AppState()),
-        ChangeNotifierProvider<AuthService>(create: (context) => AuthService()), 
-        ChangeNotifierProvider<CadastroController>(create: (context) => CadastroController()),
-        ChangeNotifierProvider<UserProvider>(create: (context) => UserProvider()),
+        ChangeNotifierProvider<AuthService>.value(value: authServiceRoteador),
+        ChangeNotifierProvider<CadastroController>(
+            create: (context) => CadastroController()),
+        ChangeNotifierProvider<UserProvider>(
+            create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => EnderecoProvider()),
-        ChangeNotifierProvider<ConnectivityService>(create: (context) => ConnectivityService()),
+        ChangeNotifierProvider<ConnectivityService>(
+            create: (context) => ConnectivityService()),
+        Provider<LojaRepository>(create: (_) => LojaRepository()),
+        Provider<ProdutoRepository>(create: (_) => ProdutoRepository()),
+        Provider<PedidoRepository>(create: (_) => PedidoRepository()),
       ],
       builder: (context, child) {
         return Consumer<ConnectivityService>(
           builder: (context, connectivity, child) {
-            return MaterialApp.router(
-              theme: AppState.of(context).theme,
-              routerConfig: appRouter,
-              builder: (context, navigator) {
-                // if (!connectivity.isOnline) {
-                //   return const NoInternetPage();
-                // }
-                return navigator!;
+            return ScreenUtilInit(
+              designSize: const Size(390, 844),
+              minTextAdapt: true,
+              splitScreenMode: true,
+              builder: (context, child) {
+                return MaterialApp.router(
+                  debugShowCheckedModeBanner: false,
+                  theme: AppState.of(context).theme,
+                  routerConfig: appRouter,
+                  builder: (context, navigator) {
+                    if (!connectivity.isOnline) {
+                      return const NoInternetPage();
+                    }
+                    return navigator!;
+                  },
+                );
               },
             );
           },

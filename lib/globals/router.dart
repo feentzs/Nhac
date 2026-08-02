@@ -4,6 +4,8 @@ import 'package:nhac/pages/bem_vindo.dart';
 import 'package:nhac/pages/auth/continuar_senha.dart';
 import 'package:nhac/pages/auth/email_cliente.dart';
 import 'package:nhac/pages/auth/insira_telefone.dart';
+import 'package:nhac/pages/carrinho_page.dart';
+import 'package:nhac/pages/checkout_page.dart';
 import 'package:nhac/pages/splash_screen.dart';
 import 'package:nhac/pages/bem_vindo_motoca.dart';
 import 'package:nhac/pages/auth/verificacao_numero.dart';
@@ -20,6 +22,8 @@ import 'package:nhac/pages/auth/cadastro/telefone_cadastro.dart';
 import 'package:nhac/pages/enderecos_page.dart';
 import 'package:nhac/pages/formas_pagamento_page.dart';
 import 'package:nhac/pages/cupons_page.dart';
+import 'package:nhac/pages/search_page.dart';
+import 'package:nhac/pages/meus_pedidos_page.dart';
 
 class _SlideRightToLeftPageRoute<T> extends PageRoute<T>
     with MaterialRouteTransitionMixin<T> {
@@ -113,8 +117,11 @@ final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   refreshListenable: authServiceRoteador,
  redirect: (BuildContext context, GoRouterState state) {
-    final bool estaAutenticado = authServiceRoteador.currentUser != null;
-    final bool usuarioExisteNoBanco = authServiceRoteador.userExists;
+    if (!authServiceRoteador.carregado) {
+      return '/splash';
+    }
+
+    final bool estaAutenticado = authServiceRoteador.isAuthenticated;
 
     final bool telaPublica = state.matchedLocation == '/' ||
         state.matchedLocation == '/splash' ||
@@ -133,26 +140,19 @@ final GoRouter appRouter = GoRouter(
       return '/bem-vindo';
     }
 
-    
-    if (estaAutenticado && !usuarioExisteNoBanco && !noMeioDoCadastro) {
-       
-       return null; 
-    }
-
-    if (estaAutenticado && usuarioExisteNoBanco && telaPublica && state.matchedLocation != '/splash' && !noMeioDoCadastro) {
+    if (estaAutenticado && telaPublica && state.matchedLocation != '/splash' && !noMeioDoCadastro) {
       return '/home-page';
     }
 
     return null; 
   },
   routes: [
-    GoRoute(path: '/', builder: (context, state) => const HomePage()),
     GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
     GoRoute(
       path: '/home-page',
       pageBuilder: (context, state) => _buildSlideRightToLeftPage(
         key: state.pageKey,
-        child: const HomePage(),
+        child: HomePage(resetSignal: state.extra),
       ),
     ),
     GoRoute(
@@ -272,5 +272,36 @@ final GoRouter appRouter = GoRouter(
         child: const CuponsPage(),
       ),
     ),
+    GoRoute(
+      path: '/meus-pedidos',
+      pageBuilder: (context, state) => _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: const MeusPedidosPage(),
+      ),
+    ),
+    GoRoute(
+    path: '/carrinho',
+    pageBuilder: (context, state) => _buildSlideRightToLeftPage(
+      key: state.pageKey,
+      child: const CarrinhoPage(),
+    ),
+  ),
+  GoRoute(
+    path: '/checkout',
+    pageBuilder: (context, state) => _buildSlideRightToLeftPage(
+      key: state.pageKey,
+      child: const CheckoutPage(),
+    ),
+  ),
+  GoRoute(
+    path: '/search',
+    pageBuilder: (context, state) {
+      final categoria = state.uri.queryParameters['categoria'];
+      return _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: SearchPage(initialCategory: categoria),
+      );
+    },
+  ),
   ],
-);
+  );

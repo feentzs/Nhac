@@ -1,106 +1,110 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nhac/models/usuario/carrinho_model.dart';
-import 'package:nhac/repository/cart_repository.dart'; 
+import 'package:nhac/repositories/cart_repository.dart';
 
 class CartProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final CartRepository _cartRepository = CartRepository();
+  final CartRepository _cartRepository;
 
-  final Map<String, CarrinhoModel> _itens = {};
-  StreamSubscription<List<CarrinhoModel>>? _carrinhoSubscription;
+  CartProvider({CartRepository? repository})
+      : _cartRepository = repository ?? CartRepository();
 
+  Map<String, CartItemModel> _itens = {};
   double _valorTotal = 0.0;
   int _totalDeUnidades = 0;
+  String _observacao = '';
+  String _lojaIdAtual = '';   
 
-  Map<String, CarrinhoModel> get itens => _itens;
+  Map<String, CartItemModel> get itens => _itens;
   int get quantidadeItens => _itens.length;
-
   double get valorTotal => _valorTotal;
   int get totalDeUnidades => _totalDeUnidades;
+  String get observacao => _observacao;
+  String get lojaId => _lojaIdAtual;   
 
-  void iniciarEscutaCarrinho() {
-    final user = _auth.currentUser;
-    
-    if (user != null) {
-      _carrinhoSubscription?.cancel();
-      
-      _carrinhoSubscription = _cartRepository.ouvirCarrinho(user.uid).listen((listaItensFirebase) {
-        _itens.clear();
-        _valorTotal = 0.0;
-        _totalDeUnidades = 0;
-        
-        for (var item in listaItensFirebase) {
-          _itens[item.idProduto] = item;
-          _valorTotal += item.preco * item.quantidade;
-          _totalDeUnidades += item.quantidade;
-        }
-        
-        notifyListeners();
-      });
+  Future<void> carregarCarrinhoLocal() async {
+    final listaSalva = await _cartRepository.carregarCarrinhoLocal();
+    _itens = {for (var item in listaSalva) item.produtoId: item};
+    if (_itens.isNotEmpty) {
+      _lojaIdAtual = _itens.values.first.lojaId;  
+    }
+    _recalcularTotais();
+  }
+
+  void setObservacao(String texto) {
+    if (_observacao != texto) {
+      _observacao = texto;
+      notifyListeners();
     }
   }
 
-  void limparCarrinhoLocal() {
-    _itens.clear();
-    _valorTotal = 0.0;
-    _totalDeUnidades = 0;
-    _carrinhoSubscription?.cancel();
-    notifyListeners();
-  }
-
-  
-  Future<void> adicionarItem({
+  Future<bool> adicionarItemComQuantidade({
     required String idProduto,
     required String nome,
     required double preco,
     required String imagemUrl,
+    required String lojaId,    
+    required int quantidade,
   }) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    int novaQuantidade = 1;
-    if (_itens.containsKey(idProduto)) {
-      novaQuantidade = _itens[idProduto]!.quantidade + 1;
+    if (_itens.isNotEmpty && _lojaIdAtual.isNotEmpty && _lojaIdAtual != lojaId) {
+      return false;   
     }
 
-    final novoItem = CarrinhoModel(
-      idDocumento: idProduto, 
-      idProduto: idProduto,
-      nome: nome,
-      preco: preco,
-      quantidade: novaQuantidade,
-      imagemUrl: imagemUrl,
-    );
+    if (_itens.containsKey(idProduto)) {
+      _itens[idProduto]!.quantidade += quantidade;
+    } else {
+      _itens[idProduto] = CartItemModel(
+        produtoId: idProduto,
+        nome: nome,
+        imagemUrl: imagemUrl,
+        preco: preco,
+        lojaId: lojaId,   
+        quantidade: quantidade,
+      );
+    }
 
-    await _cartRepository.adicionarItemAoCarrinho(user.uid, novoItem);
+    _lojaIdAtual = lojaId;   
+    _recalcularTotais();
+    await _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
+    return true;   
   }
 
   Future<void> removerItem(String idProduto) async {
-    final user = _auth.currentUser;
-    if (user == null || !_itens.containsKey(idProduto)) return;
+    if (!_itens.containsKey(idProduto)) return;
 
     if (_itens[idProduto]!.quantidade > 1) {
-      final itemAtualizado = _itens[idProduto]!.copyWith(
-        quantidade: _itens[idProduto]!.quantidade - 1,
-      );
-      await _cartRepository.adicionarItemAoCarrinho(user.uid, itemAtualizado);
+      _itens[idProduto]!.quantidade -= 1;
     } else {
-      await _cartRepository.removerItemDoCarrinho(user.uid, idProduto);
+      _itens.remove(idProduto);
     }
+
+    if (_itens.isEmpty) _lojaIdAtual = '';   
+
+    _recalcularTotais();
+    await _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
+  }
+
+  Future<void> excluirItemDoCarrinho(String idProduto) async {
+    _itens.remove(idProduto);
+    if (_itens.isEmpty) _lojaIdAtual = '';   
+    _recalcularTotais();
+    await _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
   }
 
   Future<void> esvaziarCarrinho() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-    
-    await _cartRepository.esvaziarCarrinho(user.uid);
+    _itens.clear();
+    _observacao = '';
+    _lojaIdAtual = '';   
+    _recalcularTotais();
+    await _cartRepository.limparCarrinho();
   }
 
-  @override
-  void dispose() {
-    _carrinhoSubscription?.cancel();
-    super.dispose();
+  void _recalcularTotais() {
+    _valorTotal = 0.0;
+    _totalDeUnidades = 0;
+    _itens.forEach((key, item) {
+      _valorTotal += item.preco * item.quantidade;
+      _totalDeUnidades += item.quantidade;
+    });
+    notifyListeners();
   }
 }

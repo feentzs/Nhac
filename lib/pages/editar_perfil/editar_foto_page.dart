@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
 
-import 'package:nhac/components/botao_largo_nhac.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 
 class EditarFotoPage extends StatefulWidget {
   const EditarFotoPage({super.key});
@@ -77,11 +77,14 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
 
     setState(() => _isLoading = true);
     try {
+      // Delega para o UserProvider, que faz o mesmo upload + gravação via
+      // API e já trata o erro de Anonymous Auth desabilitado no Firebase
+      // Console. Evita manter a mesma lógica duplicada em dois lugares.
       final userProvider = context.read<UserProvider>();
       await userProvider.atualizarFotoPerfil(_image!);
 
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Foto de perfil atualizada com sucesso!')),
       );
@@ -89,8 +92,9 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
       context.pop();
     } catch (e) {
       if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro: $e')),
+        SnackBar(content: Text('Erro ao atualizar foto: ${e.toString().replaceAll('Exception: ', '')}')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -163,11 +167,11 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
                                   ],
                                 ),
                                 child: ClipOval(
-                                  child: _image != null
-                                      ? Image.file(_image!, fit: BoxFit.cover)
-                                      : (usuario!.fotoUrl.isNotEmpty == true
-                                          ? CachedNetworkImage(
-                                              imageUrl: usuario.fotoUrl,
+                                  child: _image != null 
+    ? Image.file(_image!, fit: BoxFit.cover)
+    : (usuario?.imagemUrl != null && usuario!.imagemUrl!.isNotEmpty 
+        ? CachedNetworkImage(
+            imageUrl: usuario.imagemUrl!,
                                               fit: BoxFit.cover,
                                               placeholder: (ctx, url) => Container(
                                                 color: Colors.grey.shade200,
