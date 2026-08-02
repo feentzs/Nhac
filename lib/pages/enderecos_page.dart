@@ -11,15 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Normaliza qualquer CEP (com ou sem traço, com espaços etc.) para o
-/// formato XXXXX-XXX exigido pelo backend. Devolve '' se não tiver
-/// exatamente 8 dígitos (CEP inválido/incompleto).
-String _formatarCep(String cepBruto) {
-  final digitos = cepBruto.replaceAll(RegExp(r'[^0-9]'), '');
-  if (digitos.length != 8) return '';
-  return '${digitos.substring(0, 5)}-${digitos.substring(5)}';
-}
-
 class EnderecosPage extends StatefulWidget {
   const EnderecosPage({super.key});
 
@@ -230,32 +221,16 @@ class _EnderecosPageState extends State<EnderecosPage> {
   Future<void> _salvarEnderecoSelecionado(Map<String, dynamic> result) async {
     if (!mounted) return;
 
-    final cep = (result['cep'] as String?) ?? '';
-    final rua = (result['rua'] as String?) ?? '';
-    final bairro = (result['bairro'] as String?) ?? '';
-    final cidade = (result['cidade'] as String?) ?? '';
-    final estado = (result['estado'] as String?) ?? '';
-
-    // BUG CORRIGIDO: o backend real exige bairro/cidade/estado/cep/rua
-    // como @NotBlank (EnderecoUsuarioDTO) — faltava validar 'bairro' aqui
-    // também, que o Google às vezes não resolve (endereços sem
-    // sublocality/neighborhood reconhecido).
-    if (cep.isEmpty || rua.isEmpty || bairro.isEmpty || cidade.isEmpty || estado.length != 2) {
-      context.showError(
-          'Não foi possível identificar todos os dados desse endereço (rua, bairro, cidade, estado ou CEP). Tente escolher uma sugestão mais específica.');
-      return;
-    }
-
     final isPrimeiroEndereco = context.read<EnderecoProvider>().enderecos.isEmpty;
 
     final novoEndereco = EnderecoModel(
       id: '', 
-      rua: rua,
+      rua: result['rua'] ?? '',
       numero: result['numero'] ?? 'S/N',
       bairro: result['bairro'] ?? '',
-      cidade: cidade,
-      estado: estado,
-      cep: cep,
+      cidade: result['cidade'] ?? '',
+      estado: result['estado'] ?? '',
+      cep: '', 
       complemento: result['complemento'] ?? '', 
       isPadrao: isPrimeiroEndereco,
     );
@@ -654,15 +629,9 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
   List<Map<String, dynamic>> _sugestoes = [];
   bool _estaDigitando = false;
   bool _isLoadingSearch = false;
-  // BUG CORRIGIDO: quando o Google recusava a busca (chave inválida, API
-  // não habilitada, billing desligado no Google Cloud, cota excedida etc.)
-  // o app só fazia debugPrint — invisível numa build de release — e
-  // mostrava "nenhum resultado" pra sempre, sem indicar o motivo real.
-  // Agora guardamos a mensagem e mostramos na tela.
-  String? _erroBusca;
   Timer? _debounce;
   final Dio _dio = Dio();
-  final String _googleApiKey = dotenv.env['GOOGLE_API_KEY'] ?? '';
+  final String _googleApiKey = dotenv.env['GOOGLE_PLACES_API_KEY'] ?? '';
 
  void _filtrarEnderecos(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
@@ -672,7 +641,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
         _sugestoes = [];
         _estaDigitando = false;
         _isLoadingSearch = false;
-        _erroBusca = null;
       });
       return;
     }
@@ -680,24 +648,13 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
     setState(() {
       _estaDigitando = true;
       _isLoadingSearch = true;
-      _erroBusca = null;
     });
 
     _debounce = Timer(const Duration(milliseconds: 500), () async {
-      // BUG CORRIGIDO: setState() called after dispose() — se o usuário
-      // fechar esse overlay antes do debounce disparar ou antes da
-      // resposta do Google chegar, o widget já está "defunct" quando esse
-      // callback assíncrono roda. Toda chamada de setState aqui precisa
-      // checar 'mounted' primeiro.
-      if (!mounted) return;
       if (_googleApiKey.isEmpty) {
         debugPrint('🚨 ERRO CRÍTICO: A chave do Google (API Key) está vazia!');
         debugPrint('Verifique se o arquivo .env existe e se está declarado no pubspec.yaml.');
-        if (!mounted) return;
-        setState(() {
-          _isLoadingSearch = false;
-          _erroBusca = 'Chave da API do Google não configurada (.env ausente).';
-        });
+        setState(() => _isLoadingSearch = false);
         return;
       }
 
@@ -712,7 +669,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
           },
         );
 
-        if (!mounted) return;
         if (response.statusCode == 200) {
           final data = response.data;
           
@@ -735,18 +691,14 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
             setState(() {
               _sugestoes = [];
               _isLoadingSearch = false;
-              _erroBusca = 'Google recusou a busca (${data['status']})'
-                  '${data.containsKey('error_message') ? ': ${data['error_message']}' : '.'}';
             });
           }
         }
       } catch (e) {
         debugPrint('⚠️ ERRO DE REQUISIÇÃO (Dio): $e');
-        if (!mounted) return;
         setState(() {
           _sugestoes = [];
           _isLoadingSearch = false;
-          _erroBusca = 'Falha ao buscar endereços. Verifique sua conexão.';
         });
       }
     });
@@ -776,8 +728,8 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
           String numero = '';
           String bairro = '';
           String cidade = '';
+          String cidadeLocality = '';
           String estado = '';
-          String cep = '';
 
           for (var c in components) {
             final types = c['types'] as List;
@@ -792,24 +744,23 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
                 types.contains('neighborhood')) {
               bairro = c['long_name'];
             }
-            // BUG CORRIGIDO: pra muitas cidades brasileiras (principalmente
-            // capitais), o Google marca o município como 'locality', não
-            // 'administrative_area_level_2' — só checar o segundo tipo
-            // deixava "cidade" vazia, causando 422 no backend
-            // ("cidade é obrigatória"). Checa os dois, sem sobrescrever se
-            // já achou por um deles.
-            if (types.contains('locality') && cidade.isEmpty) {
+            if (types.contains('administrative_area_level_2')) {
               cidade = c['long_name'];
             }
-            if (types.contains('administrative_area_level_2') && cidade.isEmpty) {
-              cidade = c['long_name'];
+            // No Brasil, "administrative_area_level_2" costuma vir vazio ou
+            // inconsistente em várias regiões — "locality" é a fonte
+            // confiável do nome do município. Usamos como principal, com
+            // administrative_area_level_2 como reforço/fallback.
+            if (types.contains('locality')) {
+              cidadeLocality = c['long_name'];
             }
             if (types.contains('administrative_area_level_1')) {
               estado = c['short_name'];
             }
-            if (types.contains('postal_code')) {
-              cep = _formatarCep(c['long_name'].toString());
-            }
+          }
+
+          if (cidadeLocality.isNotEmpty) {
+            cidade = cidadeLocality;
           }
 
           if (mounted) {
@@ -819,7 +770,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
               'bairro': bairro,
               'cidade': cidade,
               'estado': estado,
-              'cep': cep,
             });
             context.showInfo(
                 'Endereço "${description.split(",").first}" selecionado!');
@@ -975,25 +925,16 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
   }
 
   Widget _buildLoadingState() {
-    // BUG CORRIGIDO: "Bottom overflowed by 79 pixels" durante o
-    // carregamento. A animação Lottie tinha 250x250 fixos — quando o
-    // teclado abre, o espaço vertical disponível (dentro do Expanded)
-    // podia ficar menor que isso, e um Column de tamanho fixo maior que o
-    // espaço disponível sempre estoura. SingleChildScrollView garante que
-    // nunca há overflow, não importa o espaço disponível.
     return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Lottie.asset(
-              'assets/animations/botao_loading_nhac.json',
-              width: 180,
-              height: 180,
-            ),
-          ],
-        ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            'assets/animations/botao_loading_nhac.json',
+            width: 250,
+            height: 250,
+          ),
+        ],
       ),
     );
   }
@@ -1015,25 +956,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
   }
 
   Widget _buildNotFound() {
-    if (_erroBusca != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 60, color: Colors.red.shade200),
-              const SizedBox(height: 16),
-              Text(
-                _erroBusca!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red.shade400, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -21,7 +21,7 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
   bool _isLoadingSearch = false;
   Timer? _debounce;
   final Dio _dio = Dio();
-  final String _googleApiKey = dotenv.env['GOOGLE_API_KEY'] ?? '';
+  final String _googleApiKey = dotenv.env['GOOGLE_PLACES_API_KEY'] ?? '';
 
   @override
   void initState() {

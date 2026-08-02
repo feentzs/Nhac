@@ -8,8 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
-import 'package:nhac/models/loja/lojas.dart';
-import 'package:nhac/repositories/loja_repository.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/services/auth_service.dart';
 
@@ -23,45 +21,16 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   String _formaPagamento = 'Dinheiro';
   final TextEditingController _trocoController = TextEditingController();
-  bool _mostrarCampoTroco = true;
-  // BUG CORRIGIDO: "Precisa de troco só aparece depois de trocar e voltar
-  // pra Dinheiro". _formaPagamento já começa como 'Dinheiro' (acima), mas
-  // _mostrarCampoTroco começava sempre 'false' — ela só era sincronizada
-  // dentro do onTap de uma opção de pagamento, que exige uma interação
-  // explícita do usuário. Como 'Dinheiro' já vem pré-selecionado sem
-  // nenhum toque, o campo nunca aparecia até você trocar de opção (o que
-  // aciona o onTap pela primeira vez) e voltar. Inicializar já em sincronia
-  // com o valor padrão resolve isso.
+  bool _mostrarCampoTroco = false;
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   bool _isLoading = true;
-  LojasModel? _loja;
-  final LojaRepository _lojaRepository = LojaRepository();
-
-  /// Taxa de entrega real da loja (definida por ela no cadastro). Cai para
-  /// R$ 5,00 apenas enquanto a loja ainda não carregou ou não tem o valor
-  /// configurado — o mesmo fallback que o backend usa.
-  double get _taxaEntrega =>
-      _loja?.dadosOperacionais?.taxaEntregaBase ?? 5.0;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _verificarNumeroEndereco();
-    _carregarLoja();
-  }
-
-  Future<void> _carregarLoja() async {
-    final cartProvider = context.read<CartProvider>();
-    if (cartProvider.lojaId.isEmpty) return;
-    try {
-      final loja = await _lojaRepository.buscarLoja(cartProvider.lojaId);
-      if (mounted) setState(() => _loja = loja);
-    } catch (e) {
-      // Mantemos o fallback de R$ 5,00 silenciosamente; isto é só para
-      // exibição, o valor real é sempre recalculado pelo servidor.
-      debugPrint('Não foi possível carregar a taxa de entrega da loja: $e');
-    }
   }
 
   Future<void> _verificarNumeroEndereco() async {
@@ -200,11 +169,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           );
 
     final subtotal = cartProvider.valorTotal;
-    // BUG CORRIGIDO: antes fixo em 5.0 para qualquer loja. O backend agora
-    // usa loja.dadosOperacionais.taxaEntregaBase para calcular o frete de
-    // verdade, então exibimos o mesmo valor aqui em vez de um número fixo
-    // que não batia com o que era realmente cobrado.
-    final frete = _taxaEntrega;
+    final frete = 5.0; // TODO(backend): usar loja.dadosOperacionais.taxaEntregaBase quando o backend implementar frete variável por loja — hoje o servidor sempre cobra R$ 5,00 fixos.
     final total = subtotal + frete;
     final tempoEntrega = '30 - 50 min';
     final podeFinalizar =
@@ -468,8 +433,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
             SizedBox(height: 40.h),
             BotaoLargoNhac(
-              texto: 'Confirmar pedido',
-              onPressed: podeFinalizar
+              texto: _isSubmitting ? 'Enviando pedido...' : 'Confirmar pedido',
+              onPressed: (podeFinalizar && !_isSubmitting)
                   ? () => _confirmarPedido(context, total, cartProvider)
                   : null,
             ),
@@ -620,7 +585,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _confirmarPedido(
       BuildContext context, double total, CartProvider cartProvider) async {
-    
+    if (_isSubmitting) return; // evita duplo toque disparando o pedido 2x
+    setState(() => _isSubmitting = true);
+
     final enderecoProvider = context.read<EnderecoProvider>();
     final enderecoisPadrao = enderecoProvider.enderecos.firstWhere(
       (e) => e.isPadrao,
@@ -630,6 +597,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final authService = context.read<AuthService>();
     final uid = authService.usuarioId;
     if (uid == null) {
+      setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sessão expirada. Faça login novamente.'),
@@ -640,45 +608,34 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
-    // BUG CORRIGIDO: o valor de troco digitado pelo cliente nunca era
-    // enviado no pedido (o controller era lido só para exibir o campo).
-    // Aceita tanto vírgula quanto ponto como separador decimal.
-    double? trocoPara;
-    final trocoTexto = _trocoController.text.trim();
-    if (_formaPagamento == 'Dinheiro' && trocoTexto.isNotEmpty) {
-      trocoPara = trocoTexto.contains(',')
-          ? double.tryParse(trocoTexto.replaceAll('.', '').replaceAll(',', '.'))
-          : double.tryParse(trocoTexto);
-    }
-
     final pedido = PedidoModel(
       usuarioId: uid,
       lojaId: cartProvider.lojaId,
       valorTotal: total,
-      taxaFrete: _taxaEntrega,
+      taxaFrete: 5.0, 
       formaPagamento: _formaPagamento,
       observacao: cartProvider.observacao,
       enderecoEntrega: enderecoisPadrao,
       itens: cartProvider.itens.values.toList(),
-      trocoPara: trocoPara,
     );
 
     try {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFFFF6961))),
+        builder: (dialogContext) => const Center(
+            child: CircularProgressIndicator(color: Color(0xFFFF6961))),
       );
 
       final idGerado = await PedidoRepository().finalizarPedido(pedido);
-      
+
       if (!context.mounted) return;
-      Navigator.pop(context);
+      Navigator.of(context, rootNavigator: true).pop(); // fecha o loading
 
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
           backgroundColor: Colors.white,
           title: Text(
@@ -693,11 +650,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ElevatedButton(
               onPressed: () {
                 cartProvider.esvaziarCarrinho();
-                Navigator.pop(context); 
-                // BUG CORRIGIDO: 'resetSignal' força a HomePage a resetar
-                // _selectedIndex/_isScrolledDown mesmo quando context.go()
-                // reaproveita a instância existente (ver home_page.dart).
-                context.go('/home-page', extra: DateTime.now().millisecondsSinceEpoch);
+                Navigator.of(dialogContext, rootNavigator: true).pop(); // fecha só o diálogo
+                dialogContext.go('/home-page');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFE645C),
@@ -711,7 +665,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     } catch (e) {
       if (!context.mounted) return;
-      Navigator.pop(context); 
+      Navigator.of(context, rootNavigator: true).pop(); // fecha o loading em caso de erro
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -720,6 +674,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           duration: const Duration(seconds: 4),
         ),
       );
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 }
@@ -800,7 +755,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
                   ),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.temComplemento ? ' - ${endereco.complementoOuVazio}' : ''}',
+                    '${endereco.bairro}${endereco.complemento!.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),

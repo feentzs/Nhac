@@ -43,10 +43,11 @@ main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Inicialização corrigida do App Check
   await FirebaseAppCheck.instance.activate(
-    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
+    // ignore: deprecated_member_use
+    androidProvider: kDebugMode
+        ? AndroidProvider.debug
+        : AndroidProvider.playIntegrity,
   );
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -60,7 +61,12 @@ main() async {
     (options) {
       options.dsn =
           'https://426ab5d997cbcb45965278b6b9cc5a32@o4511393718272000.ingest.us.sentry.io/4511393743896577';
+      // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+      // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
+      // The sampling rate for profiling is relative to tracesSampleRate
+      // Setting to 1.0 will profile 100% of sampled transactions:
+      //options.profilesSampleRate = 1.0;
     },
     appRunner: () => runApp(SentryWidget(child: const MyApp())),
   );
@@ -75,6 +81,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
+      
       providers: [
         ChangeNotifierProvider<AppState>(create: (context) => AppState()),
         ChangeNotifierProvider<AuthService>.value(value: authServiceRoteador),
@@ -94,7 +101,8 @@ class MyApp extends StatelessWidget {
         return Consumer<ConnectivityService>(
           builder: (context, connectivity, child) {
             return ScreenUtilInit(
-              designSize: const Size(390, 844),
+              designSize:
+                  const Size(390, 844), // Tamanho base do seu design no Figma
               minTextAdapt: true,
               splitScreenMode: true,
               builder: (context, child) {

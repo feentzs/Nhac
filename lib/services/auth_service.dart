@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/services/api_client.dart';
 import 'package:nhac/services/session_storage_service.dart';
+import 'package:uuid/uuid.dart';
 
 class AuthService with ChangeNotifier {
   final _dio = ApiClient().dio;
@@ -33,14 +33,8 @@ class AuthService with ChangeNotifier {
       final response = await _dio.post('/auth/login', data: {'email': email, 'senha': senha});
       await _salvarSessaoDaResposta(response.data);
     } catch (e) {
-      // BUG CORRIGIDO: qualquer falha aqui (timeout de rede, cold-start do
-      // Render, erro 500, etc.) virava sempre "E-mail ou senha inválidos.",
-      // mesmo quando as credenciais estavam certas e o problema era só de
-      // conexão/servidor. O backend já devolve uma mensagem clara em
-      // 'message' (ver ErroPadraoDTO) e mapException já sabe diferenciar
-      // rede de credencial — então usamos o mesmo mapeamento que registrar()
-      // já usa corretamente.
-      throw mapException(e);
+     
+      throw AuthException('E-mail ou senha inválidos.');
     }
   }
 
@@ -51,10 +45,6 @@ class AuthService with ChangeNotifier {
     required String senha,
   }) async {
     try {
-      // REVERTIDO: diferente de Loja/Produto (que o backend gera o ID
-      // sozinho, ex: prod_0001), RegistroRequestDTO ainda exige um 'id'
-      // @NotBlank vindo do cliente — confirmado lendo o backend real.
-      // Sem isso o registro falha com 422 ("id não pode ser vazio").
       final id = const Uuid().v4();
       final response = await _dio.post('/auth/registrar', data: {
         'id': id, 'nome': nome, 'email': email, 'telefone': telefone, 'senha': senha,

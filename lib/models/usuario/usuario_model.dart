@@ -6,11 +6,6 @@ class UsuarioModel {
   final String? imagemUrl;
   final String? senha;
 
-  /// True apenas se existir uma foto de perfil não-vazia. Prefira este
-  /// getter a `imagemUrl!` — o force-unwrap direto crashava para qualquer
-  /// usuário sem foto (estado inicial normal de uma conta nova).
-  bool get temFotoDePerfil => imagemUrl != null && imagemUrl!.isNotEmpty;
-
   UsuarioModel({
     required this.id,
     required this.nome,

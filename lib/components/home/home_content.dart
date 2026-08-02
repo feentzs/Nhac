@@ -23,22 +23,12 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:nhac/controllers/user_provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 @NowaGenerated()
 class HomeContent extends StatefulWidget {
-  // BUG CORRIGIDO: "animação de subir toda a tela na home parou de
-  // funcionar". HomeContent tinha seu PRÓPRIO ScrollController interno,
-  // completamente desconectado do controller que HomePage._scrollToTop()
-  // usava — então tocar no botão de "subir" chamava .animateTo() num
-  // controller órfão (sem nenhum ScrollView anexado), e o guard de
-  // hasClients simplesmente não fazia nada, silenciosamente. Agora
-  // HomePage pode injetar o controller de verdade.
-  final ScrollController? scrollController;
-
   @NowaGenerated({'loader': 'auto-constructor'})
-  const HomeContent({super.key, this.scrollController});
+  const HomeContent({super.key});
 
   @override
   State<HomeContent> createState() => _HomeContentState();
@@ -89,44 +79,7 @@ class _HomeContentState extends State<HomeContent> {
   @override
   void dispose() {
     _loadingTimer?.cancel();
-    _scrollController.removeListener(_onScrollForPagination);
-    if (_controllerEhProprio) {
-      _scrollController.dispose();
-    }
     super.dispose();
-  }
-
-  bool _listenerAttached = false;
-  // BUG CORRIGIDO: usava PrimaryScrollController.of(context), que exige um
-  // controller ambiente disponível na árvore. Isso funcionava por acaso
-  // enquanto a Home sempre herdava o controller compartilhado do PageView
-  // em home_page.dart — mas quebrava (ou lançava assertion) sempre que
-  // essa aba passava a rodar dentro de um escopo PrimaryScrollController.none
-  // (necessário pra evitar o bug de "ScrollController attached to multiple
-  // scroll views"). Agora HomeContent tem seu próprio controller, não
-  // depende de nada ambiente.
-  late final ScrollController _scrollController =
-      widget.scrollController ?? ScrollController();
-  // Só fazemos dispose do controller se fomos nós que o criamos — um
-  // controller injetado de fora (por HomePage) é responsabilidade de quem
-  // o criou, não nossa.
-  bool get _controllerEhProprio => widget.scrollController == null;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_listenerAttached) {
-      _scrollController.addListener(_onScrollForPagination);
-      _listenerAttached = true;
-    }
-  }
-
-  void _onScrollForPagination() {
-    final controller = _scrollController;
-    if (!controller.hasClients) return;
-    if (controller.position.pixels >= controller.position.maxScrollExtent - 200) {
-      _fetchLojas();
-    }
   }
 
   Future<void> _carregarDadosIniciais() async {
@@ -170,8 +123,7 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Future<void> _fetchLojas() async {
-    if (_isLoadingLojas || !_hasMoreLojas) return;
-    if (!mounted) return;
+    if (_isLoadingLojas || !_hasMoreLojas || !mounted) return;
 
     setState(() {
       _isLoadingLojas = true;
@@ -558,60 +510,18 @@ class _HomeContentState extends State<HomeContent> {
         if (!mounted) return;
         final enderecoProvider = context.read<EnderecoProvider>();
         if (enderecoProvider.enderecos.isEmpty) {
-          // BUG CORRIGIDO (2ª rodada): o log real mostrou que o backend
-          // rejeitava (422) com "cidade obrigatória", "estado deve ter 2
-          // caracteres" e "número obrigatório". Causas:
-          // - numero: aqui nunca passava pelo formulário de complemento
-          //   (que só existe no fluxo de busca manual) — ia sempre vazio.
-          // - estado: place.administrativeArea (plugin `geocoding` nativo)
-          //   devolve o nome completo ("São Paulo"), não a sigla ("SP")
-          //   que o backend exige.
-          // - cidade: o geocoder nativo às vezes não resolve locality.
-          // A Geocoding API do Google resolve os três de forma muito mais
-          // confiável (short_name já vem como sigla certa), então agora
-          // ela é a fonte primária; o Placemark nativo só serve de
-          // fallback complementar. numero vira 'S/N' (mesma convenção do
-          // formulário manual) já que o GPS não tem como saber o número
-          // da casa — o usuário pode completar depois em Endereços Salvos.
-          final enderecoGoogle = await _buscarEnderecoViaGoogle(
-              position.latitude, position.longitude);
-
-          final cep = enderecoGoogle['cep']?.isNotEmpty == true
-              ? enderecoGoogle['cep']!
-              : _formatarCep(place.postalCode ?? '');
-          final cidade = enderecoGoogle['cidade']?.isNotEmpty == true
-              ? enderecoGoogle['cidade']!
-              : (place.locality ?? '');
-          final estado = enderecoGoogle['estado']?.isNotEmpty == true
-              ? enderecoGoogle['estado']!
-              : '';
-          final bairro = enderecoGoogle['bairro']?.isNotEmpty == true
-              ? enderecoGoogle['bairro']!
-              : (place.subLocality ?? '');
-          final rua = enderecoGoogle['rua']?.isNotEmpty == true
-              ? enderecoGoogle['rua']!
-              : (place.street ?? '');
-
-          // Só cria automaticamente se TODOS os campos obrigatórios pelo
-          // backend (@NotBlank em rua/cidade/estado/cep) realmente vieram
-          // preenchidos — senão fica só o texto cosmético na Home e o
-          // usuário completa manualmente em Endereços Salvos.
-          if (cep.isNotEmpty && cidade.isNotEmpty && estado.length == 2 && rua.isNotEmpty && bairro.isNotEmpty) {
-            final novoEndereco = EnderecoModel(
-              id: '',
-              rua: rua,
-              numero: (enderecoGoogle['numero']?.isNotEmpty == true)
-                  ? enderecoGoogle['numero']!
-                  : 'S/N',
-              bairro: bairro,
-              cidade: cidade,
-              estado: estado,
-              cep: cep,
-              complemento: '',
-              isPadrao: true,
-            );
-            await enderecoProvider.adicionarEndereco(novoEndereco);
-          }
+          final novoEndereco = EnderecoModel(
+            id: '',
+            rua: place.street ?? '',
+            numero: '',
+            bairro: place.subLocality ?? '',
+            cidade: place.locality ?? '',
+            estado: place.administrativeArea ?? '',
+            cep: place.postalCode ?? '',
+            complemento: '',
+            isPadrao: true,
+          );
+          await enderecoProvider.adicionarEndereco(novoEndereco);
         }
       }
     } catch (e) {
@@ -619,83 +529,8 @@ class _HomeContentState extends State<HomeContent> {
     }
   }
 
-  /// Normaliza qualquer CEP (com ou sem traço, com espaços etc.) para o
-  /// formato XXXXX-XXX exigido pelo backend. Devolve '' se não tiver
-  /// exatamente 8 dígitos (CEP inválido/incompleto/ausente).
-  String _formatarCep(String cepBruto) {
-    final digitos = cepBruto.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digitos.length != 8) return '';
-    return '${digitos.substring(0, 5)}-${digitos.substring(5)}';
-  }
-
-  /// Fonte primária pro endereço automático da Home. Mais confiável que o
-  /// plugin `geocoding` nativo pra endereços brasileiros: 'short_name' do
-  /// Google já vem como sigla de estado correta ("SP"), e resolve cidade
-  /// mesmo quando o geocoder nativo não consegue.
-  Future<Map<String, String>> _buscarEnderecoViaGoogle(double lat, double lng) async {
-    final apiKey = dotenv.env['GOOGLE_API_KEY'] ?? '';
-    if (apiKey.isEmpty) return {};
-
-    try {
-      final dio = Dio();
-      final response = await dio.get(
-        'https://maps.googleapis.com/maps/api/geocode/json',
-        queryParameters: {
-          'latlng': '$lat,$lng',
-          'key': apiKey,
-          'language': 'pt-BR',
-        },
-      );
-
-      final data = response.data;
-      if (data['status'] != 'OK') return {};
-
-      final results = data['results'] as List;
-      if (results.isEmpty) return {};
-
-      final components = results.first['address_components'] as List;
-
-      String rua = '', numero = '', bairro = '', cidade = '', estado = '', cep = '';
-      for (final c in components) {
-        final types = c['types'] as List;
-        if (types.contains('route')) rua = c['long_name'];
-        // BUG CORRIGIDO: "não puxa o número de casa pelo endereço
-        // automático". Quando o GPS tem precisão suficiente (rooftop-level),
-        // o Google às vezes devolve o número exato via 'street_number' —
-        // antes isso nunca era extraído, e o endereço automático sempre
-        // caía direto no placeholder 'S/N', mesmo quando o número real
-        // estava disponível.
-        if (types.contains('street_number')) numero = c['long_name'];
-        if (types.contains('sublocality') ||
-            types.contains('sublocality_level_1') ||
-            types.contains('neighborhood')) {
-          bairro = c['long_name'];
-        }
-        // No Brasil, o "município"/cidade às vezes vem como locality,
-        // às vezes como administrative_area_level_2 — checamos os dois,
-        // dando prioridade a locality (mais comum em capitais).
-        if (types.contains('locality') && cidade.isEmpty) {
-          cidade = c['long_name'];
-        }
-        if (types.contains('administrative_area_level_2') && cidade.isEmpty) {
-          cidade = c['long_name'];
-        }
-        if (types.contains('administrative_area_level_1')) {
-          estado = c['short_name']; // sigla, ex: "SP"
-        }
-        if (types.contains('postal_code')) {
-          cep = _formatarCep(c['long_name'].toString());
-        }
-      }
-
-      return {'rua': rua, 'numero': numero, 'bairro': bairro, 'cidade': cidade, 'estado': estado, 'cep': cep};
-    } catch (e) {
-      debugPrint('Erro ao buscar endereço via Google Geocoding: $e');
-      return {};
-    }
-  }
-
-  Future<void> _onRefresh() async {    _currentPageLojas = 0;
+  Future<void> _onRefresh() async {
+    _currentPageLojas = 0;
     _hasMoreLojas = true;
     _lojas.clear();
     await Future.wait([
@@ -728,8 +563,16 @@ class _HomeContentState extends State<HomeContent> {
       }
     }
 
-    return CustomScrollView(
-      controller: _scrollController,
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.axis == Axis.vertical &&
+            notification.metrics.pixels >=
+                notification.metrics.maxScrollExtent - 200) {
+          _fetchLojas();
+        }
+        return false;
+      },
+      child: CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
@@ -1068,6 +911,7 @@ class _HomeContentState extends State<HomeContent> {
           ),
         ),
       ],
+      ),
     );
   }
 

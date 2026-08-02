@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/services/api_client.dart';
 
@@ -15,8 +16,13 @@ class LojaRepository {
   }
 
   Future<LojasModel?> buscarLoja(String lojaId) async {
-    final response = await _dio.get('/lojas/$lojaId');
-    return LojasModel.fromMap(response.data);
+    try {
+      final response = await _dio.get('/lojas/$lojaId');
+      return LojasModel.fromMap(response.data);
+    } catch (e) {
+      debugPrint("Erro ao buscar loja $lojaId: $e");
+      return null;
+    }
   }
 
   /// Busca lojas por nome. O backend não tem filtro por nome em GET /lojas

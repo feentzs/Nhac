@@ -37,12 +37,10 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
     
     _produtosRelacionadosFuture = _produtoRepository.buscarPorCategoria(widget.produto.categoriaMenu);
 
-    // BUG CORRIGIDO: estava fixado em Future.value(null), então a loja de
-    // verdade nunca era buscada — por isso sempre aparecia "Loja Parceira"
-    // (o texto de fallback) e o toque em "Vendido por" nunca abria o perfil
-    // da loja, já que _abrirLojaProfile também depende deste future.
-    _lojaFuture = _lojaRepository.buscarLoja(widget.produto.lojaId);
-    _produtosDaLojaFuture = _produtoRepository.buscarPorLoja(widget.produto.lojaId);
+    _lojaFuture = widget.produto.lojaId.isNotEmpty
+        ? _lojaRepository.buscarLoja(widget.produto.lojaId)
+        : Future.value(null);
+    _produtosDaLojaFuture = null;
   }
 
   void _incrementarQuantidade() {
@@ -280,18 +278,20 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                 child: const Divider(
                                     height: 1, color: Color(0xFFEEEEEE)),
                               ),
-                              // BUG CORRIGIDO: usar _lojaFuture aqui dependia
-                              // de GET /lojas/{id}, que só devolve a loja se
-                              // ela estiver ABERTA no momento — por isso
-                              // "alguns" produtos ficavam presos no
-                              // fallback "Loja Parceira" (o produto tinha
-                              // loja de verdade, só que fechada naquele
-                              // instante). widget.produto.lojaNome vem
-                              // direto do próprio produto e não depende do
-                              // status da loja.
-                              _buildServiceRow(
-                                  Icons.storefront_outlined,
-                                  'Vendido por: ${widget.produto.lojaNome.isNotEmpty ? widget.produto.lojaNome : "Loja Parceira"}'),
+                              FutureBuilder<LojasModel?>(
+                                future: _lojaFuture,
+                                builder: (context, snapshot) {
+                                  String nomeLoja = 'Loja Parceira';
+                                  if (snapshot.connectionState == ConnectionState.done &&
+                                      snapshot.hasData &&
+                                      snapshot.data != null) {
+                                      nomeLoja = snapshot.data!.nome;
+                                  }
+                                  return _buildServiceRow(
+                                      Icons.storefront_outlined,
+                                      'Vendido por: $nomeLoja');
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -457,24 +457,24 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                   SizedBox(width: 24.w),
                   Expanded(
                     child: FutureBuilder<LojasModel?>(
-                      // BUG CORRIGIDO: "loja fechada deve explicitar e não
-                      // permitir colocar itens no carrinho". GET /lojas/{id}
-                      // só devolve a loja se ela estiver aberta — então se
-                      // _lojaFuture resolver com null/erro, a loja está
-                      // fechada (ou não existe), e bloqueamos a compra aqui
-                      // em vez de deixar o usuário descobrir só no 404 ao
-                      // finalizar o pedido.
                       future: _lojaFuture,
                       builder: (context, lojaSnapshot) {
-                        final carregando = lojaSnapshot.connectionState == ConnectionState.waiting;
-                        final lojaFechada = !carregando &&
-                            (!lojaSnapshot.hasData || lojaSnapshot.data == null);
-
+                        final loja = lojaSnapshot.data;
+                        final lojaFechada = loja != null && !loja.isAberto;
                         return ElevatedButton(
-                      onPressed: (carregando || lojaFechada) ? null : () async {
+                      onPressed: lojaFechada
+                          ? () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Esta loja está fechada no momento.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          : () async {
                         try {
                           final cartProvider = Provider.of<CartProvider>(context, listen: false);
-                          final success = await cartProvider.adicionarItemComQuantidade(
+                          await cartProvider.adicionarItemComQuantidade(
                             idProduto: widget.produto.id, 
                             nome: widget.produto.nome,
                             preco: widget.produto.preco,
@@ -483,28 +483,13 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                             quantidade: _quantidade,
                           );
                           if (context.mounted) {
-                            // BUG CORRIGIDO: o retorno bool era ignorado —
-                            // quando o item era de uma loja diferente da que
-                            // já estava no carrinho (retorna false, item NÃO
-                            // adicionado), o usuário via a mesma mensagem
-                            // verde de sucesso mesmo sem nada ter mudado.
-                            if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-                                  duration: const Duration(seconds: 2),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Você já possui itens de outra loja no carrinho!'),
-                                  duration: Duration(seconds: 3),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
+                                duration: const Duration(seconds: 2),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
                           }
                         } catch (e) {
                           if (context.mounted) {
@@ -519,7 +504,9 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: lojaFechada ? Colors.grey.shade400 : const Color(0xFFFF6961),
+                        backgroundColor: lojaFechada
+                            ? Colors.grey.shade400
+                            : const Color(0xFFFF6961),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -529,7 +516,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       ),
                       child: Text(
                         lojaFechada
-                            ? 'Loja fechada no momento'
+                            ? 'Loja fechada'
                             : 'Adicionar  ${currencyFormat.format(widget.produto.preco * _quantidade)}',
                         style: TextStyle(
                           fontSize: 16.sp,
