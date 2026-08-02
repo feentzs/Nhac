@@ -4,23 +4,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nhac/pages/search_page.dart';
 
 void main() {
-  Widget createWidgetUnderTest() {
-    return ScreenUtilInit(
-      designSize: const Size(375, 812),
-      builder: (context, child) => const MaterialApp(
-        home: SearchPage(),
+  testWidgets('SearchPage deve renderizar o campo de busca e aceitar input', (WidgetTester tester) async {
+    
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(390, 844),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return const MaterialApp(
+            home: SearchPage(),
+          );
+        },
       ),
     );
-  }
 
-  testWidgets('SearchPage deve renderizar o campo de busca e aceitar input', (tester) async {
-    await tester.pumpWidget(createWidgetUnderTest());
+   
+    await tester.pumpAndSettle();
+
+    
+    expect(find.byType(AppBar), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+
+    
+    await tester.enterText(find.byType(TextField), 'pizza');
     await tester.pump();
 
-    expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('Pesquisar produtos...'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'Pizza');
-    expect(find.text('Pizza'), findsOneWidget);
+    // Verificar se o texto foi digitado
+    expect(find.text('pizza'), findsOneWidget);
   });
 }

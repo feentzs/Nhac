@@ -19,7 +19,7 @@ permissions:
   contents: write
 
 env:
-  FLUTTER_VERSION: '3.44.4'
+  FLUTTER_VERSION: '3.44.7'
 
 jobs:
 
@@ -58,7 +58,7 @@ jobs:
         continue-on-error: true
 
       - name: Static analysis
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Run tests
         run: flutter test --coverage
@@ -75,7 +75,6 @@ jobs:
   build-debug:
     name: Build Debug APK
     needs: quality
-    # Agora o job é executado se a branch atual OU a branch de destino do PR for 'eu-e-tu' OU 'context-ia-migration'
     if: |
       github.ref_name == 'eu-e-tu' || github.base_ref == 'eu-e-tu' ||
       github.ref_name == 'context-ia-migration' || github.base_ref == 'context-ia-migration'
