@@ -39,12 +39,14 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+  // Valores devem bater exatamente com a coluna `categoria_menu` do banco,
+  // já que o backend filtra produtos/lojas por valor exato.
   static const _categoriasSugeridas = [
-    {'nome': 'Mercado', 'icon': Icons.shopping_basket_rounded},
-    {'nome': 'Lanches', 'icon': Icons.fastfood_rounded},
-    {'nome': 'Pizza', 'icon': Icons.local_pizza_rounded},
-    {'nome': 'Saudável', 'icon': Icons.eco_rounded},
-    {'nome': 'Doces', 'icon': Icons.icecream_rounded},
+    {'nome': 'Combos', 'icon': Icons.fastfood_rounded},
+    {'nome': 'Prato Principal', 'icon': Icons.restaurant_rounded},
+    {'nome': 'Acompanhamento', 'icon': Icons.rice_bowl_rounded},
+    {'nome': 'Sobremesas', 'icon': Icons.icecream_rounded},
+    {'nome': 'Bebidas', 'icon': Icons.local_drink_rounded},
   ];
 
   final TextEditingController _searchController = TextEditingController();

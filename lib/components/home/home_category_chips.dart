@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 class HomeCategoryChips extends StatelessWidget {
   const HomeCategoryChips({super.key});
 
+  // Valores devem bater exatamente com a coluna `categoria_menu` do banco,
+  // já que o backend filtra produtos/lojas por valor exato.
   static const _categorias = [
-    {'nome': 'Mercado', 'icon': Icons.shopping_basket},
-    {'nome': 'Lanches', 'icon': Icons.fastfood},
-    {'nome': 'Pizza',   'icon': Icons.local_pizza},
-    {'nome': 'Saudável','icon': Icons.eco},
-    {'nome': 'Doces',   'icon': Icons.icecream},
+    {'nome': 'Combos', 'icon': Icons.fastfood},
+    {'nome': 'Prato Principal', 'icon': Icons.restaurant},
+    {'nome': 'Acompanhamento', 'icon': Icons.rice_bowl},
+    {'nome': 'Sobremesas', 'icon': Icons.icecream},
+    {'nome': 'Bebidas', 'icon': Icons.local_drink},
   ];
 
   @override

@@ -23,6 +23,7 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:nhac/controllers/user_provider.dart';
+import 'package:nhac/utils/endereco_utils.dart';
 import 'package:provider/provider.dart';
 
 @NowaGenerated()
@@ -56,6 +57,10 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
+  // lojaId -> está aberta? Usado para impedir adicionar ao carrinho
+  // produto de loja fechada direto pelas seções da home.
+  Map<String, bool> _lojaAbertaMap = {};
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +93,28 @@ class _HomeContentState extends State<HomeContent> {
       _fetchProdutosPromocao(),
       _fetchLojas(),
     ]);
+    await _atualizarStatusLojas();
+  }
+
+  /// Busca o status aberta/fechada de cada loja distinta entre os produtos
+  /// exibidos na home, para bloquear adicionar ao carrinho item de loja
+  /// fechada direto pelas seções da home.
+  Future<void> _atualizarStatusLojas() async {
+    final idsUnicos = {
+      ..._produtosNecessidades.map((p) => p.lojaId),
+      ..._produtosPromocao.map((p) => p.lojaId),
+    }..removeWhere((id) => id.isEmpty);
+
+    if (idsUnicos.isEmpty) return;
+
+    final entradas = await Future.wait(idsUnicos.map((id) async {
+      final loja = await _lojaRepository.buscarLoja(id);
+      return MapEntry(id, loja?.isAberto ?? true);
+    }));
+
+    if (mounted) {
+      setState(() => _lojaAbertaMap = Map.fromEntries(entradas));
+    }
   }
 
   Future<void> _fetchProdutosNecessidades() async {
@@ -510,18 +537,39 @@ class _HomeContentState extends State<HomeContent> {
         if (!mounted) return;
         final enderecoProvider = context.read<EnderecoProvider>();
         if (enderecoProvider.enderecos.isEmpty) {
-          final novoEndereco = EnderecoModel(
-            id: '',
-            rua: place.street ?? '',
-            numero: '',
-            bairro: place.subLocality ?? '',
-            cidade: place.locality ?? '',
-            estado: place.administrativeArea ?? '',
-            cep: place.postalCode ?? '',
-            complemento: '',
-            isPadrao: true,
+          // O pacote `geocoding` retorna o número em `subThoroughfare` e o
+          // estado como nome completo (ex: "São Paulo"), não como sigla.
+          // O backend exige número preenchido e estado com exatamente 2
+          // caracteres (UF), então normalizamos os dados antes de enviar.
+          final cidade = EnderecoUtils.normalizarCidade(
+            [place.locality, place.subAdministrativeArea],
           );
-          await enderecoProvider.adicionarEndereco(novoEndereco);
+          final estado = EnderecoUtils.normalizarEstado(place.administrativeArea);
+          final numero = EnderecoUtils.normalizarNumero(place.subThoroughfare);
+
+          if (EnderecoUtils.ehValido(cidade: cidade, estado: estado, numero: numero)) {
+            final novoEndereco = EnderecoModel(
+              id: '',
+              rua: place.street ?? '',
+              numero: numero,
+              bairro: place.subLocality ?? '',
+              cidade: cidade,
+              estado: estado,
+              cep: place.postalCode ?? '',
+              complemento: '',
+              isPadrao: true,
+            );
+            try {
+              await enderecoProvider.adicionarEndereco(novoEndereco);
+            } catch (e) {
+              debugPrint('Erro ao salvar endereço detectado por GPS: $e');
+            }
+          } else {
+            debugPrint(
+              'Endereço detectado por GPS incompleto (cidade/estado/número). '
+              'Peça para o usuário confirmar manualmente em vez de enviar.',
+            );
+          }
         }
       }
     } catch (e) {
@@ -846,6 +894,7 @@ class _HomeContentState extends State<HomeContent> {
                           title: 'Temos tudo que você precisa',
                           onSeeAll: () {},
                           products: _produtosNecessidades,
+                          lojaAberta: _lojaAbertaMap,
                         ),
                 ),
               ),
@@ -873,6 +922,7 @@ class _HomeContentState extends State<HomeContent> {
                           title: 'Tudo abaixo de R\$ 20',
                           onSeeAll: () {},
                           products: _produtosPromocao,
+                          lojaAberta: _lojaAbertaMap,
                         ),
                 ),
               ),

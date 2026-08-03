@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:nhac/utils/endereco_utils.dart';
 
 class AddressPickerSheet extends StatefulWidget {
   const AddressPickerSheet({super.key});
@@ -157,10 +158,10 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
           if (mounted) {
             Navigator.pop(context, {
               'rua': rua,
-              'numero': numero,
+              'numero': EnderecoUtils.normalizarNumero(numero),
               'bairro': bairro,
               'cidade': cidade,
-              'estado': estado,
+              'estado': EnderecoUtils.normalizarEstado(estado),
             });
           }
         }

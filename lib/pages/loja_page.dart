@@ -408,6 +408,7 @@ class _LojaPageState extends State<LojaPage>
                       ),
                       child: ProductCard(
                        produto: produto,
+                       lojaFechada: !widget.loja.isAberto,
                       ),
                     );
                   },

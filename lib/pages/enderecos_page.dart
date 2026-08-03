@@ -11,6 +11,15 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// Normaliza qualquer CEP (com ou sem traço, com espaços etc.) para o
+/// formato XXXXX-XXX exigido pelo backend. Devolve '' se não tiver
+/// exatamente 8 dígitos (CEP inválido/incompleto).
+String _formatarCep(String cepBruto) {
+  final digitos = cepBruto.replaceAll(RegExp(r'[^0-9]'), '');
+  if (digitos.length != 8) return '';
+  return '${digitos.substring(0, 5)}-${digitos.substring(5)}';
+}
+
 class EnderecosPage extends StatefulWidget {
   const EnderecosPage({super.key});
 
@@ -123,7 +132,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
         _mostrarFormularioComplemento(result)
       }
     });
-  
+
   }
   void _mostrarFormularioComplemento(Map<String, dynamic> enderecoGoogle) {
     final numeroController = TextEditingController(text: enderecoGoogle['numero']);
@@ -204,9 +213,9 @@ class _EnderecosPageState extends State<EnderecosPage> {
                 onPressed: () {
                   enderecoGoogle['numero'] = numeroController.text.isEmpty ? 'S/N' : numeroController.text;
                   enderecoGoogle['complemento'] = complementoController.text;
-                  
+
                   Navigator.pop(context); 
-                  
+
                   _salvarEnderecoSelecionado(enderecoGoogle);
                 },
               ),
@@ -221,16 +230,41 @@ class _EnderecosPageState extends State<EnderecosPage> {
   Future<void> _salvarEnderecoSelecionado(Map<String, dynamic> result) async {
     if (!mounted) return;
 
+    final cep = (result['cep'] as String?) ?? '';
+    final rua = (result['rua'] as String?) ?? '';
+    final bairro = (result['bairro'] as String?) ?? '';
+    final cidade = (result['cidade'] as String?) ?? '';
+    final estado = (result['estado'] as String?) ?? '';
+
+    // BUG CORRIGIDO: validação mais granular para dar feedback específico
+    // ao usuário sobre qual campo está faltando. Isso evita o erro 400
+    // do backend quando o Google Places API não retorna CEP para endereços
+    // genéricos (ex: "Rua Augusta" sem número).
+    final camposFaltando = <String>[];
+    if (rua.isEmpty) camposFaltando.add('rua');
+    if (bairro.isEmpty) camposFaltando.add('bairro');
+    if (cidade.isEmpty) camposFaltando.add('cidade');
+    if (estado.length != 2) camposFaltando.add('estado (UF)');
+    if (cep.isEmpty) camposFaltando.add('CEP');
+
+    if (camposFaltando.isNotEmpty) {
+      context.showError(
+          'Não foi possível identificar: ${camposFaltando.join(", ")}. '
+          'O endereço selecionado pode ser muito genérico. '
+          'Tente buscar pelo nome da rua + número (ex: "Av. Paulista, 1000").');
+      return;
+    }
+
     final isPrimeiroEndereco = context.read<EnderecoProvider>().enderecos.isEmpty;
 
     final novoEndereco = EnderecoModel(
       id: '', 
-      rua: result['rua'] ?? '',
+      rua: rua,
       numero: result['numero'] ?? 'S/N',
       bairro: result['bairro'] ?? '',
-      cidade: result['cidade'] ?? '',
-      estado: result['estado'] ?? '',
-      cep: '', 
+      cidade: cidade,
+      estado: estado,
+      cep: cep,
       complemento: result['complemento'] ?? '', 
       isPadrao: isPrimeiroEndereco,
     );
@@ -629,32 +663,40 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
   List<Map<String, dynamic>> _sugestoes = [];
   bool _estaDigitando = false;
   bool _isLoadingSearch = false;
+  String? _erroBusca;
   Timer? _debounce;
   final Dio _dio = Dio();
-  final String _googleApiKey = dotenv.env['GOOGLE_PLACES_API_KEY'] ?? '';
+  final String _googleApiKey = dotenv.env['GOOGLE_API_KEY'] ?? '';
 
  void _filtrarEnderecos(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
-    
+
     if (query.isEmpty) {
       setState(() {
         _sugestoes = [];
         _estaDigitando = false;
         _isLoadingSearch = false;
+        _erroBusca = null;
       });
       return;
     }
-    
+
     setState(() {
       _estaDigitando = true;
       _isLoadingSearch = true;
+      _erroBusca = null;
     });
 
     _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (!mounted) return;
       if (_googleApiKey.isEmpty) {
         debugPrint('🚨 ERRO CRÍTICO: A chave do Google (API Key) está vazia!');
         debugPrint('Verifique se o arquivo .env existe e se está declarado no pubspec.yaml.');
-        setState(() => _isLoadingSearch = false);
+        if (!mounted) return;
+        setState(() {
+          _isLoadingSearch = false;
+          _erroBusca = 'Chave da API do Google não configurada (.env ausente).';
+        });
         return;
       }
 
@@ -669,9 +711,10 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
           },
         );
 
+        if (!mounted) return;
         if (response.statusCode == 200) {
           final data = response.data;
-          
+
           if (data['status'] == 'OK') {
             setState(() {
               _sugestoes = List<Map<String, dynamic>>.from(data['predictions'].map((p) => {
@@ -687,22 +730,27 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
             if (data.containsKey('error_message')) {
               debugPrint('Motivo detalhado: ${data['error_message']}');
             }
-            
+
             setState(() {
               _sugestoes = [];
               _isLoadingSearch = false;
+              _erroBusca = 'Google recusou a busca (${data['status']})'
+                  '${data.containsKey('error_message') ? ': ${data['error_message']}' : '.'}';
             });
           }
         }
       } catch (e) {
         debugPrint('⚠️ ERRO DE REQUISIÇÃO (Dio): $e');
+        if (!mounted) return;
         setState(() {
           _sugestoes = [];
           _isLoadingSearch = false;
+          _erroBusca = 'Falha ao buscar endereços. Verifique sua conexão.';
         });
       }
     });
   }
+
   Future<void> _obterDetalhes(String placeId, String description) async {
     setState(() {
       _isLoadingSearch = true;
@@ -728,8 +776,8 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
           String numero = '';
           String bairro = '';
           String cidade = '';
-          String cidadeLocality = '';
           String estado = '';
+          String cep = '';
 
           for (var c in components) {
             final types = c['types'] as List;
@@ -744,23 +792,56 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
                 types.contains('neighborhood')) {
               bairro = c['long_name'];
             }
-            if (types.contains('administrative_area_level_2')) {
+            if (types.contains('locality') && cidade.isEmpty) {
               cidade = c['long_name'];
             }
-            // No Brasil, "administrative_area_level_2" costuma vir vazio ou
-            // inconsistente em várias regiões — "locality" é a fonte
-            // confiável do nome do município. Usamos como principal, com
-            // administrative_area_level_2 como reforço/fallback.
-            if (types.contains('locality')) {
-              cidadeLocality = c['long_name'];
+            if (types.contains('administrative_area_level_2') && cidade.isEmpty) {
+              cidade = c['long_name'];
             }
             if (types.contains('administrative_area_level_1')) {
               estado = c['short_name'];
             }
+            if (types.contains('postal_code')) {
+              cep = _formatarCep(c['long_name'].toString());
+            }
           }
 
-          if (cidadeLocality.isNotEmpty) {
-            cidade = cidadeLocality;
+          // BUG CORRIGIDO: O Google Places API às vezes não retorna CEP
+          // para endereços genéricos (ex: "Rua Augusta" sem número
+          // específico). Tentamos buscar o CEP via Geocoding API usando
+          // as coordenadas do lugar como fallback.
+          if (cep.isEmpty && result['geometry']?['location'] != null) {
+            final lat = result['geometry']['location']['lat'];
+            final lng = result['geometry']['location']['lng'];
+            try {
+              final geoResponse = await _dio.get(
+                'https://maps.googleapis.com/maps/api/geocode/json',
+                queryParameters: {
+                  'latlng': '$lat,$lng',
+                  'key': _googleApiKey,
+                  'language': 'pt-BR',
+                },
+              );
+              if (geoResponse.statusCode == 200 && geoResponse.data['status'] == 'OK') {
+                final geoResults = geoResponse.data['results'] as List;
+                for (var geoResult in geoResults) {
+                  final geoComponents = geoResult['address_components'] as List;
+                  for (var gc in geoComponents) {
+                    final types = gc['types'] as List;
+                    if (types.contains('postal_code')) {
+                      final cepEncontrado = _formatarCep(gc['long_name'].toString());
+                      if (cepEncontrado.isNotEmpty) {
+                        cep = cepEncontrado;
+                        break;
+                      }
+                    }
+                  }
+                  if (cep.isNotEmpty) break;
+                }
+              }
+            } catch (e) {
+              debugPrint('Falha ao buscar CEP via geocoding: $e');
+            }
           }
 
           if (mounted) {
@@ -770,6 +851,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
               'bairro': bairro,
               'cidade': cidade,
               'estado': estado,
+              'cep': cep,
             });
             context.showInfo(
                 'Endereço "${description.split(",").first}" selecionado!');
@@ -777,7 +859,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
         }
       }
     } catch (e) {
-      debugPrint('Erro ao obter detalhes do local: \$e');
+      debugPrint('Erro ao obter detalhes do local: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -926,15 +1008,18 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
 
   Widget _buildLoadingState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Lottie.asset(
-            'assets/animations/botao_loading_nhac.json',
-            width: 250,
-            height: 250,
-          ),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Lottie.asset(
+              'assets/animations/botao_loading_nhac.json',
+              width: 180,
+              height: 180,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -956,6 +1041,25 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
   }
 
   Widget _buildNotFound() {
+    if (_erroBusca != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 60, color: Colors.red.shade200),
+              const SizedBox(height: 16),
+              Text(
+                _erroBusca!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.red.shade400, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

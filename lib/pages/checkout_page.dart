@@ -21,7 +21,10 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   String _formaPagamento = 'Dinheiro';
   final TextEditingController _trocoController = TextEditingController();
-  bool _mostrarCampoTroco = false;
+  // Começa true porque _formaPagamento já inicia como 'Dinheiro' — antes
+  // ficava false até o usuário trocar de forma de pagamento e voltar pra
+  // "Dinheiro", já que só era atualizado dentro do onTap de cada opção.
+  bool _mostrarCampoTroco = true;
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   bool _isLoading = true;

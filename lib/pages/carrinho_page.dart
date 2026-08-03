@@ -70,13 +70,21 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   orElse: () => enderecoProvider.enderecos.first,
                 );
 
+          // Esta página fica dentro de um Stack (home_page.dart) com a barra
+          // flutuante "Continuar" e a navbar sobrepostas por cima do
+          // conteúdo. Sem esse respiro extra no final, elas cobrem o campo
+          // de observações.
+          final espacoParaBarraFlutuante =
+              MediaQuery.of(context).padding.bottom + 220.h;
+
           return Column(
             children: [
               Expanded(
                 child: ListView(
                   physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics()),
-                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                  padding: EdgeInsets.fromLTRB(
+                      16.w, 0, 16.w, espacoParaBarraFlutuante),
                   children: [
                     SizedBox(height: 8.h),
                     TweenAnimationBuilder<double>(

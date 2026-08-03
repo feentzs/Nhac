@@ -30,20 +30,23 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   Timer? _timer;
 
   static const List<BannerItem> _banners = [
+    // Valores de valorFiltro devem bater exatamente com a coluna
+    // `categoria_menu` do banco (Combos, Sobremesas, Acompanhamento,
+    // Prato Principal, Bebidas), senão a busca não retorna nada.
     BannerItem(
       imageUrl: 'https://scontent-gru1-2.cdninstagram.com/v/t51.82787-15/670924780_17901783585428033_4922530998420665552_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=100&ig_cache_key=Mzg4ODQ4ODk3NTM4MDEwNDc1Mg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkNBUk9VU0VMX0lURU0ueHBpZHMuMTIyNC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=i8JzVpFQUFAQ7kNvwF-S-RN&_nc_oc=AdpHGEJWLmKGv24wrEF7Cpn4A-FV2aJEJMMeDkzJz0aV0U1BebBwJyBfunIICr0s1RSykpsvdarGmVAxoTlk1mvk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-gru1-2.cdninstagram.com&_nc_gid=qYcUt4AEiM7d57vg9kf2_Q&_nc_ss=7a22e&oh=00_Af7AP5fnRqXKRPAOWhRue9FnkfAlIBNiX58AU9lZ2V5atg&oe=6A013FCD',
       tipoFiltro: 'categoria',
-      valorFiltro: 'Pizza',
+      valorFiltro: 'Prato Principal',
     ),
     BannerItem(
       imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800',
       tipoFiltro: 'categoria',
-      valorFiltro: 'Lanches',
+      valorFiltro: 'Combos',
     ),
     BannerItem(
       imageUrl: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=800',
       tipoFiltro: 'categoria',
-      valorFiltro: 'Mercado',
+      valorFiltro: 'Bebidas',
     ),
   ];
 
