@@ -653,8 +653,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ElevatedButton(
               onPressed: () {
                 cartProvider.esvaziarCarrinho();
-                Navigator.of(dialogContext, rootNavigator: true).pop(); // fecha só o diálogo
-                dialogContext.go('/home-page');
+                // Importante: navegar usando o `context` da CheckoutPage, e
+                // não o `dialogContext`. O `dialogContext` só existe
+                // enquanto o AlertDialog está na árvore — assim que ele é
+                // fechado, aquele context fica inválido, e chamar `.go()`
+                // nele falha silenciosamente. Isso deixava o usuário preso
+                // na tela do pedido, sem a navbar (que só existe na rota
+                // '/home-page'), até reiniciar o app.
+                // `context.go()` já substitui toda a pilha de rotas pela
+                // '/home-page', o que também fecha o diálogo e a tela de
+                // checkout junto.
+                if (context.mounted) {
+                  context.go('/home-page');
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFE645C),

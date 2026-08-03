@@ -195,12 +195,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                bottom: _isScrolledDown
+                bottom: (_isScrolledDown && _selectedIndex == 0)
                     ? (bottomPadding + 101.h) 
                     : (bottomPadding + 22.5.h),
                 right: 24.w + 12.5.w, 
-                child: GestureDetector(
-                  onTap: _isScrolledDown ? _scrollToTop : null,
+                child: IgnorePointer(
+                  ignoring: !(_isScrolledDown && _selectedIndex == 0),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: (_isScrolledDown && _selectedIndex == 0) ? 1.0 : 0.0,
+                    child: GestureDetector(
+                  onTap: (_isScrolledDown && _selectedIndex == 0) ? _scrollToTop : null,
                   child: Container(
                     width: 50.w,
                     height: 50.w,
@@ -219,6 +224,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       Icons.arrow_upward_rounded,
                       color: Colors.white,
                       size: 24.sp,
+                    ),
+                  ),
                     ),
                   ),
                 ),

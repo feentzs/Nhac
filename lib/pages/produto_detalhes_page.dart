@@ -282,10 +282,17 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                                 future: _lojaFuture,
                                 builder: (context, snapshot) {
                                   String nomeLoja = 'Loja Parceira';
-                                  if (snapshot.connectionState == ConnectionState.done &&
-                                      snapshot.hasData &&
-                                      snapshot.data != null) {
+                                  if (snapshot.connectionState == ConnectionState.done) {
+                                    if (snapshot.hasData && snapshot.data != null) {
                                       nomeLoja = snapshot.data!.nome;
+                                    } else {
+                                      // Busca terminou sem retornar a loja
+                                      // (ex.: indisponível/fechada no
+                                      // backend). Deixamos isso explícito em
+                                      // vez de manter o placeholder genérico
+                                      // indefinidamente.
+                                      nomeLoja = 'indisponível no momento';
+                                    }
                                   }
                                   return _buildServiceRow(
                                       Icons.storefront_outlined,
@@ -460,9 +467,19 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                       future: _lojaFuture,
                       builder: (context, lojaSnapshot) {
                         final loja = lojaSnapshot.data;
-                        final lojaFechada = loja != null && !loja.isAberto;
+                        final aindaCarregando =
+                            lojaSnapshot.connectionState != ConnectionState.done;
+                        // Se a busca da loja ainda não terminou, ou terminou
+                        // sem retornar dados (ex.: loja fechada/indisponível
+                        // no backend), tratamos como fechada por segurança —
+                        // evita permitir adicionar ao carrinho um item de
+                        // loja que na verdade está fechada.
+                        final lojaFechada =
+                            aindaCarregando || loja == null || !loja.isAberto;
                         return ElevatedButton(
-                      onPressed: lojaFechada
+                      onPressed: aindaCarregando
+                          ? null
+                          : lojaFechada
                           ? () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -515,7 +532,9 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         ),
                       ),
                       child: Text(
-                        lojaFechada
+                        aindaCarregando
+                            ? 'Carregando...'
+                            : lojaFechada
                             ? 'Loja fechada'
                             : 'Adicionar  ${currencyFormat.format(widget.produto.preco * _quantidade)}',
                         style: TextStyle(

@@ -78,6 +78,15 @@ class AuthService with ChangeNotifier {
 
   /// Atualiza o nome do usuário autenticado via `PATCH /usuarios/{id}`.
   /// Substitui o antigo método baseado em Firebase Auth.
+  ///
+  /// Importante: NÃO chama notifyListeners() aqui. Este AuthService é o
+  /// `refreshListenable` do GoRouter (ver router.dart), e o redirect só
+  /// depende de `isAuthenticated`/`carregado` — nada disso muda com uma
+  /// troca de nome. Nenhuma tela usa `watch<AuthService>()` para mostrar o
+  /// nome (isso vem do UserProvider). Disparar notifyListeners() aqui só
+  /// força o GoRouter a recalcular o redirect bem no momento em que a tela
+  /// de edição está chamando pop(), e essa disputa deixava o usuário preso
+  /// na tela de "editar nome" mesmo com o salvamento funcionando.
   Future<void> updateUserName({required String userName}) async {
     if (_usuarioId == null) {
       throw AuthException('Utilizador não autenticado.');
@@ -90,7 +99,6 @@ class AuthService with ChangeNotifier {
         usuarioId: _usuarioId!,
         nome: userName,
       );
-      notifyListeners();
     } catch (e) {
       throw mapException(e);
     }
