@@ -64,7 +64,7 @@ class UserProvider with ChangeNotifier {
       if (FirebaseAuth.instance.currentUser == null) {
         await FirebaseAuth.instance.signInAnonymously();
       }
-      final ref = storage.ref().child('usuarios').child(usuarioId).child('perfil.jpg');
+      final ref = storage.ref().child('usuarios_fotos').child(usuarioId).child('perfil.jpg');
 
       await ref.putFile(
         imagem,

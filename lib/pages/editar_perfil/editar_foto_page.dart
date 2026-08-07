@@ -101,7 +101,7 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
         await FirebaseAuth.instance.signInAnonymously();
       }
 
-      final ref = storage.ref().child('usuarios').child(uid).child('perfil.jpg');
+      final ref = storage.ref().child('usuarios_fotos').child(uid).child('perfil.jpg');
 
       await ref.putFile(
         _image!,

@@ -157,9 +157,14 @@ class _SearchPageState extends State<SearchPage> {
     final entradas = await Future.wait(idsUnicos.map((id) async {
       try {
         final loja = await _lojaRepository.buscarLoja(id);
-        return MapEntry(id, loja?.isAberto ?? true);
+        // Se a loja não veio (ex.: endpoint não retorna lojas fechadas),
+        // tratamos como fechada por segurança, e não como aberta. O mesmo
+        // vale se a busca falhar — bloquear e deixar o usuário tentar de
+        // novo é bem melhor do que liberar "adicionar ao carrinho" de uma
+        // loja que pode estar fechada.
+        return MapEntry(id, loja?.isAberto ?? false);
       } catch (_) {
-        return MapEntry(id, true); // se falhar a checagem, não bloqueia a compra
+        return MapEntry(id, false);
       }
     }));
 
@@ -675,7 +680,7 @@ class _SearchPageState extends State<SearchPage> {
                   onTap: () => _abrirProduto(produto),
                   child: ProductCard(
                     produto: produto,
-                    lojaFechada: resultado.lojaAberta[produto.lojaId] == false,
+                    lojaFechada: resultado.lojaAberta[produto.lojaId] != true,
                   ),
                 ),
               );
