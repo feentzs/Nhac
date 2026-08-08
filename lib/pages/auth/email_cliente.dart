@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
+import 'package:nhac/controllers/user_provider.dart';
+import 'package:nhac/globals/ui_utils.dart';
+import 'package:nhac/services/auth_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,7 +32,8 @@ class _EmailClienteState extends State<EmailCliente> {
 
   bool _emailValido = false;
   String? _erroEmail;
-   final bool _isLoading = false;
+  bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   final List<String> _dominios = [
     '@gmail.com',
@@ -177,18 +181,31 @@ class _EmailClienteState extends State<EmailCliente> {
               BotaoLargoNhac(
                 texto: 'Continuar com o Google',
                 isSecundario: true,
+                carregando: _isGoogleLoading,
                 icone: SvgPicture.asset(
                   'assets/google-logo.svg',
                   height: 24.0,
                   width: 24.0,
                 ),
-                // TODO(backend): reabilitar quando existir um endpoint de
-                // autenticação social (ex.: POST /auth/social) que valide um
-                // ID Token do Google/Firebase e emita o JWT próprio da API.
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Login com Google estará disponível em breve.')),
-                  );
+                onPressed: () async {
+                  setState(() => _isGoogleLoading = true);
+                  try {
+                    final authService = context.read<AuthService>();
+                    await authService.loginComGoogle();
+                    
+                    if (context.mounted) {
+                      // Assim como você faz no ContinuarSenha, carrega os dados e redireciona
+                      context.read<UserProvider>().carregarDadosUsuario();
+                      context.showSuccess("Logado com sucesso!");
+                      context.go('/home-page');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      context.showError(e.toString());
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isGoogleLoading = false);
+                  }
                 },
               ),
               const SizedBox(height: 16.0),

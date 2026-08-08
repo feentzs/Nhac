@@ -3,6 +3,7 @@ import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/services/api_client.dart';
 import 'package:nhac/services/session_storage_service.dart';
 import 'package:uuid/uuid.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService with ChangeNotifier {
   final _dio = ApiClient().dio;
@@ -100,6 +101,36 @@ class AuthService with ChangeNotifier {
         nome: userName,
       );
     } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+   Future<void> loginComGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      
+      // Força a seleção da conta do Google (útil se o usuário tiver mais de uma)
+      await googleSignIn.signOut();
+      
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      // Se for null, o usuário fechou o pop-up nativo do Google sem logar
+      if (googleUser == null) return; 
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken != null) {
+        // Dispara a requisição para a rota que acabamos de criar no Spring Boot
+        final response = await _dio.post('/auth/social', data: {'idToken': idToken});
+        
+        // Reaproveita seu método existente para salvar o JWT e o UID no SecureStorage
+        await _salvarSessaoDaResposta(response.data);
+      } else {
+        throw AuthException('Não foi possível obter o token de autenticação do Google.');
+      }
+    } catch (e) {
+      // O mapException já vai tratar o DioException do seu backend e erros do Firebase
       throw mapException(e);
     }
   }
