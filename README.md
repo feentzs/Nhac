@@ -14,7 +14,7 @@ Abaixo estão algumas capturas de tela demonstrando o fluxo principal e a interf
 
 | Bem-vindo | Tela Inicial | Localização |
 |:---:|:---:|:---:|
-| <video src="./readme/bem-vindo.mp4" autoplay loop muted playsinline width="250"></video> | <video src="./readme/tela-inicial.mp4" autoplay loop muted playsinline width="250"></video> | <video src="./readme/localizacao.mp4" autoplay loop muted playsinline width="250"></video> |
+| <img src="readme\tela-bemvindo.gif" width="250"> | <img src="./readme/tela-inicial.gif" width="250"> | <img src="./readme/localizacao.gif" width="250"> |
 
 ## Tecnologias e Dependências
 
