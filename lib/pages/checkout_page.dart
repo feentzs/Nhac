@@ -21,9 +21,7 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   String _formaPagamento = 'Dinheiro';
   final TextEditingController _trocoController = TextEditingController();
-  // Começa true porque _formaPagamento já inicia como 'Dinheiro' — antes
-  // ficava false até o usuário trocar de forma de pagamento e voltar pra
-  // "Dinheiro", já que só era atualizado dentro do onTap de cada opção.
+
   bool _mostrarCampoTroco = true;
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
@@ -588,7 +586,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _confirmarPedido(
       BuildContext context, double total, CartProvider cartProvider) async {
-    if (_isSubmitting) return; // evita duplo toque disparando o pedido 2x
+    if (_isSubmitting) return; 
     setState(() => _isSubmitting = true);
 
     final enderecoProvider = context.read<EnderecoProvider>();
@@ -633,7 +631,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final idGerado = await PedidoRepository().finalizarPedido(pedido);
 
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // fecha o loading
+      Navigator.of(context, rootNavigator: true).pop(); 
 
       showDialog(
         context: context,
@@ -653,16 +651,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ElevatedButton(
               onPressed: () {
                 cartProvider.esvaziarCarrinho();
-                // Importante: navegar usando o `context` da CheckoutPage, e
-                // não o `dialogContext`. O `dialogContext` só existe
-                // enquanto o AlertDialog está na árvore — assim que ele é
-                // fechado, aquele context fica inválido, e chamar `.go()`
-                // nele falha silenciosamente. Isso deixava o usuário preso
-                // na tela do pedido, sem a navbar (que só existe na rota
-                // '/home-page'), até reiniciar o app.
-                // `context.go()` já substitui toda a pilha de rotas pela
-                // '/home-page', o que também fecha o diálogo e a tela de
-                // checkout junto.
+               
                 if (context.mounted) {
                   context.go('/home-page');
                 }
@@ -679,7 +668,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     } catch (e) {
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // fecha o loading em caso de erro
+      Navigator.of(context, rootNavigator: true).pop(); 
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

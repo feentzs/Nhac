@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Troca de e-mail com verificação não é suportada pelo backend atual
-/// (o endpoint PATCH /usuarios/{id} ignora silenciosamente o campo "email",
-/// e não existe fluxo de verificação). Tela mantida como placeholder até
-/// que o backend ofereça esse recurso.
+
 /// TODO(backend): implementar endpoint de troca de e-mail com verificação.
 class EditarEmailPage extends StatelessWidget {
   const EditarEmailPage({super.key});

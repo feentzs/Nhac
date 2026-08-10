@@ -1,25 +1,27 @@
 import 'package:flutter/foundation.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
 
 class BiometricService {
   static final _auth = LocalAuthentication();
 
-  static Future<bool> canAuthenticate() async {
+  static Future<bool> isDeviceSecure() async {
     try {
-      return await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
-    } on PlatformException {
+      return await _auth.isDeviceSupported();
+    } on PlatformException catch (e) {
+      debugPrint('Erro ao verificar suporte do dispositivo: $e');
       return false;
     }
   }
 
   static Future<bool> authenticate() async {
     try {
-      final isSupported = await canAuthenticate();
+      final secure = await isDeviceSecure();
       
-      if (!isSupported) {
-       
-        return true; 
+      if (!secure) {
+        
+        return false; 
       }
 
       return await _auth.authenticate(
@@ -29,9 +31,16 @@ class BiometricService {
           biometricOnly: false, 
           useErrorDialogs: true,
         ),
+        authMessages: const [
+          AndroidAuthMessages(
+            signInTitle: 'Autenticação necessária',
+            biometricHint: 'Toque no sensor',
+          ),
+     
+        ],
       );
     } on PlatformException catch (e) {
-      debugPrint('Erro na autenticação biométrica: $e');
+      debugPrint('Erro na autenticação: $e');
       return false;
     }
   }

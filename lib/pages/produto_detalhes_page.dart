@@ -408,7 +408,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                               return const SizedBox.shrink();
                             }
 
-                            // Filtramos o produto atual para ele não aparecer na própria lista
                             final produtosRelacionados = snapshot.data!
                                 .where((p) => p.id != widget.produto.id)
                                 .take(5)
@@ -469,11 +468,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                         final loja = lojaSnapshot.data;
                         final aindaCarregando =
                             lojaSnapshot.connectionState != ConnectionState.done;
-                        // Se a busca da loja ainda não terminou, ou terminou
-                        // sem retornar dados (ex.: loja fechada/indisponível
-                        // no backend), tratamos como fechada por segurança —
-                        // evita permitir adicionar ao carrinho um item de
-                        // loja que na verdade está fechada.
                         final lojaFechada =
                             aindaCarregando || loja == null || !loja.isAberto;
                         return ElevatedButton(
