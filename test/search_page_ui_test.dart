@@ -23,7 +23,9 @@ void main() {
     await tester.pumpAndSettle();
 
     
-    expect(find.byType(AppBar), findsOneWidget);
+    // SearchPage não usa AppBar: a barra de busca é custom (Row com botão
+    // de voltar + campo de texto arredondado), ver _buildBarraBusca().
+    expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
 
     
