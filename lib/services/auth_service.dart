@@ -73,74 +73,94 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Alias de [logout] mantido pelo nome já usado em outras telas do app
-  /// (ex.: `profile_content.dart`).
+ 
   Future<void> signOut() => logout();
 
-  /// Atualiza o nome do usuário autenticado via `PATCH /usuarios/{id}`.
-  /// Substitui o antigo método baseado em Firebase Auth.
-  ///
-  /// Importante: NÃO chama notifyListeners() aqui. Este AuthService é o
-  /// `refreshListenable` do GoRouter (ver router.dart), e o redirect só
-  /// depende de `isAuthenticated`/`carregado` — nada disso muda com uma
-  /// troca de nome. Nenhuma tela usa `watch<AuthService>()` para mostrar o
-  /// nome (isso vem do UserProvider). Disparar notifyListeners() aqui só
-  /// força o GoRouter a recalcular o redirect bem no momento em que a tela
-  /// de edição está chamando pop(), e essa disputa deixava o usuário preso
-  /// na tela de "editar nome" mesmo com o salvamento funcionando.
-  Future<void> updateUserName({required String userName}) async {
-    if (_usuarioId == null) {
-      throw AuthException('Utilizador não autenticado.');
-    }
-    try {
-      await _dio.patch('/usuarios/$_usuarioId', data: {'nome': userName});
-      _nome = userName;
-      await _sessionStorage.salvarSessao(
-        token: (await _sessionStorage.obterToken())!,
-        usuarioId: _usuarioId!,
-        nome: userName,
-      );
-    } catch (e) {
-      throw mapException(e);
-    }
+  
+
+Future<void> updateUserName({required String userName}) async {
+  if (_usuarioId == null) {
+    throw AuthException('Utilizador não autenticado.');
   }
+
+  final nomeLimpo = userName.trim();
+
+  try {
+    await _dio.put('/usuarios/$_usuarioId', data: {
+      'nome': nomeLimpo 
+    });
+
+    final tokenAtual = await _sessionStorage.obterToken();
+    if (tokenAtual == null) {
+      throw AuthException('Sessão inválida ao salvar novo nome.');
+    }
+
+    _nome = nomeLimpo;
+
+    await _sessionStorage.salvarSessao(
+      token: tokenAtual,
+      usuarioId: _usuarioId!,
+      nome: nomeLimpo,
+    );
+  } catch (e) {
+    throw mapException(e);
+  }
+}
+
+
+
+  Future<void> updateEmail({required String novoEmail}) async {
+  if (_usuarioId == null) {
+    throw AuthException('Utilizador não autenticado.');
+  }
+
+  try {
+    final response = await _dio.put('/usuarios/$_usuarioId', data: {
+      'email': novoEmail.trim(),
+    });
+
+    final tokenFresquinho = response.data['token'] as String?;
+    if (tokenFresquinho == null || tokenFresquinho.isEmpty) {
+      throw AuthException('Backend não retornou um token válido.');
+    }
+
+    await _sessionStorage.salvarSessao(
+      token: tokenFresquinho,
+      usuarioId: _usuarioId!,
+      nome: _nome ?? 'Usuário',
+    );
+
+  } catch (e) {
+    throw mapException(e);
+  }
+}
 
    Future<void> loginComGoogle() async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
       
-      // Força a seleção da conta do Google (útil se o usuário tiver mais de uma)
       await googleSignIn.signOut();
       
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
-      // Se for null, o usuário fechou o pop-up nativo do Google sem logar
       if (googleUser == null) return; 
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
 
       if (idToken != null) {
-        // Dispara a requisição para a rota que acabamos de criar no Spring Boot
         final response = await _dio.post('/auth/social', data: {'idToken': idToken});
         
-        // Reaproveita seu método existente para salvar o JWT e o UID no SecureStorage
         await _salvarSessaoDaResposta(response.data);
       } else {
         throw AuthException('Não foi possível obter o token de autenticação do Google.');
       }
     } catch (e) {
-      // O mapException já vai tratar o DioException do seu backend e erros do Firebase
       throw mapException(e);
     }
   }
 
-  // Login/cadastro social (Google) e por telefone/SMS não são suportados
-  // pelo backend atual (apenas e-mail + senha via /auth/login e /auth/registrar).
-  // Todo ponto de entrada dessas opções na UI foi desabilitado (ver telas em
-  // lib/pages/auth/**). Mantido como propriedades estáveis para as telas que
-  // ainda checam o "tipo" de conta -- hoje toda conta é e-mail/senha.
-  // TODO(backend): reabilitar quando /auth/social existir (Google, SMS, etc.)
+  
   bool get isGoogleUser => false;
   bool get hasPassword => true;
 }

@@ -22,9 +22,7 @@ class UserProvider with ChangeNotifier {
   UsuarioModel? get usuario => _usuario;
   bool get isLoading => _isLoading;
 
-  // Login social (Google) e por telefone não são suportados pelo backend
-  // atual — toda conta hoje é criada por e-mail + senha via /auth/registrar.
-  // TODO(backend): reabilitar quando /auth/social existir.
+  
   bool get isGoogleUser => false;
   bool get hasPassword => true;
 
