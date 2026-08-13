@@ -1,32 +1,171 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nhac/controllers/user_provider.dart';
+import 'package:nhac/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'package:nhac/components/botoes/botao_largo_nhac.dart'; 
+import 'package:nhac/globals/ui_utils.dart';
+import 'package:nhac/components/nhac_input_field.dart';
+import 'package:nhac/utils/validators.dart';
 
-/// Troca de e-mail com verificação não é suportada pelo backend atual
-/// (o endpoint PATCH /usuarios/{id} ignora silenciosamente o campo "email",
-/// e não existe fluxo de verificação). Tela mantida como placeholder até
-/// que o backend ofereça esse recurso.
-/// TODO(backend): implementar endpoint de troca de e-mail com verificação.
-class EditarEmailPage extends StatelessWidget {
+class EditarEmailPage extends StatefulWidget {
   const EditarEmailPage({super.key});
 
   @override
+  State<EditarEmailPage> createState() => _EditarEmailPageState();
+}
+
+class _EditarEmailPageState extends State<EditarEmailPage> {
+  final TextEditingController _emailController = TextEditingController();
+  bool _emailValido = false;
+  String? _erroEmail;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(_validarNovoEmail);
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _validarNovoEmail() {
+    if (!mounted) return;
+    
+    final texto = _emailController.text.trim();
+
+    // TODO fazer um bloqueio para emails repetidos
+    // Pegamos o e-mail atual direto do Provider, sem depender do Firebase!
+    final emailAtual = context.read<UserProvider>().usuario?.email ?? '';
+
+    String? erroTemp = Validators.validarEmail(texto);
+
+    if (erroTemp == null && texto.toLowerCase() == emailAtual.toLowerCase()) {
+      erroTemp = 'Este já é o seu e-mail atual';
+    }
+
+    setState(() {
+      _erroEmail = erroTemp;
+      _emailValido = erroTemp == null && texto.isNotEmpty;
+    });
+  }
+
+  Future<void> _processarAtualizacaoEmail() async {
+    try {
+      setState(() => _isLoading = true);
+      
+      final authService = context.read<AuthService>();
+      final userProvider = context.read<UserProvider>();
+      
+      // 1. Chama o nosso "PUT insano" lá no Spring Boot
+      await authService.updateEmail(novoEmail: _emailController.text.trim());
+      
+      // 2. Avisa o Provider para recarregar os dados para a tela de Perfil atualizar
+      await userProvider.carregarDadosUsuario();
+      
+      if (!mounted) return;
+      
+      // 3. Volta para a tela anterior com sucesso
+      context.showSuccess('E-mail alterado com sucesso!');
+      context.pop(); 
+      
+    } catch (e) {
+      if (mounted) context.showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Usamos o seu próprio Provider para saber se é usuário do Google
+    final isGoogleUser = context.watch<UserProvider>().isGoogleUser;
+
+    if (isGoogleUser) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Usuários do Google não podem alterar o e-mail por aqui.')),
+          );
+        }
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
+      backgroundColor: const Color(0xFFFFE7E5),
       appBar: AppBar(
-        title: const Text('Editar e-mail'),
+        backgroundColor: const Color(0xFFFFE7E5),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => GoRouter.of(context).pop(),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF5D201C), size: 20),
+          onPressed: () => context.pop(),
         ),
       ),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text(
-            'A troca de e-mail estará disponível em breve.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16.0, color: Color(0xFF5D201C)),
-          ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16.0),
+                      const Text(
+                        'Digite seu novo endereço de email',
+                        style: TextStyle(
+                          fontSize: 28.0,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF5D201C),
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 12.0),
+                      Text(
+                        'Seu e-mail será atualizado imediatamente na sua conta.',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          color: Colors.grey.shade600,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 28.0),
+                      NhacInputField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        errorText: _erroEmail,
+                        hintText: 'Novo e-mail',
+                        validator: Validators.validarEmail,
+                        style: const TextStyle(
+                          fontSize: 18.0,
+                          color: Color(0xFF5D201C),
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 32.0, top: 16.0),
+              child: BotaoLargoNhac(
+                texto: 'Salvar Alteração',
+                carregando: _isLoading,
+                onPressed: _emailValido ? () => _processarAtualizacaoEmail() : null,
+              ),
+            ),
+          ],
         ),
       ),
     );

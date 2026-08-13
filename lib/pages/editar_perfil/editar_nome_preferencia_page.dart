@@ -49,13 +49,6 @@ class _EditarNomePreferenciaPageState extends State<EditarNomePreferenciaPage> {
   }
 
   void renameName() async {
-    // Guarda síncrona: sem isso, um duplo toque rápido antes do primeiro
-    // setState() ser aplicado podia disparar renameName() duas vezes,
-    // resultando em dois context.pop() em sequência — o que navegava de
-    // volta duas telas (ou reabria/pulava telas de forma inesperada) em vez
-    // de só uma.
-    if (_isLoading) return;
-
     final localContext = context;
     try {
       setState(() => _isLoading = true);
@@ -65,11 +58,16 @@ class _EditarNomePreferenciaPageState extends State<EditarNomePreferenciaPage> {
       await authService.updateUserName(userName: _nameController.text);
 
       if (!localContext.mounted) return;
-      await localContext.read<UserProvider>().carregarDadosUsuario();
 
-      if (!localContext.mounted) return;
+      // Navega de volta primeiro, antes de disparar o recarregamento do
+      // UserProvider. updateUserName() já chama notifyListeners() no
+      // AuthService (que é o refreshListenable do GoRouter), e disparar mais
+      // uma recarga/notifyListeners *antes* do pop() competia com a
+      // navegação e podia deixar a tela presa em "editar nome" até sair
+      // manualmente.
       localContext.showSuccess('Nome atualizado com sucesso!');
       localContext.pop();
+      localContext.read<UserProvider>().carregarDadosUsuario();
     } catch (e){
       if (!localContext.mounted) return;
       localContext.showError(e.toString());

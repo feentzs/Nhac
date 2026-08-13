@@ -9,12 +9,6 @@ class EnderecoModel {
   final String? complemento;
   final bool isPadrao;
 
-  /// `complemento` é opcional/nullable. Use estes getters em vez de
-  /// `complemento!` — o force-unwrap direto crashava sempre que um
-  /// endereço vinha sem complemento preenchido.
-  String get complementoOuVazio => complemento ?? '';
-  bool get temComplemento => complementoOuVazio.isNotEmpty;
-
   EnderecoModel({
     this.id = '',
     required this.rua,

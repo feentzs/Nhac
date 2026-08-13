@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/services/api_client.dart';
 import 'package:nhac/services/session_storage_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService with ChangeNotifier {
   final _dio = ApiClient().dio;
@@ -33,14 +34,8 @@ class AuthService with ChangeNotifier {
       final response = await _dio.post('/auth/login', data: {'email': email, 'senha': senha});
       await _salvarSessaoDaResposta(response.data);
     } catch (e) {
-      // BUG CORRIGIDO: qualquer falha aqui (timeout de rede, cold-start do
-      // Render, erro 500, etc.) virava sempre "E-mail ou senha inválidos.",
-      // mesmo quando as credenciais estavam certas e o problema era só de
-      // conexão/servidor. O backend já devolve uma mensagem clara em
-      // 'message' (ver ErroPadraoDTO) e mapException já sabe diferenciar
-      // rede de credencial — então usamos o mesmo mapeamento que registrar()
-      // já usa corretamente.
-      throw mapException(e);
+     
+      throw AuthException('E-mail ou senha inválidos.');
     }
   }
 
@@ -51,10 +46,6 @@ class AuthService with ChangeNotifier {
     required String senha,
   }) async {
     try {
-      // REVERTIDO: diferente de Loja/Produto (que o backend gera o ID
-      // sozinho, ex: prod_0001), RegistroRequestDTO ainda exige um 'id'
-      // @NotBlank vindo do cliente — confirmado lendo o backend real.
-      // Sem isso o registro falha com 422 ("id não pode ser vazio").
       final id = const Uuid().v4();
       final response = await _dio.post('/auth/registrar', data: {
         'id': id, 'nome': nome, 'email': email, 'telefone': telefone, 'senha': senha,
@@ -82,36 +73,94 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Alias de [logout] mantido pelo nome já usado em outras telas do app
-  /// (ex.: `profile_content.dart`).
+ 
   Future<void> signOut() => logout();
 
-  /// Atualiza o nome do usuário autenticado via `PATCH /usuarios/{id}`.
-  /// Substitui o antigo método baseado em Firebase Auth.
-  Future<void> updateUserName({required String userName}) async {
-    if (_usuarioId == null) {
-      throw AuthException('Utilizador não autenticado.');
+  
+
+Future<void> updateUserName({required String userName}) async {
+  if (_usuarioId == null) {
+    throw AuthException('Utilizador não autenticado.');
+  }
+
+  final nomeLimpo = userName.trim();
+
+  try {
+    await _dio.put('/usuarios/$_usuarioId', data: {
+      'nome': nomeLimpo 
+    });
+
+    final tokenAtual = await _sessionStorage.obterToken();
+    if (tokenAtual == null) {
+      throw AuthException('Sessão inválida ao salvar novo nome.');
     }
+
+    _nome = nomeLimpo;
+
+    await _sessionStorage.salvarSessao(
+      token: tokenAtual,
+      usuarioId: _usuarioId!,
+      nome: nomeLimpo,
+    );
+  } catch (e) {
+    throw mapException(e);
+  }
+}
+
+
+
+  Future<void> updateEmail({required String novoEmail}) async {
+  if (_usuarioId == null) {
+    throw AuthException('Utilizador não autenticado.');
+  }
+
+  try {
+    final response = await _dio.put('/usuarios/$_usuarioId', data: {
+      'email': novoEmail.trim(),
+    });
+
+    final tokenFresquinho = response.data['token'] as String?;
+    if (tokenFresquinho == null || tokenFresquinho.isEmpty) {
+      throw AuthException('Backend não retornou um token válido.');
+    }
+
+    await _sessionStorage.salvarSessao(
+      token: tokenFresquinho,
+      usuarioId: _usuarioId!,
+      nome: _nome ?? 'Usuário',
+    );
+
+  } catch (e) {
+    throw mapException(e);
+  }
+}
+
+   Future<void> loginComGoogle() async {
     try {
-      await _dio.patch('/usuarios/$_usuarioId', data: {'nome': userName});
-      _nome = userName;
-      await _sessionStorage.salvarSessao(
-        token: (await _sessionStorage.obterToken())!,
-        usuarioId: _usuarioId!,
-        nome: userName,
-      );
-      notifyListeners();
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      
+      await googleSignIn.signOut();
+      
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) return; 
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken != null) {
+        final response = await _dio.post('/auth/social', data: {'idToken': idToken});
+        
+        await _salvarSessaoDaResposta(response.data);
+      } else {
+        throw AuthException('Não foi possível obter o token de autenticação do Google.');
+      }
     } catch (e) {
       throw mapException(e);
     }
   }
 
-  // Login/cadastro social (Google) e por telefone/SMS não são suportados
-  // pelo backend atual (apenas e-mail + senha via /auth/login e /auth/registrar).
-  // Todo ponto de entrada dessas opções na UI foi desabilitado (ver telas em
-  // lib/pages/auth/**). Mantido como propriedades estáveis para as telas que
-  // ainda checam o "tipo" de conta -- hoje toda conta é e-mail/senha.
-  // TODO(backend): reabilitar quando /auth/social existir (Google, SMS, etc.)
+  
   bool get isGoogleUser => false;
   bool get hasPassword => true;
 }

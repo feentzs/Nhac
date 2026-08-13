@@ -10,11 +10,13 @@ class HomeProductSection extends StatelessWidget {
     required this.title,
     required this.products,
     this.onSeeAll,
+    this.lojaAberta = const {},
   });
 
   final String title;
   final List<ProdutosModel> products;
   final VoidCallback? onSeeAll;
+  final Map<String, bool> lojaAberta;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +84,7 @@ class HomeProductSection extends StatelessWidget {
                     },
                     child: ProductCard(
                         produto: item,
+                        lojaFechada: lojaAberta[item.lojaId] == false,
                     ),
                   ),
                     Positioned(

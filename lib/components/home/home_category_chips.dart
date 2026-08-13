@@ -5,10 +5,8 @@ import 'package:go_router/go_router.dart';
 class HomeCategoryChips extends StatelessWidget {
   const HomeCategoryChips({super.key});
 
-  // BUG CORRIGIDO: essas categorias eram categorias de LOJA (loja.categoria:
-  // Japonesa, Italiana, Brasileira...), não de PRODUTO (produto.categoriaMenu)
-  // — e o filtro da busca usa categoriaMenu. "Mercado" nem existia em
-  // nenhum dos dois. Trocado pelas categorias de produto reais.
+  // Valores devem bater exatamente com a coluna `categoria_menu` do banco,
+  // já que o backend filtra produtos/lojas por valor exato.
   static const _categorias = [
     {'nome': 'Combos', 'icon': Icons.fastfood},
     {'nome': 'Prato Principal', 'icon': Icons.restaurant},
@@ -32,8 +30,7 @@ class HomeCategoryChips extends StatelessWidget {
               label: Text(cat['nome'] as String),
               avatar: Icon(cat['icon'] as IconData, size: 16.r),
               onPressed: () {
-                final categoriaCodificada = Uri.encodeComponent(cat['nome'] as String);
-                context.push('/search?categoria=$categoriaCodificada');
+                context.push('/search?categoria=${Uri.encodeComponent(cat['nome'] as String)}');
               },
             ),
           );

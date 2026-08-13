@@ -132,7 +132,7 @@ class _EnderecosPageState extends State<EnderecosPage> {
         _mostrarFormularioComplemento(result)
       }
     });
-  
+
   }
   void _mostrarFormularioComplemento(Map<String, dynamic> enderecoGoogle) {
     final numeroController = TextEditingController(text: enderecoGoogle['numero']);
@@ -213,9 +213,9 @@ class _EnderecosPageState extends State<EnderecosPage> {
                 onPressed: () {
                   enderecoGoogle['numero'] = numeroController.text.isEmpty ? 'S/N' : numeroController.text;
                   enderecoGoogle['complemento'] = complementoController.text;
-                  
+
                   Navigator.pop(context); 
-                  
+
                   _salvarEnderecoSelecionado(enderecoGoogle);
                 },
               ),
@@ -236,13 +236,22 @@ class _EnderecosPageState extends State<EnderecosPage> {
     final cidade = (result['cidade'] as String?) ?? '';
     final estado = (result['estado'] as String?) ?? '';
 
-    // BUG CORRIGIDO: o backend real exige bairro/cidade/estado/cep/rua
-    // como @NotBlank (EnderecoUsuarioDTO) — faltava validar 'bairro' aqui
-    // também, que o Google às vezes não resolve (endereços sem
-    // sublocality/neighborhood reconhecido).
-    if (cep.isEmpty || rua.isEmpty || bairro.isEmpty || cidade.isEmpty || estado.length != 2) {
+    // BUG CORRIGIDO: validação mais granular para dar feedback específico
+    // ao usuário sobre qual campo está faltando. Isso evita o erro 400
+    // do backend quando o Google Places API não retorna CEP para endereços
+    // genéricos (ex: "Rua Augusta" sem número).
+    final camposFaltando = <String>[];
+    if (rua.isEmpty) camposFaltando.add('rua');
+    if (bairro.isEmpty) camposFaltando.add('bairro');
+    if (cidade.isEmpty) camposFaltando.add('cidade');
+    if (estado.length != 2) camposFaltando.add('estado (UF)');
+    if (cep.isEmpty) camposFaltando.add('CEP');
+
+    if (camposFaltando.isNotEmpty) {
       context.showError(
-          'Não foi possível identificar todos os dados desse endereço (rua, bairro, cidade, estado ou CEP). Tente escolher uma sugestão mais específica.');
+          'Não foi possível identificar: ${camposFaltando.join(", ")}. '
+          'O endereço selecionado pode ser muito genérico. '
+          'Tente buscar pelo nome da rua + número (ex: "Av. Paulista, 1000").');
       return;
     }
 
@@ -654,11 +663,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
   List<Map<String, dynamic>> _sugestoes = [];
   bool _estaDigitando = false;
   bool _isLoadingSearch = false;
-  // BUG CORRIGIDO: quando o Google recusava a busca (chave inválida, API
-  // não habilitada, billing desligado no Google Cloud, cota excedida etc.)
-  // o app só fazia debugPrint — invisível numa build de release — e
-  // mostrava "nenhum resultado" pra sempre, sem indicar o motivo real.
-  // Agora guardamos a mensagem e mostramos na tela.
   String? _erroBusca;
   Timer? _debounce;
   final Dio _dio = Dio();
@@ -666,7 +670,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
 
  void _filtrarEnderecos(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
-    
+
     if (query.isEmpty) {
       setState(() {
         _sugestoes = [];
@@ -676,7 +680,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
       });
       return;
     }
-    
+
     setState(() {
       _estaDigitando = true;
       _isLoadingSearch = true;
@@ -684,11 +688,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
     });
 
     _debounce = Timer(const Duration(milliseconds: 500), () async {
-      // BUG CORRIGIDO: setState() called after dispose() — se o usuário
-      // fechar esse overlay antes do debounce disparar ou antes da
-      // resposta do Google chegar, o widget já está "defunct" quando esse
-      // callback assíncrono roda. Toda chamada de setState aqui precisa
-      // checar 'mounted' primeiro.
       if (!mounted) return;
       if (_googleApiKey.isEmpty) {
         debugPrint('🚨 ERRO CRÍTICO: A chave do Google (API Key) está vazia!');
@@ -715,7 +714,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
         if (!mounted) return;
         if (response.statusCode == 200) {
           final data = response.data;
-          
+
           if (data['status'] == 'OK') {
             setState(() {
               _sugestoes = List<Map<String, dynamic>>.from(data['predictions'].map((p) => {
@@ -731,7 +730,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
             if (data.containsKey('error_message')) {
               debugPrint('Motivo detalhado: ${data['error_message']}');
             }
-            
+
             setState(() {
               _sugestoes = [];
               _isLoadingSearch = false;
@@ -751,6 +750,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
       }
     });
   }
+
   Future<void> _obterDetalhes(String placeId, String description) async {
     setState(() {
       _isLoadingSearch = true;
@@ -792,12 +792,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
                 types.contains('neighborhood')) {
               bairro = c['long_name'];
             }
-            // BUG CORRIGIDO: pra muitas cidades brasileiras (principalmente
-            // capitais), o Google marca o município como 'locality', não
-            // 'administrative_area_level_2' — só checar o segundo tipo
-            // deixava "cidade" vazia, causando 422 no backend
-            // ("cidade é obrigatória"). Checa os dois, sem sobrescrever se
-            // já achou por um deles.
             if (types.contains('locality') && cidade.isEmpty) {
               cidade = c['long_name'];
             }
@@ -809,6 +803,44 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
             }
             if (types.contains('postal_code')) {
               cep = _formatarCep(c['long_name'].toString());
+            }
+          }
+
+          // BUG CORRIGIDO: O Google Places API às vezes não retorna CEP
+          // para endereços genéricos (ex: "Rua Augusta" sem número
+          // específico). Tentamos buscar o CEP via Geocoding API usando
+          // as coordenadas do lugar como fallback.
+          if (cep.isEmpty && result['geometry']?['location'] != null) {
+            final lat = result['geometry']['location']['lat'];
+            final lng = result['geometry']['location']['lng'];
+            try {
+              final geoResponse = await _dio.get(
+                'https://maps.googleapis.com/maps/api/geocode/json',
+                queryParameters: {
+                  'latlng': '$lat,$lng',
+                  'key': _googleApiKey,
+                  'language': 'pt-BR',
+                },
+              );
+              if (geoResponse.statusCode == 200 && geoResponse.data['status'] == 'OK') {
+                final geoResults = geoResponse.data['results'] as List;
+                for (var geoResult in geoResults) {
+                  final geoComponents = geoResult['address_components'] as List;
+                  for (var gc in geoComponents) {
+                    final types = gc['types'] as List;
+                    if (types.contains('postal_code')) {
+                      final cepEncontrado = _formatarCep(gc['long_name'].toString());
+                      if (cepEncontrado.isNotEmpty) {
+                        cep = cepEncontrado;
+                        break;
+                      }
+                    }
+                  }
+                  if (cep.isNotEmpty) break;
+                }
+              }
+            } catch (e) {
+              debugPrint('Falha ao buscar CEP via geocoding: $e');
             }
           }
 
@@ -827,7 +859,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
         }
       }
     } catch (e) {
-      debugPrint('Erro ao obter detalhes do local: \$e');
+      debugPrint('Erro ao obter detalhes do local: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -975,12 +1007,6 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
   }
 
   Widget _buildLoadingState() {
-    // BUG CORRIGIDO: "Bottom overflowed by 79 pixels" durante o
-    // carregamento. A animação Lottie tinha 250x250 fixos — quando o
-    // teclado abre, o espaço vertical disponível (dentro do Expanded)
-    // podia ficar menor que isso, e um Column de tamanho fixo maior que o
-    // espaço disponível sempre estoura. SingleChildScrollView garante que
-    // nunca há overflow, não importa o espaço disponível.
     return Center(
       child: SingleChildScrollView(
         child: Column(

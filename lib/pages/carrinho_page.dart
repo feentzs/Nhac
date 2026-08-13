@@ -11,15 +11,7 @@ import 'package:flutter/services.dart';
 
 class CarrinhoPage extends StatefulWidget {
   final bool isActive;
-  // BUG CORRIGIDO: "barra de finalizar pedido atrás da navbar". Quando o
-  // CarrinhoPage é usado como aba dentro do PageView da HomePage, existe
-  // uma navbar customizada flutuante (Positioned) por cima do conteúdo
-  // (Scaffold da Home usa extendBody: true) — sem saber disso, esta
-  // página não tinha como compensar aquele espaço. Quando usado como rota
-  // independente (push('/carrinho')), não existe essa navbar, então o
-  // padding extra não deve ser aplicado.
-  final bool dentroDaHome;
-  const CarrinhoPage({super.key, this.isActive = true, this.dentroDaHome = false});
+  const CarrinhoPage({super.key, this.isActive = true});
 
   @override
   State<CarrinhoPage> createState() => _CarrinhoPageState();
@@ -78,13 +70,21 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   orElse: () => enderecoProvider.enderecos.first,
                 );
 
+          // Esta página fica dentro de um Stack (home_page.dart) com a barra
+          // flutuante "Continuar" e a navbar sobrepostas por cima do
+          // conteúdo. Sem esse respiro extra no final, elas cobrem o campo
+          // de observações.
+          final espacoParaBarraFlutuante =
+              MediaQuery.of(context).padding.bottom + 220.h;
+
           return Column(
             children: [
               Expanded(
                 child: ListView(
                   physics: const BouncingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics()),
-                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                  padding: EdgeInsets.fromLTRB(
+                      16.w, 0, 16.w, espacoParaBarraFlutuante),
                   children: [
                     SizedBox(height: 8.h),
                     TweenAnimationBuilder<double>(
@@ -136,102 +136,9 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                   ],
                 ),
               ),
-              _buildCheckoutBar(context, cartProvider, defaultAddress),
             ],
           );
         },
-      ),
-    );
-  }
-
-  /// BUG CORRIGIDO: esta tela não tinha nenhum botão/CTA para avançar ao
-  /// checkout, nem exibia o total. A única forma de chegar ao checkout
-  /// dependia de uma barra flutuante que vive na árvore de widgets da
-  /// HomePage; ao acessar esta página como rota independente (push
-  /// '/carrinho' vindo de qualquer aba que não seja a do carrinho), essa
-  /// barra não existe e o usuário ficava sem saída. Este rodapé cobre os
-  /// dois casos.
-  Widget _buildCheckoutBar(
-    BuildContext context,
-    CartProvider cartProvider,
-    EnderecoModel? defaultAddress,
-  ) {
-    final podeAvancar = defaultAddress != null;
-
-    return Container(
-      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF5D201C).withValues(alpha: 0.08),
-            blurRadius: 12.r,
-            offset: Offset(0, -4.h),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        // A navbar customizada da Home ocupa bottomPadding + 10.h (offset)
-        // + 75.h (altura) — replicamos essa mesma conta aqui só quando
-        // esta página está dentro da Home, senão o SafeArea normal basta.
-        bottom: !widget.dentroDaHome,
-        child: Padding(
-          padding: widget.dentroDaHome
-              ? EdgeInsets.only(bottom: 75.h + 10.h + 8.h)
-              : EdgeInsets.zero,
-          child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Total',
-                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-                  ),
-                  Text(
-                    currencyFormat.format(cartProvider.valorTotal),
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF5D201C),
-                    ),
-                  ),
-                  if (!podeAvancar)
-                    Padding(
-                      padding: EdgeInsets.only(top: 2.h),
-                      child: Text(
-                        'Adicione um endereço para continuar',
-                        style: TextStyle(fontSize: 11.sp, color: Colors.red[700]),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            SizedBox(width: 12.w),
-            ElevatedButton(
-              onPressed: podeAvancar
-                  ? () => context.push('/checkout')
-                  : () => context.push('/enderecos-salvos'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 14.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-              ),
-              child: Text(
-                podeAvancar ? 'Finalizar Pedido' : 'Adicionar endereço',
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-          ),
-        ),
       ),
     );
   }
@@ -762,8 +669,8 @@ class _AddressSelectionSheet extends StatelessWidget {
                     ),
                     child: Icon(
                       endereco.bairro.toLowerCase().contains('trabalho') ||
-                              endereco.complementoOuVazio
-                                  .toLowerCase()
+                              endereco.complemento
+                                  !.toLowerCase()
                                   .contains('trabalho')
                           ? Icons.work_outline
                           : Icons.home_outlined,
@@ -775,7 +682,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                       style: TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 15.sp)),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.temComplemento ? ' - ${endereco.complementoOuVazio}' : ''}',
+                    '${endereco.bairro}${endereco.complemento!.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),

@@ -4,49 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
-import 'package:nhac/services/loja_status_service.dart';
 import 'package:provider/provider.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
     required this.produto,
-    this.lojaFechada,
+    this.lojaFechada = false,
   });
 
   final ProdutosModel produto;
-  // BUG CORRIGIDO: "loja fechada deve explicitar que tá fechada e não
-  // permitir colocar itens no carrinho". Antes o card não sabia nada
-  // sobre o status da loja — o usuário só descobria no 404 ao finalizar
-  // o pedido, depois de todo o fluxo de checkout.
-  //
-  // Agora é opcional (bool?): quando quem chama JÁ SABE o status (ex:
-  // loja_page.dart, que já carregou a loja inteira), passa o valor direto
-  // e nenhuma consulta extra é feita. Quando não é passado (Home, busca —
-  // onde não há a loja carregada por perto), o card resolve sozinho via
-  // LojaStatusService, usando só o lojaId, com cache — sem precisar de
-  // nenhum campo novo do backend.
-  final bool? lojaFechada;
+  final bool lojaFechada;
 
   @override
   Widget build(BuildContext context) {
-    if (lojaFechada != null) {
-      return _buildCard(context, lojaFechada!);
-    }
-
-    return FutureBuilder<bool>(
-      future: LojaStatusService().isLojaAberta(produto.lojaId),
-      builder: (context, snapshot) {
-        // Enquanto carrega (ou se a checagem falhar por algum motivo
-        // inesperado), assume aberta — evita que todo card pisque como
-        // "fechado" por uma fração de segundo a cada carregamento.
-        final fechada = snapshot.hasData && snapshot.data == false;
-        return _buildCard(context, fechada);
-      },
-    );
-  }
-
-  Widget _buildCard(BuildContext context, bool lojaFechada) {
     return Container(
       width: 160.w,
       margin: EdgeInsets.only(right: 16.w),
@@ -116,15 +87,16 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                     InkWell(
-                      onTap: lojaFechada
-                          ? () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Essa loja está fechada no momento. Não é possível adicionar itens.')),
-                              );
-                            }
-                          : () async {
+                      onTap: () async {
+                        if (lojaFechada) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Esta loja está fechada no momento.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
                         final cartProvider = context.read<CartProvider>();
                         final success = await cartProvider.adicionarItemComQuantidade(
                           idProduto: produto.id,
