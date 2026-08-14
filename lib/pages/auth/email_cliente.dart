@@ -135,29 +135,20 @@ class _EmailClienteState extends State<EmailCliente> {
                                 width: 1.0,
                               ),
                             ),
-                            onPressed: () async {
-                              try {
-                                setState(() => _isLoading = true);
-
-                                await context.read<AuthService>().updateEmail(
-                                    novoEmail: _emailController.text.trim());
-                                if (context.mounted) {
-                                  await context
-                                      .read<UserProvider>()
-                                      .carregarDadosUsuario();
-                                }
-
-                                if (context.mounted) {
-                                  context.showSuccess(
-                                      'E-mail alterado com sucesso!');
-                                  context.pop();
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  context.showError(e.toString());
-                                }
-                              } finally {
-                                if (mounted) setState(() => _isLoading = false);
+                            onPressed: () {
+                              final textoAtual = _emailController.text.trim();
+                              final indexArroba = textoAtual.indexOf('@');
+                              final prefixo = indexArroba != -1
+                                  ? textoAtual.substring(0, indexArroba)
+                                  : textoAtual;
+                              if (prefixo.isNotEmpty) {
+                                _emailController.text =
+                                    '$prefixo${_dominios[index]}';
+                                _emailController.selection =
+                                    TextSelection.fromPosition(
+                                  TextPosition(
+                                      offset: _emailController.text.length),
+                                );
                               }
                             },
                           ),
@@ -218,8 +209,9 @@ class _EmailClienteState extends State<EmailCliente> {
                               context.showError(e.toString());
                             }
                           } finally {
-                            if (mounted)
+                            if (mounted) {
                               setState(() => _isGoogleLoading = false);
+                            }
                           }
                         },
                       ),
