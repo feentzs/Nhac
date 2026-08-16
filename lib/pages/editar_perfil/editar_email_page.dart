@@ -29,6 +29,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
 
   @override
   void dispose() {
+    _emailController.removeListener(_validarNovoEmail);
     _emailController.dispose();
     super.dispose();
   }
@@ -37,15 +38,20 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
     if (!mounted) return;
     
     final texto = _emailController.text.trim();
+    final emailAtual = context.read<UserProvider>().usuario?.email.trim() ?? '';
 
-    // TODO fazer um bloqueio para emails repetidos
-    // Pegamos o e-mail atual direto do Provider, sem depender do Firebase!
-    final emailAtual = context.read<UserProvider>().usuario?.email ?? '';
+    if (texto.isEmpty) {
+      setState(() {
+        _erroEmail = null;
+        _emailValido = false;
+      });
+      return;
+    }
 
     String? erroTemp = Validators.validarEmail(texto);
 
-    if (erroTemp == null && texto.toLowerCase() == emailAtual.toLowerCase()) {
-      erroTemp = 'Este já é o seu e-mail atual';
+    if (erroTemp == null && emailAtual.isNotEmpty && texto.toLowerCase() == emailAtual.toLowerCase()) {
+      erroTemp = 'Este e-mail já está sendo utilizado pela sua conta';
     }
 
     setState(() {
@@ -61,7 +67,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       final authService = context.read<AuthService>();
       final userProvider = context.read<UserProvider>();
       
-      // 1. Chama o nosso "PUT insano" lá no Spring Boot
+      // 1. Chama a atualização na API
       await authService.updateEmail(novoEmail: _emailController.text.trim());
       
       // 2. Avisa o Provider para recarregar os dados para a tela de Perfil atualizar
@@ -74,7 +80,23 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       context.pop(); 
       
     } catch (e) {
-      if (mounted) context.showError(e.toString());
+      if (mounted) {
+        final mensagemErro = e.toString();
+        final lower = mensagemErro.toLowerCase();
+        if (lower.contains('já') ||
+            lower.contains('ja') ||
+            lower.contains('uso') ||
+            lower.contains('existe') ||
+            lower.contains('cadastrado') ||
+            lower.contains('duplicate') ||
+            lower.contains('already')) {
+          setState(() {
+            _erroEmail = 'Este e-mail já está em uso';
+            _emailValido = false;
+          });
+        }
+        context.showError(mensagemErro);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -141,6 +163,8 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
                       const SizedBox(height: 28.0),
                       NhacInputField(
                         controller: _emailController,
+                        autofocus: true,
+                        onChanged: (value) => _validarNovoEmail(),
                         keyboardType: TextInputType.emailAddress,
                         errorText: _erroEmail,
                         hintText: 'Novo e-mail',
