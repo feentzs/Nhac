@@ -23,7 +23,7 @@ class UserProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
 
   
-  bool get isGoogleUser => false;
+  bool get isGoogleUser => _authService.isGoogleUser;
   bool get hasPassword => true;
 
   Future<void> carregarDadosUsuario() async {

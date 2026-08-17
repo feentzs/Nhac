@@ -12,6 +12,7 @@ class AuthService with ChangeNotifier {
   String? _usuarioId;
   String? _nome;
   bool _carregado = false; 
+  bool _isGoogleUser = false;
 
   bool get isAuthenticated => _usuarioId != null;
   bool get carregado => _carregado;
@@ -25,6 +26,7 @@ class AuthService with ChangeNotifier {
   Future<void> _carregarSessaoLocal() async {
     _usuarioId = await _sessionStorage.obterUsuarioId();
     _nome = await _sessionStorage.obterNome();
+    _isGoogleUser = await _sessionStorage.obterLoginGoogle();
     _carregado = true;
     notifyListeners();
   }
@@ -56,13 +58,15 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<void> _salvarSessaoDaResposta(Map<String, dynamic> data) async {
+  Future<void> _salvarSessaoDaResposta(Map<String, dynamic> data, {bool viaGoogle = false}) async {
     final token = data['token'] as String;
     final usuarioId = data['usuarioId'] as String;
     final nome = data['nome'] as String;
     await _sessionStorage.salvarSessao(token: token, usuarioId: usuarioId, nome: nome);
+    await _sessionStorage.salvarLoginGoogle(viaGoogle);
     _usuarioId = usuarioId;
     _nome = nome;
+    _isGoogleUser = viaGoogle;
     notifyListeners();
   }
 
@@ -70,6 +74,7 @@ class AuthService with ChangeNotifier {
     await _sessionStorage.limparSessao();
     _usuarioId = null;
     _nome = null;
+    _isGoogleUser = false;
     notifyListeners();
   }
 
@@ -151,7 +156,7 @@ Future<void> updateUserName({required String userName}) async {
       if (idToken != null) {
         final response = await _dio.post('/auth/social', data: {'idToken': idToken});
         
-        await _salvarSessaoDaResposta(response.data);
+        await _salvarSessaoDaResposta(response.data, viaGoogle: true);
       } else {
         throw AuthException('Não foi possível obter o token de autenticação do Google.');
       }
@@ -161,6 +166,6 @@ Future<void> updateUserName({required String userName}) async {
   }
 
   
-  bool get isGoogleUser => false;
+  bool get isGoogleUser => _isGoogleUser;
   bool get hasPassword => true;
 }
