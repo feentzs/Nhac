@@ -83,19 +83,26 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       if (mounted) {
         final mensagemErro = e.toString();
         final lower = mensagemErro.toLowerCase();
-        if (lower.contains('já') ||
+        final ehEmailDuplicado = lower.contains('já') ||
             lower.contains('ja') ||
             lower.contains('uso') ||
             lower.contains('existe') ||
             lower.contains('cadastrado') ||
             lower.contains('duplicate') ||
-            lower.contains('already')) {
+            lower.contains('already');
+
+        if (ehEmailDuplicado) {
           setState(() {
             _erroEmail = 'Este e-mail já está em uso';
             _emailValido = false;
           });
+        } else {
+          // Só mostra o banner de erro genérico para falhas que não sejam
+          // e-mail duplicado — esse caso já tem a mensagem bonitinha
+          // aparecendo embaixo do campo, então não precisa (e não deveria)
+          // mostrar também a mensagem crua vinda do backend.
+          context.showError(mensagemErro);
         }
-        context.showError(mensagemErro);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
