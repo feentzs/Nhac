@@ -31,7 +31,7 @@ class UserRepository {
 
   Future<void> atualizarDadosUsuario(String id, Map<String, dynamic> dados) async {
     try {
-      await _dio.patch('/usuarios/$id', data: dados);
+      await _dio.put('/usuarios/$id', data: dados);
     } catch (e) {
       debugPrint("Erro ao atualizar utilizador na API: $e");
       rethrow;

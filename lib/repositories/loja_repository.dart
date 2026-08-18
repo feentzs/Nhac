@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/services/api_client.dart';
@@ -44,5 +45,62 @@ class LojaRepository {
     return todasAsLojas
         .where((loja) => loja.nome.toLowerCase().contains(termoBusca))
         .toList();
+  }
+  Future<Map<String, dynamic>> calcularFrete(String lojaId, String enderecoId) async {
+    try {
+      final response = await _dio.post(
+        '/lojas/$lojaId/calcular-frete',
+        data: {'enderecoId': enderecoId},
+      );
+      if (response.statusCode == 200) {
+        return response.data; // { 'valor': 5.50, 'tempoEstimado': '30 - 50 min' }
+      }
+      return {'valor': 0.0, 'tempoEstimado': 'N/A'};
+    } on DioException catch (e) {
+      debugPrint("Erro ao calcular frete: ${e.message}");
+      return {'valor': 0.0, 'tempoEstimado': 'N/A'};
+    }
+  }
+
+  Future<void> seguirLoja(String usuarioId, String lojaId) async {
+    try {
+      await _dio.post('/usuarios/$usuarioId/seguindo/$lojaId');
+    } on DioException catch (e) {
+      debugPrint("Erro ao seguir loja: ${e.message}");
+      throw Exception('Erro ao seguir loja');
+    }
+  }
+
+  Future<void> deixarDeSeguir(String usuarioId, String lojaId) async {
+    try {
+      await _dio.delete('/usuarios/$usuarioId/seguindo/$lojaId');
+    } on DioException catch (e) {
+      debugPrint("Erro ao deixar de seguir loja: ${e.message}");
+      throw Exception('Erro ao deixar de seguir loja');
+    }
+  }
+
+  Future<int> contarSeguidores(String lojaId) async {
+    try {
+      final response = await _dio.get('/lojas/$lojaId/seguidores/contagem');
+      if (response.statusCode == 200) {
+        return (response.data['total'] ?? response.data ?? 0) as int;
+      }
+      return 0;
+    } on DioException catch (e) {
+      debugPrint("Erro ao contar seguidores: ${e.message}");
+      return 0;
+    }
+  }
+
+  Future<bool> estaSeguindo(String usuarioId, String lojaId) async {
+    try {
+      final response = await _dio.get('/usuarios/$usuarioId/seguindo/$lojaId');
+      return response.statusCode == 200 && response.data == true;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return false;
+      debugPrint("Erro ao verificar se segue a loja: ${e.message}");
+      return false;
+    }
   }
 }

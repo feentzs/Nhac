@@ -8,7 +8,9 @@ class PedidoModel {
   final double valorTotal;
   final double taxaFrete;
   final String formaPagamento;
+  final double? trocoPara;
   final String? observacao;
+  final String? cupomId;
   final EnderecoModel enderecoEntrega;
   final List<CartItemModel> itens;
   
@@ -22,7 +24,9 @@ class PedidoModel {
     required this.valorTotal,
     required this.taxaFrete,
     required this.formaPagamento,
+    this.trocoPara,
     this.observacao,
+    this.cupomId,
     required this.enderecoEntrega,
     required this.itens,
     this.status,
@@ -31,14 +35,27 @@ class PedidoModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'usuarioId': usuarioId,
       'lojaId': lojaId,
-      'valorTotal': valorTotal,
-      'taxaFrete': taxaFrete,
       'formaPagamento': formaPagamento,
-      'observacao': observacao,
-      'enderecoEntrega': enderecoEntrega.toMap(), 
-      'itens': itens.map((item) => item.toMap()).toList(), 
+      if (trocoPara != null) 'trocoPara': trocoPara,
+      if (observacao != null && observacao!.isNotEmpty) 'observacao': observacao,
+      if (cupomId != null) 'cupomId': cupomId,
+      'enderecoEntrega': {
+        'rua': enderecoEntrega.rua,
+        'numero': enderecoEntrega.numero,
+        'bairro': enderecoEntrega.bairro,
+        'cidade': enderecoEntrega.cidade,
+        'estado': enderecoEntrega.estado,
+        'cep': enderecoEntrega.cep,
+        if (enderecoEntrega.complemento != null && enderecoEntrega.complemento!.isNotEmpty) 
+          'complemento': enderecoEntrega.complemento,
+      },
+      'itens': itens.map((item) => {
+        'produtoId': item.produtoId,
+        'nome': item.nome,
+        if (item.imagemUrl.isNotEmpty) 'imagemUrl': item.imagemUrl,
+        'quantidade': item.quantidade,
+      }).toList(),
     };
   }
 
@@ -50,7 +67,9 @@ class PedidoModel {
       valorTotal: num.tryParse(map['valorTotal']?.toString() ?? '0')?.toDouble() ?? 0.0,
       taxaFrete: num.tryParse(map['taxaFrete']?.toString() ?? '0')?.toDouble() ?? 0.0,
       formaPagamento: map['formaPagamento'] ?? '',
+      trocoPara: num.tryParse(map['trocoPara']?.toString() ?? '0')?.toDouble(),
       observacao: map['observacao'],
+      cupomId: map['cupomId'],
       enderecoEntrega: EnderecoModel.fromMap(map['enderecoEntrega'] ?? {}),
       itens: List<CartItemModel>.from(
         (map['itens'] ?? []).map((x) => CartItemModel.fromMap(x)),

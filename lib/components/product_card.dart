@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/components/favorite_heart.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -36,23 +37,36 @@ class ProductCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-              child: CachedNetworkImage(
-                imageUrl: produto.imagemUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                placeholder: (context, url) => Shimmer.fromColors(
-                  baseColor: Colors.grey.shade300,
-                  highlightColor: Colors.grey.shade100,
-                  child: Container(color: Colors.white),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                  child: CachedNetworkImage(
+                    imageUrl: produto.imagemUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey.shade300,
+                      highlightColor: Colors.grey.shade100,
+                      child: Container(color: Colors.white),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: const Color(0xFFFFF0EE),
+                      child: Icon(Icons.image_not_supported_outlined,
+                          color: const Color(0xFF5D201C), size: 32.r),
+                    ),
+                  ),
                 ),
-                errorWidget: (context, url, error) => Container(
-                  color: const Color(0xFFFFF0EE),
-                  child: Icon(Icons.image_not_supported_outlined,
-                      color: const Color(0xFF5D201C), size: 32.r),
+                Positioned(
+                  top: 8.h,
+                  right: 8.w,
+                  child: FavoriteHeart(
+                    produtoId: produto.id,
+                    size: 20.r,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           Padding(

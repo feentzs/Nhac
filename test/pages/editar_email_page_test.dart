@@ -95,6 +95,24 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   Future<bool> checarEmail(String email) async {
     return false;
   }
+
+  @override
+  Future<void> alterarSenha(String senhaAtual, String novaSenha) {
+    // TODO: implement alterarSenha
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> esqueciSenha(String telefone) {
+    // TODO: implement esqueciSenha
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> redefinirSenha(String telefone, String codigo, String novaSenha) {
+    // TODO: implement redefinirSenha
+    throw UnimplementedError();
+  }
 }
 
 void main() {

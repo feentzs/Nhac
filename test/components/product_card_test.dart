@@ -4,17 +4,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nhac/components/product_card.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
+import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:network_image_mock/network_image_mock.dart';
 
 class MockCartProvider extends Mock implements CartProvider {}
+class MockAuthService extends Mock implements AuthService {}
 
 void main() {
   late MockCartProvider mockCart;
+  late MockAuthService mockAuth;
 
   setUp(() {
     mockCart = MockCartProvider();
+    mockAuth = MockAuthService();
+    when(() => mockAuth.usuarioId).thenReturn(null); 
   });
 
   Widget createWidgetUnderTest() {
@@ -31,6 +36,7 @@ void main() {
       builder: (context, child) => MultiProvider(
         providers: [
           ChangeNotifierProvider<CartProvider>.value(value: mockCart),
+          ChangeNotifierProvider<AuthService>.value(value: mockAuth),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -56,6 +62,8 @@ void main() {
 
       expect(find.text('Nhac Burger'), findsOneWidget);
       expect(find.text('R\$ 35.90'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 
@@ -87,6 +95,8 @@ void main() {
           )).called(1);
       
       expect(find.byType(SnackBar), findsOneWidget);
+      
+        await tester.pump(const Duration(seconds: 5));
     });
   });
 }

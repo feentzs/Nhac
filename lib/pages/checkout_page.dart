@@ -10,6 +10,9 @@ import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/services/auth_service.dart';
+import 'package:nhac/models/usuario/cupom_model.dart';
+import 'package:nhac/repositories/cupom_repository.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -27,6 +30,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   bool _isLoading = true;
   bool _isSubmitting = false;
+
+  CupomModel? _cupomAplicado;
+  final TextEditingController _cupomController = TextEditingController();
+  bool _validandoCupom = false;
+  final CupomRepository _cupomRepository = CupomRepository();
 
   @override
   void initState() {
@@ -147,7 +155,48 @@ class _CheckoutPageState extends State<CheckoutPage> {
   @override
   void dispose() {
     _trocoController.dispose();
+    _cupomController.dispose();
     super.dispose();
+  }
+
+  Future<void> _aplicarCupom(double subtotal) async {
+    final codigo = _cupomController.text.trim();
+    if (codigo.isEmpty) return;
+
+    setState(() => _validandoCupom = true);
+    try {
+      final cupom = await _cupomRepository.validarCupom(codigo);
+      if (subtotal < cupom.usoMinimo) {
+        throw Exception('Valor mínimo para este cupom é R\$ ${cupom.usoMinimo.toStringAsFixed(2)}');
+      }
+      setState(() {
+        _cupomAplicado = cupom;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cupom aplicado com sucesso!')),
+        );
+      }
+    } catch (e) {
+      setState(() => _cupomAplicado = null);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _validandoCupom = false);
+    }
+  }
+
+  void _removerCupom() {
+    setState(() {
+      _cupomAplicado = null;
+      _cupomController.clear();
+    });
   }
 
   @override
@@ -170,8 +219,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
           );
 
     final subtotal = cartProvider.valorTotal;
-    final frete = 5.0; // TODO(backend): usar loja.dadosOperacionais.taxaEntregaBase quando o backend implementar frete variável por loja — hoje o servidor sempre cobra R$ 5,00 fixos.
-    final total = subtotal + frete;
+    final frete = 5.0; // TODO(backend): usar loja.dadosOperacionais.taxaEntregaBase
+    
+    double descontoValue = 0.0;
+    if (_cupomAplicado != null) {
+      if (_cupomAplicado!.tipo == 'PERCENTUAL') {
+        descontoValue = subtotal * (_cupomAplicado!.desconto / 100);
+      } else {
+        descontoValue = _cupomAplicado!.desconto;
+      }
+      if (descontoValue > subtotal) descontoValue = subtotal;
+    }
+    
+    final total = subtotal + frete - descontoValue;
     final tempoEntrega = '30 - 50 min';
     final podeFinalizar =
         enderecoisPadrao != null && enderecoisPadrao.numero.isNotEmpty;
@@ -308,6 +368,69 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ],
             SizedBox(height: 24.h),
+            _buildSectionTitle('Cupom de desconto'),
+            SizedBox(height: 8.h),
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: _cardDecoration(),
+              child: _cupomAplicado != null
+                  ? Row(
+                      children: [
+                        Icon(Icons.local_offer, color: const Color(0xFFFF6961), size: 24.r),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _cupomAplicado!.titulo,
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp),
+                              ),
+                              Text(
+                                _cupomAplicado!.codigo,
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: _removerCupom,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _cupomController,
+                            decoration: InputDecoration(
+                              hintText: 'Digite seu cupom',
+                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14.sp),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        ElevatedButton(
+                          onPressed: _validandoCupom ? null : () => _aplicarCupom(subtotal),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF6961),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                          ),
+                          child: _validandoCupom
+                              ? SizedBox(width: 20.w, height: 20.w, child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text('Aplicar', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+            ),
+            SizedBox(height: 24.h),
             _buildSectionTitle('Resumo do pedido'),
             SizedBox(height: 8.h),
             Container(
@@ -388,6 +511,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     ],
                   ),
+                  if (descontoValue > 0) ...[
+                    SizedBox(height: 8.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Desconto',
+                            style: TextStyle(
+                                color: const Color(0xFFFF6961), fontSize: 14.sp)),
+                        Text(
+                          '- ${currencyFormat.format(descontoValue)}',
+                          style: TextStyle(
+                            color: const Color(0xFFFF6961),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   SizedBox(height: 12.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -609,13 +751,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
+    final trocoText = _trocoController.text.replaceAll(RegExp(r'[^0-9,]'), '').replaceAll(',', '.');
+    final trocoPara = (_formaPagamento == 'Dinheiro' && trocoText.isNotEmpty) 
+      ? double.tryParse(trocoText) 
+      : null;
+
     final pedido = PedidoModel(
       usuarioId: uid,
       lojaId: cartProvider.lojaId,
       valorTotal: total,
-      taxaFrete: 5.0, 
+      taxaFrete: 0, 
       formaPagamento: _formaPagamento,
+      trocoPara: trocoPara,
       observacao: cartProvider.observacao,
+      cupomId: _cupomAplicado?.id,
       enderecoEntrega: enderecoisPadrao,
       itens: cartProvider.itens.values.toList(),
     );
@@ -628,10 +777,36 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: CircularProgressIndicator(color: Color(0xFFFF6961))),
       );
 
-      final idGerado = await PedidoRepository().finalizarPedido(pedido);
+      final respostaPedido = await PedidoRepository().finalizarPedido(pedido);
+      final idGerado = respostaPedido['id'] ?? respostaPedido['pedidoId'] ?? 'ID Indisponível';
+      final clientSecret = respostaPedido['clientSecret'];
 
       if (!context.mounted) return;
       Navigator.of(context, rootNavigator: true).pop(); 
+
+      if (clientSecret != null && clientSecret.toString().isNotEmpty) {
+        try {
+          await Stripe.instance.initPaymentSheet(
+            paymentSheetParameters: SetupPaymentSheetParameters(
+              paymentIntentClientSecret: clientSecret,
+              merchantDisplayName: 'Nhac Delivery',
+            ),
+          );
+          await Stripe.instance.presentPaymentSheet();
+        } on StripeException {
+          if (!context.mounted) return;
+          setState(() => _isSubmitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pagamento cancelado ou falhou.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      if (!context.mounted) return;
 
       showDialog(
         context: context,

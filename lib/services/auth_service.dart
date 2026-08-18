@@ -120,7 +120,41 @@ class AuthService with ChangeNotifier {
  
   Future<void> signOut() => logout();
 
-  
+  Future<void> esqueciSenha(String telefone) async {
+    try {
+      await _dio.post('/auth/esqueci-senha', data: {
+        'telefone': formatarTelefoneE164(telefone),
+      });
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  Future<void> redefinirSenha(String telefone, String codigo, String novaSenha) async {
+    try {
+      await _dio.post('/auth/redefinir-senha', data: {
+        'telefone': formatarTelefoneE164(telefone),
+        'codigo': codigo,
+        'novaSenha': novaSenha,
+      });
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  Future<void> alterarSenha(String senhaAtual, String novaSenha) async {
+    if (_usuarioId == null) {
+      throw AuthException('Utilizador não autenticado.');
+    }
+    try {
+      await _dio.put('/auth/alterar-senha', data: {
+        'senhaAtual': senhaAtual,
+        'novaSenha': novaSenha,
+      });
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
 
 Future<void> updateUserName({required String userName}) async {
   if (_usuarioId == null) {

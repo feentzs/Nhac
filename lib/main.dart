@@ -23,6 +23,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/services/push_notification_service.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -38,6 +39,8 @@ main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
+
+  Stripe.publishableKey = 'pk_test_51Tc2RjP2DcjcdlKw1cig5G7GXrVC1T1fU9jDEpkpGOk84v8ztaXwyUnI7eiLHEfXgOokfTVJ8lOIQz3M5wKhfmeW007rQRgVaD';
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

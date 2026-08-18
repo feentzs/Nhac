@@ -98,6 +98,15 @@ class EnderecoProvider with ChangeNotifier {
       notifyListeners();
 
       final enderecoSelecionado = _enderecos.firstWhere((e) => e.id == enderecoId);
+      final enderecoPadraoAtual = _enderecos.cast<EnderecoModel?>().firstWhere((e) => e?.isPadrao == true && e?.id != enderecoId, orElse: () => null);
+
+      if (enderecoPadraoAtual != null) {
+        await _enderecoRepository.atualizarEndereco(
+          usuarioId,
+          enderecoPadraoAtual.id,
+          enderecoPadraoAtual.copyWith(isPadrao: false),
+        );
+      }
 
       await _enderecoRepository.atualizarEndereco(
         usuarioId,
