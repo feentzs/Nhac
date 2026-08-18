@@ -67,15 +67,12 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       final authService = context.read<AuthService>();
       final userProvider = context.read<UserProvider>();
       
-      // 1. Chama a atualização na API
       await authService.updateEmail(novoEmail: _emailController.text.trim());
       
-      // 2. Avisa o Provider para recarregar os dados para a tela de Perfil atualizar
       await userProvider.carregarDadosUsuario();
       
       if (!mounted) return;
       
-      // 3. Volta para a tela anterior com sucesso
       context.showSuccess('E-mail alterado com sucesso!');
       context.pop(); 
       
@@ -97,10 +94,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
             _emailValido = false;
           });
         } else {
-          // Só mostra o banner de erro genérico para falhas que não sejam
-          // e-mail duplicado — esse caso já tem a mensagem bonitinha
-          // aparecendo embaixo do campo, então não precisa (e não deveria)
-          // mostrar também a mensagem crua vinda do backend.
+        
           context.showError(mensagemErro);
         }
       }
@@ -111,7 +105,6 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos o seu próprio Provider para saber se é usuário do Google
     final isGoogleUser = context.watch<UserProvider>().isGoogleUser;
 
     if (isGoogleUser) {

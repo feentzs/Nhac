@@ -1,7 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nhac/services/auth_service.dart';
 
 class PushNotificationService {
@@ -77,21 +76,14 @@ class PushNotificationService {
   }
 
   Future<void> _guardarTokenNoBancoDeDados(String token) async {
-    // TODO(backend): expor um endpoint tipo PATCH /usuarios/{id}/fcm-token e migrar esta gravação para a API REST
     String? userId = _authService.usuarioId;
 
     if (userId != null) {
       try {
-        await FirebaseFirestore.instance
-            .collection('usuarios') 
-            .doc(userId)
-            .set({
-              'fcmToken': token,
-            }, SetOptions(merge: true)); 
-
-        debugPrint('✅ FCM Token atualizado no Firestore com sucesso!');
+        await _authService.updateFcmToken(fcmToken: token);
+        debugPrint('✅ FCM Token atualizado na API com sucesso!');
       } catch (e) {
-        debugPrint('❌ Erro ao guardar o token no Firestore: $e');
+        debugPrint('❌ Erro ao guardar o token na API: $e');
       }
     } else {
       debugPrint('Nenhum utilizador logado. O token não foi guardado na base de dados.');

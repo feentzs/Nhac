@@ -58,6 +58,45 @@ class AuthService with ChangeNotifier {
     }
   }
 
+  Future<bool> checarEmail(String email) async {
+    try {
+      final response = await _dio.post('/auth/checar-email', data: {
+        'email': email.trim(),
+      });
+      return response.data['existe'] == true;
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  String formatarTelefoneE164(String telefoneBR) {
+    final numeros = telefoneBR.replaceAll(RegExp(r'\D'), '');
+    return '+55$numeros';
+  }
+
+  Future<void> enviarCodigoSms(String telefone) async {
+    try {
+      await _dio.post('/verificacao-telefone/enviar-codigo', data: {
+        'telefone': formatarTelefoneE164(telefone),
+      });
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  Future<bool> loginSms(String telefone, String codigo) async {
+    try {
+      final response = await _dio.post('/auth/login-sms', data: {
+        'telefone': formatarTelefoneE164(telefone),
+        'codigo': codigo,
+      });
+      await _salvarSessaoDaResposta(response.data);
+      return response.data['isNovoUsuario'] == true;
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
   Future<void> _salvarSessaoDaResposta(Map<String, dynamic> data, {bool viaGoogle = false}) async {
     final token = data['token'] as String;
     final usuarioId = data['usuarioId'] as String;
@@ -139,6 +178,20 @@ Future<void> updateUserName({required String userName}) async {
     throw mapException(e);
   }
 }
+
+  Future<void> updateFcmToken({required String fcmToken}) async {
+    if (_usuarioId == null) {
+      throw AuthException('Utilizador não autenticado.');
+    }
+
+    try {
+      await _dio.put('/usuarios/$_usuarioId', data: {
+        'fcmToken': fcmToken.trim(),
+      });
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
 
    Future<void> loginComGoogle() async {
     try {

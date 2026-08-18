@@ -22,7 +22,7 @@ class NetworkException extends AppException {
 AppException mapException(Object error) {
   if (error is DioException) {
     if (error.response?.data != null && error.response!.data is Map) {
-      final data = error.response!.data as Map<String, dynamic>;
+      final data = error.response!.data as Map;
       if (data.containsKey('message')) {
         return AppException(data['message'].toString());
       }
