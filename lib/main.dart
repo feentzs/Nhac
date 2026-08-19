@@ -40,7 +40,7 @@ main() async {
 
   await dotenv.load(fileName: ".env");
 
-  Stripe.publishableKey = 'pk_test_51Tc2RjP2DcjcdlKw1cig5G7GXrVC1T1fU9jDEpkpGOk84v8ztaXwyUnI7eiLHEfXgOokfTVJ8lOIQz3M5wKhfmeW007rQRgVaD';
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -62,8 +62,7 @@ main() async {
 
   await SentryFlutter.init(
     (options) {
-      options.dsn =
-          'https://426ab5d997cbcb45965278b6b9cc5a32@o4511393718272000.ingest.us.sentry.io/4511393743896577';
+      options.dsn = dotenv.env['SENTRY_DSN'] ?? '';
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
       // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;

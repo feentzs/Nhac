@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/models/pedido_model.dart';
 import 'package:nhac/services/api_client.dart';
+import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class PedidoRepository {
   final _dio = ApiClient().dio;
@@ -15,7 +16,7 @@ class PedidoRepository {
         data: pedido.toMap(), 
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         return response.data as Map<String, dynamic>;
       } else {
         throw Exception("Falha ao criar o pedido. Tente novamente.");
@@ -46,7 +47,7 @@ class PedidoRepository {
         queryParameters: {'page': page, 'size': size},
       );
       if (response.statusCode == 200 && response.data != null) {
-        final List data = response.data['content'] ?? response.data;
+        final List data = extrairLista(response.data);
         return data.map((map) => PedidoModel.fromMap(map)).toList();
       }
       return [];

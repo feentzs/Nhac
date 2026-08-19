@@ -1,3 +1,5 @@
+import 'package:nhac/utils/safe_parse_helpers.dart';
+
 class FavoritosModel {
   final String id;
   final String produtoId;
@@ -19,7 +21,7 @@ class FavoritosModel {
       produtoId: map['produtoId'] ?? '',
       imagemUrl: map['imagemUrl'] ?? '',
       nome: map['nome'] ?? '',
-      preco: (map['preco'] ?? 0.0).toDouble(),
+      preco: safeDouble(map['preco']),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'package:nhac/utils/safe_parse_helpers.dart';
+
 class CupomModel {
   final String id;
   final String titulo;
@@ -27,9 +29,9 @@ class CupomModel {
       titulo: map['titulo'] ?? '',
       descricao: map['descricao'] ?? '',
       codigo: map['codigo'] ?? '',
-      desconto: (map['desconto'] ?? 0.0).toDouble(),
+      desconto: safeDouble(map['desconto']),
       tipo: map['tipo'] ?? 'FIXO',
-      usoMinimo: (map['usoMinimo'] ?? 0.0).toDouble(),
+      usoMinimo: safeDouble(map['usoMinimo']),
       dataValidade: map['dataValidade']?.toString(),
       status: map['status'] ?? 'DISPONIVEL',
     );

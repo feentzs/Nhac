@@ -1,3 +1,5 @@
+import 'package:nhac/utils/safe_parse_helpers.dart';
+
 class ProdutosModel {
   final String id;
   final String nome;
@@ -27,7 +29,7 @@ class ProdutosModel {
       preco: num.tryParse(map['preco']?.toString() ?? '0')?.toDouble() ?? 0.0,
       categoriaMenu: map['categoriaMenu']?.toString() ?? '',
       imagemUrl: map['imagemUrl']?.toString() ?? '',
-      percentualDesconto: map['percentualDesconto'] ?? 0,
+      percentualDesconto: safeInt(map['percentualDesconto']),
       lojaId: map['lojaId']?.toString() ?? '',
     );
   }

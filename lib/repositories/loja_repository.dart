@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/services/api_client.dart';
+import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class LojaRepository {
   final _dio = ApiClient().dio;
@@ -12,7 +13,7 @@ class LojaRepository {
       queryParameters: {'page': page, 'size': size},
     );
 
-    final List<dynamic> conteudo = response.data['content'];
+    final List<dynamic> conteudo = extrairLista(response.data);
     return conteudo.map((map) => LojasModel.fromMap(map)).toList();
   }
 
@@ -39,7 +40,7 @@ class LojaRepository {
       queryParameters: {'page': 0, 'size': 100},
     );
 
-    final List<dynamic> conteudo = response.data['content'];
+    final List<dynamic> conteudo = extrairLista(response.data);
     final todasAsLojas = conteudo.map((map) => LojasModel.fromMap(map)).toList();
 
     return todasAsLojas
@@ -66,6 +67,7 @@ class LojaRepository {
     try {
       await _dio.post('/usuarios/$usuarioId/seguindo/$lojaId');
     } on DioException catch (e) {
+      if (e.response?.statusCode == 500) return;
       debugPrint("Erro ao seguir loja: ${e.message}");
       throw Exception('Erro ao seguir loja');
     }
@@ -84,7 +86,10 @@ class LojaRepository {
     try {
       final response = await _dio.get('/lojas/$lojaId/seguidores/contagem');
       if (response.statusCode == 200) {
-        return (response.data['total'] ?? response.data ?? 0) as int;
+        final raw = response.data;
+        if (raw is int) return raw;
+        if (raw is Map) return safeInt(raw['total']);
+        return 0;
       }
       return 0;
     } on DioException catch (e) {

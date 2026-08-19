@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nhac/models/usuario/metodos_pagamento_model.dart';
 import 'package:nhac/services/api_client.dart';
+import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class PagamentoRepository {
   final _dio = ApiClient().dio;
@@ -15,7 +16,9 @@ class PagamentoRepository {
       }
       return [];
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 500) {
+        return [];
+      }
       debugPrint("Erro ao buscar pagamentos: ${e.message}");
       throw Exception('Falha ao buscar métodos de pagamento');
     }
@@ -32,7 +35,7 @@ class PagamentoRepository {
       }
       throw Exception('Erro ao adicionar método de pagamento');
     } on DioException catch (e) {
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao adicionar método de pagamento';
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao adicionar método de pagamento');
       throw Exception(mensagem);
     }
   }
@@ -42,7 +45,7 @@ class PagamentoRepository {
       await _dio.delete('/usuarios/$usuarioId/pagamentos/$pagamentoId');
     } on DioException catch (e) {
       debugPrint("Erro ao remover pagamento: ${e.message}");
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao remover método de pagamento';
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao remover método de pagamento');
       throw Exception(mensagem);
     }
   }
@@ -54,7 +57,7 @@ class PagamentoRepository {
       });
     } on DioException catch (e) {
       debugPrint("Erro ao definir pagamento padrão: ${e.message}");
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao definir método de pagamento padrão';
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao definir método de pagamento padrão');
       throw Exception(mensagem);
     }
   }

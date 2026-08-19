@@ -1,3 +1,5 @@
+import 'package:nhac/utils/safe_parse_helpers.dart';
+
 class LojasModel {
   final String id; 
   final String nome;
@@ -30,7 +32,7 @@ class LojasModel {
       categoria: map['categoria']?.toString() ?? '',
       descricao: map['descricao']?.toString() ?? '',
       imagemUrl: map['imagemUrl']?.toString() ?? '',
-      isAberto: map['isAberto'] ?? true, 
+      isAberto: safeBool(map['isAberto'], fallback: true), 
       
       dadosOperacionais: map['dadosOperacionais'] != null 
           ? DadosOperacionais.fromMap(map['dadosOperacionais']) 
@@ -64,9 +66,9 @@ class DadosOperacionais {
     return DadosOperacionais(
       avaliacaoMedia: num.tryParse(map['avaliacaoMedia']?.toString() ?? '0')?.toDouble() ?? 0.0,
       taxaEntregaBase: num.tryParse(map['taxaEntregaBase']?.toString() ?? '0')?.toDouble() ?? 0.0,
-      tempoEntregaMin: map['tempoEntregaMin'] ?? 0,
-      tempoEntregaMax: map['tempoEntregaMax'] ?? 0,
-      totalAvaliacoes: map['totalAvaliacoes'] ?? 0,
+      tempoEntregaMin: safeInt(map['tempoEntregaMin']),
+      tempoEntregaMax: safeInt(map['tempoEntregaMax']),
+      totalAvaliacoes: safeInt(map['totalAvaliacoes']),
     );
   }
 }

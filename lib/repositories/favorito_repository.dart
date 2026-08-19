@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nhac/models/usuario/favoritos_model.dart';
 import 'package:nhac/services/api_client.dart';
+import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class FavoritoRepository {
   final _dio = ApiClient().dio;
@@ -15,7 +16,9 @@ class FavoritoRepository {
       }
       return [];
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return [];
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 500) {
+        return [];
+      }
       debugPrint("Erro ao buscar favoritos: ${e.message}");
       throw Exception('Falha ao buscar favoritos');
     }
@@ -32,7 +35,8 @@ class FavoritoRepository {
       }
       throw Exception('Erro ao favoritar produto');
     } on DioException catch (e) {
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao favoritar produto';
+      if (e.response?.statusCode == 500) throw Exception('Serviço de favoritos indisponível');
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao favoritar produto');
       throw Exception(mensagem);
     }
   }
@@ -42,8 +46,9 @@ class FavoritoRepository {
       // Usando query params ou path vars conforme o endpoint
       await _dio.delete('/usuarios/$usuarioId/favoritos/$produtoId');
     } on DioException catch (e) {
+      if (e.response?.statusCode == 500) return;
       debugPrint("Erro ao desfavoritar: ${e.message}");
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao remover dos favoritos';
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao remover dos favoritos');
       throw Exception(mensagem);
     }
   }
@@ -52,7 +57,10 @@ class FavoritoRepository {
     try {
       final response = await _dio.get('/produtos/$produtoId/favoritos/contagem');
       if (response.statusCode == 200) {
-        return (response.data['total'] ?? response.data ?? 0) as int;
+        final raw = response.data;
+        if (raw is int) return raw;
+        if (raw is Map) return safeInt(raw['total']);
+        return 0;
       }
       return 0;
     } on DioException catch (e) {

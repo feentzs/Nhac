@@ -826,8 +826,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ElevatedButton(
               onPressed: () {
                 cartProvider.esvaziarCarrinho();
+                
+                // Fecha o dialog primeiro
+                Navigator.of(dialogContext).pop();
                
                 if (context.mounted) {
+                  // Volta para a raiz/home
                   context.go('/home-page');
                 }
               },
@@ -933,7 +937,7 @@ class _AddressSelectionSheet extends StatelessWidget {
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 15.sp),
                   ),
                   subtitle: Text(
-                    '${endereco.bairro}${endereco.complemento!.isNotEmpty ? ' - ${endereco.complemento}' : ''}',
+                    '${endereco.bairro}${(endereco.complemento?.isNotEmpty ?? false) ? ' - ${endereco.complemento}' : ''}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 13.sp),

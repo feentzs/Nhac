@@ -28,8 +28,20 @@ class PushNotificationService {
       String? token = await _fcm.getToken();
       if (token != null) {
         debugPrint('MEU FCM TOKEN: $token');
-        await _guardarTokenNoBancoDeDados(token); 
+        if (_authService.usuarioId != null) {
+          await _guardarTokenNoBancoDeDados(token);
+        }
       }
+
+      // Envia FCM token ao backend quando o usuário faz login
+      _authService.addListener(() async {
+        if (_authService.usuarioId != null) {
+          final fcmToken = await _fcm.getToken();
+          if (fcmToken != null) {
+            await _guardarTokenNoBancoDeDados(fcmToken);
+          }
+        }
+      });
 
       _fcm.onTokenRefresh.listen((novoToken) {
         _guardarTokenNoBancoDeDados(novoToken);

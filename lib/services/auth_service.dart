@@ -37,7 +37,7 @@ class AuthService with ChangeNotifier {
       await _salvarSessaoDaResposta(response.data);
     } catch (e) {
      
-      throw AuthException('E-mail ou senha inválidos.');
+      throw mapException(e);
     }
   }
 
@@ -102,6 +102,7 @@ class AuthService with ChangeNotifier {
     final usuarioId = data['usuarioId'] as String;
     final nome = data['nome'] as String;
     await _sessionStorage.salvarSessao(token: token, usuarioId: usuarioId, nome: nome);
+    ApiClient().atualizarTokenCache(token);
     await _sessionStorage.salvarLoginGoogle(viaGoogle);
     _usuarioId = usuarioId;
     _nome = nome;
@@ -111,6 +112,7 @@ class AuthService with ChangeNotifier {
 
   Future<void> logout() async {
     await _sessionStorage.limparSessao();
+    ApiClient().atualizarTokenCache(null);
     _usuarioId = null;
     _nome = null;
     _isGoogleUser = false;

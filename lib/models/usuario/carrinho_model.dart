@@ -1,3 +1,5 @@
+import 'package:nhac/utils/safe_parse_helpers.dart';
+
 class CartItemModel {
   final String produtoId;
   final String nome;
@@ -33,7 +35,7 @@ class CartItemModel {
       imagemUrl: map['imagemUrl'] ?? '',
       preco: num.tryParse(map['precoHistorico']?.toString() ?? '0')?.toDouble() ?? 0.0,
       lojaId: map['lojaId']?.toString() ?? '',  
-      quantidade: map['quantidade'] ?? 1,
+      quantidade: safeInt(map['quantidade'], fallback: 1),
     );
   }
 }

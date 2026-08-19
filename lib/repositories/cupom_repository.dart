@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nhac/models/usuario/cupom_model.dart';
 import 'package:nhac/services/api_client.dart';
+import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class CupomRepository {
   final _dio = ApiClient().dio;
@@ -31,7 +32,7 @@ class CupomRepository {
       }
       throw Exception('Erro ao resgatar cupom');
     } on DioException catch (e) {
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao resgatar cupom';
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao resgatar cupom');
       throw Exception(mensagem);
     }
   }
@@ -46,7 +47,8 @@ class CupomRepository {
       }
       throw Exception('Cupom inválido');
     } on DioException catch (e) {
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao validar cupom';
+      if (e.response?.statusCode == 500) throw Exception('Cupom inválido ou servidor indisponível');
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao validar cupom');
       throw Exception(mensagem);
     }
   }

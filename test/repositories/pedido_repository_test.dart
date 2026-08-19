@@ -3,16 +3,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:dio/dio.dart';
 import 'package:nhac/models/pedido_model.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
-import 'package:nhac/repositories/pedido_repository.dart';
 
 class MockDio extends Mock implements Dio {}
 
 void main() {
-  late PedidoRepository repository;
-  late MockDio mockDio;
 
   setUp(() {
-    mockDio = MockDio();
     // No aplicativo real, PedidoRepository() obtém o ApiClient().dio
     // Para fins de teste isolado e injeção de dependência rudimentar, 
     // idealmente deveríamos injetar o Dio no repositório.

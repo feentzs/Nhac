@@ -2,13 +2,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/globals/app_constants.dart';
 import 'package:nhac/services/session_storage_service.dart';
+import 'package:nhac/globals/router.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   late final Dio dio;
+  String? _cachedToken;
 
   factory ApiClient() {
     return _instance;
+  }
+
+  void atualizarTokenCache(String? novoToken) {
+    _cachedToken = novoToken;
   }
 
   ApiClient._internal() {
@@ -33,7 +39,8 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await SessionStorageService().obterToken();
+          _cachedToken ??= await SessionStorageService().obterToken();
+          final token = _cachedToken;
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -48,7 +55,8 @@ class ApiClient {
           debugPrint('❌ [ERR HTTP] Status: ${e.response?.statusCode} | Rota: ${e.requestOptions.path}');
           
           if (e.response?.statusCode == 401) {
-             await SessionStorageService().limparSessao();
+             _cachedToken = null;
+             await authServiceRoteador.logout();
           }
 
           if (e.response?.data != null) {

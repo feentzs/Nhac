@@ -94,6 +94,14 @@ class _HomeContentState extends State<HomeContent> {
       _fetchLojas(),
     ]);
     await _atualizarStatusLojas();
+    // Esconde o loading assim que os dados chegam, sem esperar o timer
+    if (mounted && _isLoading) {
+      _loadingTimer?.cancel();
+      setState(() {
+        _isLoading = false;
+        _jaCarregouUmaVez = true;
+      });
+    }
   }
 
   /// Busca o status aberta/fechada de cada loja distinta entre os produtos

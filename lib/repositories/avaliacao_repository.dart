@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nhac/models/produto/avaliacoes.dart';
 import 'package:nhac/services/api_client.dart';
+import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class AvaliacaoRepository {
   final _dio = ApiClient().dio;
@@ -13,7 +14,7 @@ class AvaliacaoRepository {
         'size': size,
       });
       if (response.statusCode == 200 && response.data != null) {
-        final List data = response.data['content'] ?? response.data; 
+        final List data = extrairLista(response.data); 
         return data.map((map) => AvaliacoesModel.fromMap(map, map['id']?.toString() ?? '')).toList();
       }
       return [];
@@ -36,7 +37,7 @@ class AvaliacaoRepository {
       }
       throw Exception('Erro ao criar avaliação');
     } on DioException catch (e) {
-      final mensagem = e.response?.data?['message'] ?? 'Erro ao criar avaliação';
+      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao criar avaliação');
       throw Exception(mensagem);
     }
   }

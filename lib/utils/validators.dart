@@ -22,9 +22,6 @@ class Validators {
     }
   
 
-    if (!RegExp(r'^[a-zA-Z0-9@._-]+$').hasMatch(value.trim())) {
-      return 'Caracteres inválidos (use apenas letras, números, @ e ponto)';
-    }
     if (!EmailValidator.validate(value.trim())) {
       return 'E-mail inválido';
     }
