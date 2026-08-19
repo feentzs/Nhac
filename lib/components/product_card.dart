@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:provider/provider.dart';
-import 'package:nhac/components/favorite_heart.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -58,14 +57,7 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 8.h,
-                  right: 8.w,
-                  child: FavoriteHeart(
-                    produtoId: produto.id,
-                    size: 20.r,
-                  ),
-                ),
+
               ],
             ),
           ),

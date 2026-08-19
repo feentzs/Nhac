@@ -41,9 +41,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   late Future<Map<String, dynamic>> _resumoAvaliacoesFuture;
   late Future<List<AvaliacoesModel>> _avaliacoesFuture;
 
-  bool _isFavorito = false;
-  int _totalFavoritos = 0;
-
   @override
   void initState() {
     super.initState();
@@ -57,50 +54,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
     _resumoAvaliacoesFuture = _avaliacaoRepository.buscarResumoAvaliacoes(widget.produto.id);
     _avaliacoesFuture = _avaliacaoRepository.buscarAvaliacoes(widget.produto.id);
-    
-    _carregarFavorito();
-  }
-
-  Future<void> _carregarFavorito() async {
-    final count = await _favoritoRepository.contarFavoritos(widget.produto.id);
-    if (mounted) setState(() => _totalFavoritos = count);
-
-    if (!mounted) return;
-    final auth = context.read<AuthService>();
-    if (auth.usuarioId != null) {
-      final favoritos = await _favoritoRepository.buscarFavoritos(auth.usuarioId!);
-      if (mounted) {
-        setState(() {
-          _isFavorito = favoritos.any((f) => f.produtoId == widget.produto.id);
-        });
-      }
-    }
-  }
-
-  Future<void> _toggleFavorito() async {
-    final auth = context.read<AuthService>();
-    if (auth.usuarioId == null) {
-      context.showError('Faça login para favoritar produtos.');
-      return;
-    }
-
-    try {
-      if (_isFavorito) {
-        await _favoritoRepository.desfavoritarProduto(auth.usuarioId!, widget.produto.id);
-        setState(() {
-          _isFavorito = false;
-          _totalFavoritos = (_totalFavoritos > 0) ? _totalFavoritos - 1 : 0;
-        });
-      } else {
-        await _favoritoRepository.favoritarProduto(auth.usuarioId!, widget.produto.id);
-        setState(() {
-          _isFavorito = true;
-          _totalFavoritos++;
-        });
-      }
-    } catch (e) {
-      if (mounted) context.showError(e.toString());
-    }
   }
 
   void _incrementarQuantidade() {
@@ -517,16 +470,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
               ),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: _toggleFavorito,
-                    child: _buildIconAction(
-                      _isFavorito ? Icons.star : Icons.star_border, 
-                      'Favoritar', 
-                      '$_totalFavoritos',
-                      iconColor: _isFavorito ? Colors.orange : const Color(0xFF666666),
-                    ),
-                  ),
-                  SizedBox(width: 16.w),
+
                   _buildIconAction(Icons.chat_bubble_outline, 'Chat', ''),
                   SizedBox(width: 24.w),
                   Expanded(

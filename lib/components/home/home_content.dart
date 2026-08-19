@@ -542,43 +542,6 @@ class _HomeContentState extends State<HomeContent> {
           LocalCacheService.salvarLocalizacaoGps(endereco);
         }
 
-        if (!mounted) return;
-        final enderecoProvider = context.read<EnderecoProvider>();
-        if (enderecoProvider.enderecos.isEmpty) {
-          // O pacote `geocoding` retorna o número em `subThoroughfare` e o
-          // estado como nome completo (ex: "São Paulo"), não como sigla.
-          // O backend exige número preenchido e estado com exatamente 2
-          // caracteres (UF), então normalizamos os dados antes de enviar.
-          final cidade = EnderecoUtils.normalizarCidade(
-            [place.locality, place.subAdministrativeArea],
-          );
-          final estado = EnderecoUtils.normalizarEstado(place.administrativeArea);
-          final numero = EnderecoUtils.normalizarNumero(place.subThoroughfare);
-
-          if (EnderecoUtils.ehValido(cidade: cidade, estado: estado, numero: numero)) {
-            final novoEndereco = EnderecoModel(
-              id: '',
-              rua: place.street ?? '',
-              numero: numero,
-              bairro: place.subLocality ?? '',
-              cidade: cidade,
-              estado: estado,
-              cep: place.postalCode ?? '',
-              complemento: '',
-              isPadrao: true,
-            );
-            try {
-              await enderecoProvider.adicionarEndereco(novoEndereco);
-            } catch (e) {
-              debugPrint('Erro ao salvar endereço detectado por GPS: $e');
-            }
-          } else {
-            debugPrint(
-              'Endereço detectado por GPS incompleto (cidade/estado/número). '
-              'Peça para o usuário confirmar manualmente em vez de enviar.',
-            );
-          }
-        }
       }
     } catch (e) {
       if (mounted) setState(() => _currentAddress = 'Erro ao buscar endereço');
