@@ -65,6 +65,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           _cartBarController.forward();
         }
       } else {
+        setState(() {
+          _isScrolledDown = false;
+        });
         if (_cartBarController.status != AnimationStatus.reverse &&
             _cartBarController.value != 0.0) {
           _cartBarController.animateBack(0,
@@ -326,7 +329,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: () {
         if (_isScrolledDown) {
-          _scrollToTop();
+          if (_selectedIndex == 0) {
+            _scrollToTop();
+          } else {
+            setState(() {
+              _isScrolledDown = false;
+            });
+          }
         }
       },
       child: AnimatedContainer(

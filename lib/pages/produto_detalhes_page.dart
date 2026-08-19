@@ -736,8 +736,8 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
           FutureBuilder<List<AvaliacoesModel>>(
             future: _avaliacoesFuture,
             builder: (context, snapshot) {
-              if (!snapshot.hasData) return const CircularProgressIndicator();
-              if (snapshot.data!.isEmpty) return Text('Sem avaliações ainda.', style: TextStyle(color: Colors.grey.shade600));
+              if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) return Text('Sem avaliações ainda.', style: TextStyle(color: Colors.grey.shade600));
 
               return Column(
                 children: snapshot.data!.take(3).map((avaliacao) {

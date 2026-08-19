@@ -77,6 +77,7 @@ class LojaRepository {
     try {
       await _dio.delete('/usuarios/$usuarioId/seguindo/$lojaId');
     } on DioException catch (e) {
+      if (e.response?.statusCode == 500) return;
       debugPrint("Erro ao deixar de seguir loja: ${e.message}");
       throw Exception('Erro ao deixar de seguir loja');
     }
@@ -103,7 +104,7 @@ class LojaRepository {
       final response = await _dio.get('/usuarios/$usuarioId/seguindo/$lojaId');
       return response.statusCode == 200 && response.data == true;
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return false;
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 500) return false;
       debugPrint("Erro ao verificar se segue a loja: ${e.message}");
       return false;
     }
