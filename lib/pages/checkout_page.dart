@@ -12,6 +12,9 @@ import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:nhac/models/usuario/cupom_model.dart';
 import 'package:nhac/repositories/cupom_repository.dart';
+import 'dart:convert';
+import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -24,6 +27,7 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   String _formaPagamento = 'Dinheiro';
   final TextEditingController _trocoController = TextEditingController();
+  final TextEditingController _cpfController = TextEditingController();
 
   bool _mostrarCampoTroco = true;
   final NumberFormat currencyFormat =
@@ -155,6 +159,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   @override
   void dispose() {
     _trocoController.dispose();
+    _cpfController.dispose();
     _cupomController.dispose();
     super.dispose();
   }
@@ -330,6 +335,43 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ],
               ),
             ),
+            if (_formaPagamento == 'PIX') ...[
+              SizedBox(height: 16.h),
+              Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: _cardDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CPF para pagamento PIX',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.sp,
+                          color: const Color(0xFF5D201C)),
+                    ),
+                    SizedBox(height: 8.h),
+                    TextField(
+                      controller: _cpfController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Digite seu CPF (obrigatório)',
+                        hintStyle: TextStyle(
+                            color: Colors.grey.shade400, fontSize: 14.sp),
+                        prefixIcon: Icon(Icons.person,
+                            size: 20.r, color: Colors.grey.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (_mostrarCampoTroco) ...[
               SizedBox(height: 16.h),
               Container(
@@ -756,13 +798,26 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ? double.tryParse(trocoText) 
       : null;
 
+    final cpfPagador = _cpfController.text.replaceAll(RegExp(r'\D'), '');
+    if (_formaPagamento == 'PIX' && cpfPagador.isEmpty) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('CPF é obrigatório para pagamento via PIX.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final pedido = PedidoModel(
       usuarioId: uid,
       lojaId: cartProvider.lojaId,
       valorTotal: total,
       taxaFrete: 0, 
-      formaPagamento: _formaPagamento,
+      formaPagamento: _formaPagamento == 'Cartão de crédito' ? 'CARTAO' : _formaPagamento,
       trocoPara: trocoPara,
+      cpfPagador: _formaPagamento == 'PIX' ? cpfPagador : null,
       observacao: cartProvider.observacao,
       cupomId: _cupomAplicado?.id,
       enderecoEntrega: enderecoisPadrao,
@@ -780,11 +835,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final respostaPedido = await PedidoRepository().finalizarPedido(pedido);
       final idGerado = respostaPedido['id'] ?? respostaPedido['pedidoId'] ?? 'ID Indisponível';
       final clientSecret = respostaPedido['clientSecret'];
+      final pixCopiaECola = respostaPedido['pixCopiaECola'];
+      final qrCodeUrl = respostaPedido['qrCodeUrl'];
 
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); 
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading
 
-      if (clientSecret != null && clientSecret.toString().isNotEmpty) {
+      if (_formaPagamento == 'Cartão de crédito' && clientSecret != null && clientSecret.toString().isNotEmpty) {
         try {
           await Stripe.instance.initPaymentSheet(
             paymentSheetParameters: SetupPaymentSheetParameters(
@@ -793,6 +850,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           );
           await Stripe.instance.presentPaymentSheet();
+          _aguardarPagamentoEConcluir(idGerado.toString(), cartProvider);
         } on StripeException {
           if (!context.mounted) return;
           setState(() => _isSubmitting = false);
@@ -804,51 +862,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           );
           return;
         }
+      } else if (_formaPagamento == 'PIX' && qrCodeUrl != null && pixCopiaECola != null) {
+        _mostrarDialogPix(idGerado.toString(), qrCodeUrl, pixCopiaECola, cartProvider);
+      } else {
+        // Dinheiro
+        _exibirSucessoEVoltar(idGerado.toString(), cartProvider);
       }
-
-      if (!context.mounted) return;
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-          backgroundColor: Colors.white,
-          title: Text(
-            'Pedido confirmado!',
-            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
-          ),
-          content: Text(
-            'O seu pedido foi recebido com sucesso!\n\nID do Pedido: $idGerado',
-            style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                cartProvider.esvaziarCarrinho();
-                
-                // Fecha o dialog primeiro
-                Navigator.of(dialogContext).pop();
-               
-                if (context.mounted) {
-                  // Volta para a raiz/home
-                  context.go('/home-page');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFE645C),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
-              ),
-              child: const Text('Voltar ao Início', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
 
     } catch (e) {
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); 
-
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading
+      setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString().replaceAll('Exception: ', '')),
@@ -856,8 +880,106 @@ class _CheckoutPageState extends State<CheckoutPage> {
           duration: const Duration(seconds: 4),
         ),
       );
+    } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _exibirSucessoEVoltar(String idGerado, CartProvider cartProvider) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: Colors.white,
+        title: Text(
+          'Pedido confirmado!',
+          style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
+        ),
+        content: Text(
+          'O seu pedido foi recebido com sucesso!\n\nID do Pedido: $idGerado',
+          style: TextStyle(fontSize: 14.sp, color: const Color(0xFF5D201C)),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              cartProvider.esvaziarCarrinho();
+              Navigator.of(dialogContext).pop();
+              if (context.mounted) context.go('/home-page');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFE645C),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.r)),
+            ),
+            child: const Text('Voltar ao Início', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDialogPix(String pedidoId, String qrCodeUrl, String pixCopiaECola, CartProvider cartProvider) {
+    final String cleanBase64 = qrCodeUrl.split(',').last;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: Colors.white,
+        title: Text(
+          'Pagamento PIX',
+          style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Escaneie o QR Code ou copie o código abaixo para pagar.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14.sp)),
+            SizedBox(height: 16.h),
+            Image.memory(base64Decode(cleanBase64), height: 200.h, width: 200.w),
+            SizedBox(height: 16.h),
+            ElevatedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: pixCopiaECola));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código PIX copiado!')));
+              },
+              icon: const Icon(Icons.copy, color: Colors.white),
+              label: const Text('Copiar Código PIX', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6961)),
+            ),
+            SizedBox(height: 16.h),
+            const CircularProgressIndicator(color: Color(0xFFFF6961)),
+            SizedBox(height: 8.h),
+            const Text('Aguardando pagamento...', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      ),
+    );
+    _aguardarPagamentoEConcluir(pedidoId, cartProvider);
+  }
+
+  Future<void> _aguardarPagamentoEConcluir(String pedidoId, CartProvider cartProvider) async {
+    Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      try {
+        final pedido = await PedidoRepository().buscarPedidoPorId(pedidoId);
+        if (pedido.status == 'PAGO' || pedido.status == 'PREPARANDO') {
+          timer.cancel();
+          if (mounted && _formaPagamento == 'PIX') {
+            Navigator.of(context, rootNavigator: true).pop(); // Close PIX dialog
+          }
+          if (mounted) {
+            _exibirSucessoEVoltar(pedidoId, cartProvider);
+          }
+        }
+      } catch (e) {
+        debugPrint('Erro ao verificar status do pedido: $e');
+      }
+    });
   }
 }
 

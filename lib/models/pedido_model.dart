@@ -11,6 +11,7 @@ class PedidoModel {
   final double? trocoPara;
   final String? observacao;
   final String? cupomId;
+  final String? cpfPagador;
   final EnderecoModel enderecoEntrega;
   final List<CartItemModel> itens;
   
@@ -27,6 +28,7 @@ class PedidoModel {
     this.trocoPara,
     this.observacao,
     this.cupomId,
+    this.cpfPagador,
     required this.enderecoEntrega,
     required this.itens,
     this.status,
@@ -40,6 +42,7 @@ class PedidoModel {
       if (trocoPara != null) 'trocoPara': trocoPara,
       if (observacao != null && observacao!.isNotEmpty) 'observacao': observacao,
       if (cupomId != null) 'cupomId': cupomId,
+      if (cpfPagador != null) 'cpfPagador': cpfPagador,
       'enderecoEntrega': {
         'rua': enderecoEntrega.rua,
         'numero': enderecoEntrega.numero,
@@ -70,6 +73,7 @@ class PedidoModel {
       trocoPara: num.tryParse(map['trocoPara']?.toString() ?? '0')?.toDouble(),
       observacao: map['observacao'],
       cupomId: map['cupomId'],
+      cpfPagador: map['cpfPagador'],
       enderecoEntrega: EnderecoModel.fromMap(map['enderecoEntrega'] ?? {}),
       itens: List<CartItemModel>.from(
         (map['itens'] ?? []).map((x) => CartItemModel.fromMap(x)),

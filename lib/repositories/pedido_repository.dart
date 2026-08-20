@@ -27,6 +27,21 @@ class PedidoRepository {
       throw Exception("Erro inesperado: $e");
     }
   }
+  
+  Future<PedidoModel> buscarPedidoPorId(String pedidoId) async {
+    try {
+      final response = await _dio.get('/pedidos/$pedidoId');
+      if (response.statusCode == 200) {
+        return PedidoModel.fromMap(response.data);
+      } else {
+        throw Exception("Falha ao buscar o pedido.");
+      }
+    } on DioException catch (e) {
+      throw mapException(e);
+    } catch (e) {
+      throw Exception("Erro inesperado: $e");
+    }
+  }
   Future<Map<String, dynamic>> buscarEstatisticas(String usuarioId) async {
     try {
       final response = await _dio.get('/usuarios/$usuarioId/estatisticas');
