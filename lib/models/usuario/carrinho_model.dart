@@ -7,6 +7,7 @@ class CartItemModel {
   final double preco;
   final String lojaId;   
   int quantidade;
+  bool esgotado;
 
   CartItemModel({
     required this.produtoId,
@@ -15,6 +16,7 @@ class CartItemModel {
     required this.preco,
     required this.lojaId,  
     this.quantidade = 1,
+    this.esgotado = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -25,6 +27,7 @@ class CartItemModel {
       'precoHistorico': preco,
       'lojaId': lojaId,      
       'quantidade': quantidade,
+      'esgotado': esgotado,
     };
   }
 
@@ -36,6 +39,7 @@ class CartItemModel {
       preco: num.tryParse(map['precoHistorico']?.toString() ?? '0')?.toDouble() ?? 0.0,
       lojaId: map['lojaId']?.toString() ?? '',  
       quantidade: safeInt(map['quantidade'], fallback: 1),
+      esgotado: map['esgotado'] ?? false,
     );
   }
 }
