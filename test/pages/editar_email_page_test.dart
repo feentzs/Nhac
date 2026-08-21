@@ -204,7 +204,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final inputFinder = find.byType(NhacInputField);
-      await tester.enterText(inputFinder, 'email_invalido');
+      await tester.enterText(inputFinder, 'emailinvalido');
       await tester.pumpAndSettle();
 
       expect(find.text('E-mail inválido'), findsOneWidget);
