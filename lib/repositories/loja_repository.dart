@@ -27,7 +27,7 @@ class LojaRepository {
       return LojasModel.fromMap(response.data);
     } catch (e) {
       debugPrint("Erro ao buscar loja $lojaId: $e");
-       throw mapException(e);
+      return null;
     }
   }
 
