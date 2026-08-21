@@ -1,14 +1,11 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:nhac/services/api_client.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:dio/dio.dart';
 
 class PaymentService {
-  final Dio _dio = Dio();
-  final String _asaasApiKey = 'YOUR_ASAAS_API_KEY'; // Replace with your actual key
+  final String _asaasApiKey = dotenv.env['ASAAS_API_KEY'] ?? '';
   final String _asaasBaseUrl = 'https://api.asaas.com/v3';
-
-  PaymentService() {
-    _dio.options.headers['Authorization'] = 'Bearer $_asaasApiKey';
-  }
 
   /// Criar cobrança PIX no Asaas
   Future<Map<String, dynamic>> criarCobrancaPix({
@@ -17,7 +14,7 @@ class PaymentService {
     required String email,
   }) async {
     try {
-      final response = await _dio.post(
+      final response = await ApiClient().dio.post(
         '$_asaasBaseUrl/payments',
         data: {
           'customer': email,
@@ -26,6 +23,7 @@ class PaymentService {
           'description': descricao,
           'dueDate': DateTime.now().toIso8601String(),
         },
+        options: Options(headers: {'access_token': _asaasApiKey}),
       );
       return response.data;
     } catch (e) {
@@ -36,8 +34,9 @@ class PaymentService {
   /// Obter QR Code PIX
   Future<String> obterQrCodePix(String paymentId) async {
     try {
-      final response = await _dio.get(
+      final response = await ApiClient().dio.get(
         '$_asaasBaseUrl/payments/$paymentId/pixQrCode',
+        options: Options(headers: {'access_token': _asaasApiKey}),
       );
       // O response contém 'encodedImage' (base64) no v3 geralmente
       return response.data['encodedImage'] ?? '';
@@ -71,8 +70,8 @@ class PaymentService {
   Future<Map<String, dynamic>> _criarPaymentIntent(double valor) async {
     try {
       // Chamar seu backend que chamará Stripe
-      final response = await _dio.post(
-        'YOUR_BACKEND_URL/create-payment-intent',
+      final response = await ApiClient().dio.post(
+        '/create-payment-intent',
         data: {'amount': (valor * 100).toInt()}, // Stripe usa centavos
       );
       return response.data;

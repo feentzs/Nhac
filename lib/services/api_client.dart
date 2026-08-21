@@ -41,7 +41,7 @@ class ApiClient {
         onRequest: (options, handler) async {
           _cachedToken ??= await SessionStorageService().obterToken();
           final token = _cachedToken;
-          if (token != null) {
+          if (token != null && !options.headers.containsKey('Authorization')) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           debugPrint('🌍 [REQ HTTP] ${options.method} ${options.uri}');
