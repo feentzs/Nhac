@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:nhac/controllers/payment_provider.dart';
+import 'package:nhac/pages/qrcode_pix_page.dart';
+import 'package:nhac/controllers/user_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/models/pedido_model.dart';
 import 'package:nhac/repositories/pedido_repository.dart';
@@ -862,8 +865,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           );
           return;
         }
-      } else if (_formaPagamento == 'PIX' && qrCodeUrl != null && pixCopiaECola != null) {
-        _mostrarDialogPix(idGerado.toString(), qrCodeUrl, pixCopiaECola, cartProvider);
+      } else if (_formaPagamento == 'PIX') {
+        final email = context.read<UserProvider>().usuario?.email ?? 'cliente@nhac.com';
+        await _processarPagamentoPix(idGerado.toString(), total, email);
       } else {
         // Dinheiro
         _exibirSucessoEVoltar(idGerado.toString(), cartProvider);
@@ -980,6 +984,35 @@ class _CheckoutPageState extends State<CheckoutPage> {
         debugPrint('Erro ao verificar status do pedido: $e');
       }
     });
+  }
+
+  Future<void> _processarPagamentoPix(String pedidoId, double total, String email) async {
+    final paymentProvider = context.read<PaymentProvider>();
+    await paymentProvider.processarPagamentoPix(
+      valor: total,
+      descricao: 'Pedido Nhac #$pedidoId',
+      email: email,
+    );
+    if (!mounted) return;
+    if (paymentProvider.error == null && paymentProvider.qrCodeBase64 != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QrCodePixPage(
+            pixQrCode: paymentProvider.qrCodeBase64!,
+            paymentId: paymentProvider.paymentId!,
+            valor: total,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro: ${paymentProvider.error}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 

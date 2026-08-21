@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:nhac/controllers/payment_provider.dart';
 import 'package:nhac/repositories/loja_repository.dart';
 import 'package:nhac/repositories/produto_repository.dart';
 import 'package:nhac/repositories/pedido_repository.dart';
@@ -41,6 +42,7 @@ main() async {
   await dotenv.load(fileName: ".env");
 
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
+  await Stripe.instance.applySettings();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -93,6 +95,7 @@ class MyApp extends StatelessWidget {
             create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => EnderecoProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider()),
         ChangeNotifierProvider<ConnectivityService>(
             create: (context) => ConnectivityService()),
         Provider<LojaRepository>(create: (_) => LojaRepository()),
