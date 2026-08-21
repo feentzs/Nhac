@@ -1,22 +1,21 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:nhac/controllers/payment_provider.dart';
 import 'package:flutter/services.dart';
 
-// Assuming BotaoLargoNhac exists in components/botoes. Otherwise using standard ElevatedButton
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 
 class QrCodePixPage extends StatefulWidget {
   final String pixQrCode;
+  final String? pixCopiaECola;
   final String paymentId;
   final double valor;
 
   const QrCodePixPage({
     super.key,
     required this.pixQrCode,
+    this.pixCopiaECola,
     required this.paymentId,
     required this.valor,
   });
@@ -26,21 +25,14 @@ class QrCodePixPage extends StatefulWidget {
 }
 
 class _QrCodePixPageState extends State<QrCodePixPage> {
-  late Timer _timer;
 
   @override
   void initState() {
     super.initState();
-    // Verificar status do pagamento a cada 5 segundos
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) async {
-      // Chamar seu backend para verificar se foi pago
-      // Se sim, mostrar confirmação e fechar
-    });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
     super.dispose();
   }
 
@@ -77,70 +69,81 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
               ),
               SizedBox(height: 48.h),
               // QR Code
-              Container(
-                padding: EdgeInsets.all(16.w),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: QrImageView(
-                  data: widget.pixQrCode,
-                  version: QrVersions.auto,
-                  size: 250.w,
-                  // If the image asset doesn't exist, remove embeddedImage to avoid errors
-                  // embeddedImage: const AssetImage('assets/nhac-logo.png'),
-                  // embeddedImageStyle: QrEmbeddedImageStyle(
-                  //   size: Size(50.w, 50.w),
-                  // ),
+              Semantics(
+                label: 'QR Code PIX. Valor de R\$ ${widget.valor.toStringAsFixed(2)}',
+                image: true,
+                child: Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: QrImageView(
+                    data: widget.pixQrCode,
+                    version: QrVersions.auto,
+                    size: 250.w,
+                  ),
                 ),
               ),
               SizedBox(height: 32.h),
               // Valor
-              Container(
-                padding: EdgeInsets.all(16.w),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE7E5),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Valor a pagar:',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: Colors.grey.shade600,
+              MergeSemantics(
+                child: Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE7E5),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Valor a pagar:',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'R\$ ${widget.valor.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF5D201C),
+                      Text(
+                        'R\$ ${widget.valor.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF5D201C),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               SizedBox(height: 48.h),
               // Botão de confirmação
               BotaoLargoNhac(
-                titulo: 'Já realizei o pagamento',
-                onPressed: () => Navigator.pop(context),
+                texto: 'Ir para Acompanhamento de Pedido',
+                onPressed: () {
+                  // Aqui o usuário seria redirecionado para a tela de acompanhamento (ex: /acompanhamento). 
+                  // Vou apenas fechar a tela assumindo que a home ou o histórico de pedidos seja o default para status.
+                  Navigator.pop(context);
+                  Navigator.pop(context); // Pop back twice to home
+                },
               ),
               SizedBox(height: 16.h),
               // Botão secundário
               OutlinedButton(
                 onPressed: () {
-                  Clipboard.setData(ClipboardData(text: widget.pixQrCode));
+                  final textToCopy = widget.pixCopiaECola ?? widget.pixQrCode;
+                  Clipboard.setData(ClipboardData(text: textToCopy));
+                  
+                  // ignore: deprecated_member_use
+                  SemanticsService.announce('Código PIX copiado com sucesso!', TextDirection.ltr);
+                  
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Código PIX copiado!')),
                   );

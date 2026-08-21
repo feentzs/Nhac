@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:nhac/controllers/payment_provider.dart';
 import 'package:nhac/pages/qrcode_pix_page.dart';
-import 'package:nhac/controllers/user_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/models/pedido_model.dart';
 import 'package:nhac/repositories/pedido_repository.dart';
@@ -15,10 +13,8 @@ import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:nhac/models/usuario/cupom_model.dart';
 import 'package:nhac/repositories/cupom_repository.dart';
-import 'dart:convert';
-import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:nhac/globals/exceptions.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -530,70 +526,78 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                   ],
                   Divider(height: 24.h, color: Colors.grey.shade200),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Subtotal',
-                          style: TextStyle(
-                              color: Colors.grey.shade700, fontSize: 14.sp)),
-                      Text(currencyFormat.format(subtotal),
-                          style: TextStyle(fontSize: 14.sp)),
-                    ],
-                  ),
-                  SizedBox(height: 8.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Frete',
-                          style: TextStyle(
-                              color: Colors.grey.shade700, fontSize: 14.sp)),
-                      Text(
-                        currencyFormat.format(frete),
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 14.sp,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (descontoValue > 0) ...[
-                    SizedBox(height: 8.h),
-                    Row(
+                  MergeSemantics(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Desconto',
+                        Text('Subtotal',
                             style: TextStyle(
-                                color: const Color(0xFFFF6961), fontSize: 14.sp)),
+                                color: Colors.grey.shade700, fontSize: 14.sp)),
+                        Text(currencyFormat.format(subtotal),
+                            style: TextStyle(fontSize: 14.sp)),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  MergeSemantics(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Frete',
+                            style: TextStyle(
+                                color: Colors.grey.shade700, fontSize: 14.sp)),
                         Text(
-                          '- ${currencyFormat.format(descontoValue)}',
+                          currencyFormat.format(frete),
                           style: TextStyle(
-                            color: const Color(0xFFFF6961),
+                            color: Colors.black87,
                             fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
+                  ),
+                  if (descontoValue > 0) ...[
+                    SizedBox(height: 8.h),
+                    MergeSemantics(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Desconto',
+                              style: TextStyle(
+                                  color: const Color(0xFFFF6961), fontSize: 14.sp)),
+                          Text(
+                            '- ${currencyFormat.format(descontoValue)}',
+                            style: TextStyle(
+                              color: const Color(0xFFFF6961),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                   SizedBox(height: 12.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16.sp,
-                            color: const Color(0xFF5D201C)),
-                      ),
-                      Text(
-                        currencyFormat.format(total),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18.sp,
-                            color: const Color(0xFFFF6961)),
-                      ),
-                    ],
+                  MergeSemantics(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                              color: const Color(0xFF5D201C)),
+                        ),
+                        Text(
+                          currencyFormat.format(total),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18.sp,
+                              color: const Color(0xFFFF6961)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -853,7 +857,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           );
           await Stripe.instance.presentPaymentSheet();
-          _aguardarPagamentoEConcluir(idGerado.toString(), cartProvider);
+          _exibirSucessoEVoltar(idGerado.toString(), cartProvider);
         } on StripeException {
           if (!context.mounted) return;
           setState(() => _isSubmitting = false);
@@ -866,13 +870,53 @@ class _CheckoutPageState extends State<CheckoutPage> {
           return;
         }
       } else if (_formaPagamento == 'PIX') {
-        final email = context.read<UserProvider>().usuario?.email ?? 'cliente@nhac.com';
-        await _processarPagamentoPix(idGerado.toString(), total, email);
+        Navigator.push(context, MaterialPageRoute(
+          builder: (context) => QrCodePixPage(
+            pixQrCode: qrCodeUrl.toString(),
+            pixCopiaECola: pixCopiaECola.toString(),
+            paymentId: idGerado.toString(),
+            valor: total,
+          ),
+        ));
       } else {
         // Dinheiro
         _exibirSucessoEVoltar(idGerado.toString(), cartProvider);
       }
 
+    } on CustomCheckoutException catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading
+      setState(() => _isSubmitting = false);
+      
+      if (e.produtoId != null) {
+        cartProvider.marcarItemComoEsgotado(e.produtoId!);
+      }
+      
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          title: Text(e.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(e.message),
+              if (e.suggestions != null && e.suggestions!.isNotEmpty) ...[
+                SizedBox(height: 16.h),
+                const Text('Sugestões:', style: TextStyle(fontWeight: FontWeight.bold)),
+                ...e.suggestions!.map((s) => Text('• $s')),
+              ]
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Entendi'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (!context.mounted) return;
       Navigator.of(context, rootNavigator: true).pop(); // Close loading
@@ -920,99 +964,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ],
       ),
     );
-  }
-
-  void _mostrarDialogPix(String pedidoId, String qrCodeUrl, String pixCopiaECola, CartProvider cartProvider) {
-    final String cleanBase64 = qrCodeUrl.split(',').last;
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-        backgroundColor: Colors.white,
-        title: Text(
-          'Pagamento PIX',
-          style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: const Color(0xFF5D201C)),
-          textAlign: TextAlign.center,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Escaneie o QR Code ou copie o código abaixo para pagar.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14.sp)),
-            SizedBox(height: 16.h),
-            Image.memory(base64Decode(cleanBase64), height: 200.h, width: 200.w),
-            SizedBox(height: 16.h),
-            ElevatedButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: pixCopiaECola));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código PIX copiado!')));
-              },
-              icon: const Icon(Icons.copy, color: Colors.white),
-              label: const Text('Copiar Código PIX', style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6961)),
-            ),
-            SizedBox(height: 16.h),
-            const CircularProgressIndicator(color: Color(0xFFFF6961)),
-            SizedBox(height: 8.h),
-            const Text('Aguardando pagamento...', style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-    );
-    _aguardarPagamentoEConcluir(pedidoId, cartProvider);
-  }
-
-  Future<void> _aguardarPagamentoEConcluir(String pedidoId, CartProvider cartProvider) async {
-    Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      try {
-        final pedido = await PedidoRepository().buscarPedidoPorId(pedidoId);
-        if (pedido.status == 'PAGO' || pedido.status == 'PREPARANDO') {
-          timer.cancel();
-          if (mounted && _formaPagamento == 'PIX') {
-            Navigator.of(context, rootNavigator: true).pop(); // Close PIX dialog
-          }
-          if (mounted) {
-            _exibirSucessoEVoltar(pedidoId, cartProvider);
-          }
-        }
-      } catch (e) {
-        debugPrint('Erro ao verificar status do pedido: $e');
-      }
-    });
-  }
-
-  Future<void> _processarPagamentoPix(String pedidoId, double total, String email) async {
-    final paymentProvider = context.read<PaymentProvider>();
-    await paymentProvider.processarPagamentoPix(
-      valor: total,
-      descricao: 'Pedido Nhac #$pedidoId',
-      email: email,
-    );
-    if (!mounted) return;
-    if (paymentProvider.error == null && paymentProvider.qrCodeBase64 != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => QrCodePixPage(
-            pixQrCode: paymentProvider.qrCodeBase64!,
-            paymentId: paymentProvider.paymentId!,
-            valor: total,
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro: ${paymentProvider.error}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }
 
@@ -1114,7 +1065,8 @@ class _AddressSelectionSheet extends StatelessWidget {
             child: InkWell(
               onTap: () => context.push('/enderecos-salvos'),
               borderRadius: BorderRadius.circular(12.r),
-              child: Padding(
+              child: Container(
+                constraints: BoxConstraints(minHeight: 48.h),
                 padding: EdgeInsets.symmetric(vertical: 8.h),
                 child: Row(
                   children: [
