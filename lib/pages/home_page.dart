@@ -207,6 +207,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),
                     opacity: (_isScrolledDown && _selectedIndex == 0) ? 1.0 : 0.0,
+                    child: Semantics(
+                    button: true,
+                    label: 'Voltar ao topo da página',
                     child: GestureDetector(
                   onTap: (_isScrolledDown && _selectedIndex == 0) ? _scrollToTop : null,
                   child: Container(
@@ -230,6 +233,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                   ),
                     ),
+                  ),
                   ),
                 ),
               ),
@@ -341,7 +345,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
-        height: 75.h,
+        constraints: BoxConstraints(minHeight: 75.h),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(50.r),
@@ -379,15 +383,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ],
               );
             },
-            firstChild: SizedBox(
-              width: MediaQuery.of(context).size.width - 48.w,
-              height: 75.h,
+            firstChild: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: MediaQuery.of(context).size.width - 48.w,
+                minHeight: 75.h,
+              ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 physics: const NeverScrollableScrollPhysics(),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width - 48.w,
-                  height: 75.h,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: MediaQuery.of(context).size.width - 48.w,
+                    minHeight: 75.h,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -410,9 +418,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            secondChild: SizedBox(
-              width: 75.w,
-              height: 75.h,
+            secondChild: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: 75.w,
+                minHeight: 75.h,
+              ),
               child: Center(
                 child: Icon(
                   _getIconForIndex(_selectedIndex),
@@ -431,8 +441,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       {required IconData icon, required String label, required int index}) {
     final isSelected = _selectedIndex == index;
 
-    return GestureDetector(
-      onTap: () {
+    return Semantics(
+      button: true,
+      label: label,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: () {
         final oldIndex = _selectedIndex;
         setState(() {
           _selectedIndex = index;
@@ -517,6 +531,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ],
         ),
       ),
+    ),
     );
   }
 

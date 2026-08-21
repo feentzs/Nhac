@@ -103,23 +103,27 @@ class ProductCard extends StatelessWidget {
                           );
                           return;
                         }
-                        final cartProvider = context.read<CartProvider>();
-                        final success = await cartProvider.adicionarItemComQuantidade(
-                          idProduto: produto.id,
-                          nome: produto.nome,
-                          preco: produto.preco,
-                          imagemUrl: produto.imagemUrl,
-                          lojaId: produto.lojaId,
-                          quantidade: 1,
-                        );
-                        if (success && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('${produto.nome} adicionado ao carrinho!')),
+                        try {
+                          final cartProvider = context.read<CartProvider>();
+                          await cartProvider.adicionarItemComQuantidade(
+                            idProduto: produto.id,
+                            nome: produto.nome,
+                            preco: produto.preco,
+                            imagemUrl: produto.imagemUrl,
+                            lojaId: produto.lojaId,
+                            quantidade: 1,
                           );
-                        } else if (!success && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Você já possui itens de outra loja no carrinho!')),
-                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('${produto.nome} adicionado ao carrinho!')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                            );
+                          }
                         }
                       },
                       child: Container(

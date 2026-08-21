@@ -11,11 +11,8 @@ import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/pages/loja_page.dart';
 import 'package:nhac/repositories/produto_repository.dart';
 import 'package:nhac/repositories/loja_repository.dart';
-import 'package:nhac/repositories/favorito_repository.dart';
 import 'package:nhac/repositories/avaliacao_repository.dart';
 import 'package:nhac/models/produto/avaliacoes.dart';
-import 'package:nhac/services/auth_service.dart';
-import 'package:nhac/globals/ui_utils.dart';
 
 class ProdutoDetalhesPage extends StatefulWidget {
   final ProdutosModel produto;
@@ -35,7 +32,6 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
 
   final _produtoRepository = ProdutoRepository();
   final _lojaRepository = LojaRepository();
-  final _favoritoRepository = FavoritoRepository();
   final _avaliacaoRepository = AvaliacaoRepository();
 
   late Future<Map<String, dynamic>> _resumoAvaliacoesFuture;

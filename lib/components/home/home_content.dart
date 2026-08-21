@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:nhac/components/home/home_category_chips.dart';
+import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/loja_page.dart';
@@ -23,7 +23,6 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:nhac/controllers/user_provider.dart';
-import 'package:nhac/utils/endereco_utils.dart';
 import 'package:provider/provider.dart';
 
 @NowaGenerated()
@@ -57,8 +56,6 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-  // lojaId -> está aberta? Usado para impedir adicionar ao carrinho
-  // produto de loja fechada direto pelas seções da home.
   Map<String, bool> _lojaAbertaMap = {};
 
   @override
@@ -94,7 +91,7 @@ class _HomeContentState extends State<HomeContent> {
       _fetchLojas(),
     ]);
     await _atualizarStatusLojas();
-    // Esconde o loading assim que os dados chegam, sem esperar o timer
+
     if (mounted && _isLoading) {
       _loadingTimer?.cancel();
       setState(() {
@@ -104,9 +101,6 @@ class _HomeContentState extends State<HomeContent> {
     }
   }
 
-  /// Busca o status aberta/fechada de cada loja distinta entre os produtos
-  /// exibidos na home, para bloquear adicionar ao carrinho item de loja
-  /// fechada direto pelas seções da home.
   Future<void> _atualizarStatusLojas() async {
     final idsUnicos = {
       ..._produtosNecessidades.map((p) => p.lojaId),
@@ -191,28 +185,15 @@ class _HomeContentState extends State<HomeContent> {
           _isLoadingLojas = false;
         });
       }
-    } on DioException catch (e) {
-      final isTimeout = e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout;
-      debugPrint("Erro ao buscar lojas da API REST: ${e.type} | status=${e.response?.statusCode} | ${e.message}");
+    } on NetworkException catch (e) {
+      debugPrint("Erro de rede ao buscar lojas: $e");
       if (mounted) {
         setState(() {
           _isLoadingLojas = false;
           _errorLojas = true;
-          _mensagemErroLojas = isTimeout
-              ? 'O servidor está iniciando, isso pode levar até 1 minuto na primeira vez. Tente novamente.'
-              : 'Ocorreu um erro ao carregar os restaurantes.';
-        });
-      }
-    } catch (e) {
-      debugPrint("Erro ao buscar lojas da API REST: $e");
-      if (mounted) {
-        setState(() {
-          _isLoadingLojas = false;
-          _errorLojas = true;
-          _mensagemErroLojas = 'Ocorreu um erro ao carregar os restaurantes.';
-        });
+          _mensagemErroLojas = e.message;
+          }
+          );
       }
     }
   }
@@ -541,7 +522,6 @@ class _HomeContentState extends State<HomeContent> {
           setState(() => _currentAddress = endereco);
           LocalCacheService.salvarLocalizacaoGps(endereco);
         }
-
       }
     } catch (e) {
       if (mounted) setState(() => _currentAddress = 'Erro ao buscar endereço');
@@ -592,350 +572,352 @@ class _HomeContentState extends State<HomeContent> {
         return false;
       },
       child: CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(
-        parent: BouncingScrollPhysics(),
-      ),
-      slivers: [
-        CupertinoSliverRefreshControl(
-          refreshIndicatorExtent: 140.h,
-          refreshTriggerPullDistance: 180.h,
-          onRefresh: _onRefresh,
-          builder: (context, refreshState, pulledExtent,
-              refreshTriggerPullDistance, refreshIndicatorExtent) {
-            return Center(
-              child: Opacity(
-                opacity:
-                    (pulledExtent / refreshIndicatorExtent).clamp(0.0, 1.0),
-                child: Lottie.asset(
-                  'assets/animations/loading_nhac.json',
-                  width: 240.w,
-                  height: 240.h,
-                  animate: refreshState == RefreshIndicatorMode.refresh ||
-                      refreshState == RefreshIndicatorMode.armed,
-                ),
-              ),
-            );
-          },
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
         ),
-        SliverPadding(
-          padding: EdgeInsets.all(24.w),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              SizedBox(height: 16.h),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, -20 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(8.w),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF5D201C)
-                                          .withValues(alpha: 0.05),
-                                      blurRadius: 10.r,
-                                      offset: const Offset(0.0, 4.0),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.location_on_outlined,
-                                  color: Colors.grey,
-                                  size: 20.r,
-                                ),
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Sua Localização',
-                                      style: TextStyle(
-                                          color: Colors.grey, fontSize: 12.sp),
-                                    ),
-                                    Text(
-                                      enderecoTopo,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14.sp,
-                                        color: const Color(0xFF5D201C),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 16.w),
-                        GestureDetector(
-                          onTap: () => _abrirSelecaoEndereco(context),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 12.w, vertical: 8.h),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(50.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF5D201C)
-                                      .withValues(alpha: 0.05),
-                                  blurRadius: 10.r,
-                                  offset: const Offset(0.0, 4.0),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Mudar',
-                                  style: TextStyle(
-                                    color: const Color(0xFFFF6961),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12.sp,
-                                  ),
-                                ),
-                                Icon(Icons.chevron_right,
-                                    color: const Color(0xFFFF6961), size: 18.r),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 24.h),
-                    Hero(
-                      tag: 'search_bar',
-                      child: Material(
-                        color: Colors.transparent,
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        const SearchPage(),
-                                transitionsBuilder: (context, animation,
-                                    secondaryAnimation, child) {
-                                  return FadeTransition(
-                                      opacity: animation, child: child);
-                                },
-                                transitionDuration:
-                                    const Duration(milliseconds: 300),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.w,
-                              vertical: 12.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(50.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF5D201C)
-                                      .withValues(alpha: 0.05),
-                                  blurRadius: 10.r,
-                                  offset: const Offset(0.0, 4.0),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.search,
-                                    color: Colors.grey, size: 22.r),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: Text(
-                                    'Procurar',
-                                    style: TextStyle(
-                                        color: Colors.grey.shade400,
-                                        fontSize: 16.sp),
-                                  ),
-                                ),
-                                Icon(Icons.tune,
-                                    color: Colors.grey, size: 22.r),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+        slivers: [
+          CupertinoSliverRefreshControl(
+            refreshIndicatorExtent: 140.h,
+            refreshTriggerPullDistance: 180.h,
+            onRefresh: _onRefresh,
+            builder: (context, refreshState, pulledExtent,
+                refreshTriggerPullDistance, refreshIndicatorExtent) {
+              return Center(
+                child: Opacity(
+                  opacity:
+                      (pulledExtent / refreshIndicatorExtent).clamp(0.0, 1.0),
+                  child: Lottie.asset(
+                    'assets/animations/loading_nhac.json',
+                    width: 240.w,
+                    height: 240.h,
+                    animate: refreshState == RefreshIndicatorMode.refresh ||
+                        refreshState == RefreshIndicatorMode.armed,
+                  ),
                 ),
-              ),
-              SizedBox(height: 24.h),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, -20 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 600),
-                  child: _isLoading
-                      ? SizedBox(
-                          key: const ValueKey('carousel_skeleton'),
-                          height: 180.h,
-                          child: PageView(
-                            controller: PageController(viewportFraction: 0.9),
-                            physics: const NeverScrollableScrollPhysics(),
-                            children: [
-                              _buildBoxSkeleton(
-                                  width: double.infinity,
-                                  height: 180.h,
-                                  borderRadius: 20.r),
-                            ],
-                          ),
-                        )
-                      : const HomeBannerCarousel(
-                          key: ValueKey('carousel_content')),
-                ),
-              ),
-              SizedBox(height: 28.h),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: const HomeCategoryChips(),
-              ),
-              SizedBox(height: 28.h),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 600),
-                  child: _isLoadingProdutosNecessidades
-                      ? _buildSectionSkeleton(
-                          key: const ValueKey('section1_skeleton'))
-                      : HomeProductSection(
-                          key: const ValueKey('section1_content'),
-                          title: 'Temos tudo que você precisa',
-                          onSeeAll: () {},
-                          products: _produtosNecessidades,
-                          lojaAberta: _lojaAbertaMap,
-                        ),
-                ),
-              ),
-              SizedBox(height: 28.h),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 600),
-                  child: _isLoadingProdutosPromocao
-                      ? _buildSectionSkeleton(
-                          key: const ValueKey('section2_skeleton'))
-                      : HomeProductSection(
-                          key: const ValueKey('section2_content'),
-                          title: 'Tudo abaixo de R\$ 20',
-                          onSeeAll: () {},
-                          products: _produtosPromocao,
-                          lojaAberta: _lojaAbertaMap,
-                        ),
-                ),
-              ),
-              SizedBox(height: 28.h),
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween(begin: 0.0, end: 1.0),
-                curve: const Interval(0.8, 1.0, curve: Curves.easeOutCubic),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Restaurantes',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20.sp,
-                        color: const Color(0xFF5D201C),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    _buildListaDeLojas(),
-                  ],
-                ),
-              ),
-              SizedBox(height: 100.h),
-            ]),
+              );
+            },
           ),
-        ),
-      ],
+          SliverPadding(
+            padding: EdgeInsets.all(24.w),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                SizedBox(height: 16.h),
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 800),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, -20 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8.w),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF5D201C)
+                                            .withValues(alpha: 0.05),
+                                        blurRadius: 10.r,
+                                        offset: const Offset(0.0, 4.0),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Icons.location_on_outlined,
+                                    color: Colors.grey,
+                                    size: 20.r,
+                                  ),
+                                ),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Sua Localização',
+                                        style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12.sp),
+                                      ),
+                                      Text(
+                                        enderecoTopo,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14.sp,
+                                          color: const Color(0xFF5D201C),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 16.w),
+                          GestureDetector(
+                            onTap: () => _abrirSelecaoEndereco(context),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 12.w, vertical: 8.h),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(50.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF5D201C)
+                                        .withValues(alpha: 0.05),
+                                    blurRadius: 10.r,
+                                    offset: const Offset(0.0, 4.0),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Mudar',
+                                    style: TextStyle(
+                                      color: const Color(0xFFFF6961),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12.sp,
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right,
+                                      color: const Color(0xFFFF6961),
+                                      size: 18.r),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 24.h),
+                      Hero(
+                        tag: 'search_bar',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation,
+                                          secondaryAnimation) =>
+                                      const SearchPage(),
+                                  transitionsBuilder: (context, animation,
+                                      secondaryAnimation, child) {
+                                    return FadeTransition(
+                                        opacity: animation, child: child);
+                                  },
+                                  transitionDuration:
+                                      const Duration(milliseconds: 300),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 12.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(50.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF5D201C)
+                                        .withValues(alpha: 0.05),
+                                    blurRadius: 10.r,
+                                    offset: const Offset(0.0, 4.0),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.search,
+                                      color: Colors.grey, size: 22.r),
+                                  SizedBox(width: 8.w),
+                                  Expanded(
+                                    child: Text(
+                                      'Procurar',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade400,
+                                          fontSize: 16.sp),
+                                    ),
+                                  ),
+                                  Icon(Icons.tune,
+                                      color: Colors.grey, size: 22.r),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 24.h),
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 800),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, -20 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 600),
+                    child: _isLoading
+                        ? SizedBox(
+                            key: const ValueKey('carousel_skeleton'),
+                            height: 180.h,
+                            child: PageView(
+                              controller: PageController(viewportFraction: 0.9),
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: [
+                                _buildBoxSkeleton(
+                                    width: double.infinity,
+                                    height: 180.h,
+                                    borderRadius: 20.r),
+                              ],
+                            ),
+                          )
+                        : const HomeBannerCarousel(
+                            key: ValueKey('carousel_content')),
+                  ),
+                ),
+                SizedBox(height: 28.h),
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 800),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 30 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: const HomeCategoryChips(),
+                ),
+                SizedBox(height: 28.h),
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 800),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 30 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 600),
+                    child: _isLoadingProdutosNecessidades
+                        ? _buildSectionSkeleton(
+                            key: const ValueKey('section1_skeleton'))
+                        : HomeProductSection(
+                            key: const ValueKey('section1_content'),
+                            title: 'Temos tudo que você precisa',
+                            onSeeAll: () {},
+                            products: _produtosNecessidades,
+                            lojaAberta: _lojaAbertaMap,
+                          ),
+                  ),
+                ),
+                SizedBox(height: 28.h),
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 800),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 30 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 600),
+                    child: _isLoadingProdutosPromocao
+                        ? _buildSectionSkeleton(
+                            key: const ValueKey('section2_skeleton'))
+                        : HomeProductSection(
+                            key: const ValueKey('section2_content'),
+                            title: 'Tudo abaixo de R\$ 20',
+                            onSeeAll: () {},
+                            products: _produtosPromocao,
+                            lojaAberta: _lojaAbertaMap,
+                          ),
+                  ),
+                ),
+                SizedBox(height: 28.h),
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 800),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: const Interval(0.8, 1.0, curve: Curves.easeOutCubic),
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 30 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Restaurantes',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20.sp,
+                          color: const Color(0xFF5D201C),
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                      _buildListaDeLojas(),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 100.h),
+              ]),
+            ),
+          ),
+        ],
       ),
     );
   }
-
 
   Widget _buildBoxSkeleton(
       {double? width, double? height, double borderRadius = 8}) {
