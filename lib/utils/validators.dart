@@ -20,7 +20,9 @@ class Validators {
     if (value == null || value.trim().isEmpty) {
       return 'E-mail obrigatório';
     }
-  
+    if (!RegExp(r'^[a-zA-Z0-9@.]+$').hasMatch(value.trim())) {
+      return 'Caracteres inválidos (use apenas letras, números, @ e ponto)';
+    }
 
     if (!EmailValidator.validate(value.trim())) {
       return 'E-mail inválido';

@@ -22,6 +22,15 @@ class PedidoRepository {
         throw Exception("Falha ao criar o pedido. Tente novamente.");
       }
     } on DioException catch (e) {
+      if (e.response?.statusCode == 422 && e.response?.data != null) {
+        final data = e.response!.data;
+        throw CustomCheckoutException(
+          message: data['message'] ?? 'Alguns itens do seu carrinho estão esgotados ou com quantidade insuficiente.',
+          title: data['title'] ?? 'Estoque Insuficiente',
+          produtoId: data['details']?['produtoId'],
+          suggestions: data['suggestions'],
+        );
+      }
       throw mapException(e);
     } catch (e) {
       throw Exception("Erro inesperado: $e");
