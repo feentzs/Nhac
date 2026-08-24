@@ -144,6 +144,29 @@ class AuthService with ChangeNotifier {
     }
   }
 
+  Future<void> esqueciSenhaEmail(String email) async {
+    try {
+      await _dio.post('/auth/esqueci-senha/email', data: {
+        'email': email,
+      });
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  Future<void> redefinirSenhaEmail(String email, String codigo, String novaSenha) async {
+    try {
+      await _dio.post('/auth/redefinir-senha/email', data: {
+        'email': email,
+        'codigo': codigo,
+        'novaSenha': novaSenha,
+      });
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+
   Future<void> alterarSenha(String senhaAtual, String novaSenha) async {
     if (_usuarioId == null) {
       throw AuthException('Utilizador não autenticado.');
@@ -186,6 +209,9 @@ Future<void> updateUserName({required String userName}) async {
       usuarioId: _usuarioId!,
       nome: nomeLimpo,
     );
+    
+    ApiClient().atualizarTokenCache(tokenFinal);
+    notifyListeners();
   } catch (e) {
     throw mapException(e);
   }
@@ -194,30 +220,32 @@ Future<void> updateUserName({required String userName}) async {
 
 
   Future<void> updateEmail({required String novoEmail}) async {
-  if (_usuarioId == null) {
-    throw AuthException('Utilizador não autenticado.');
-  }
-
-  try {
-    final response = await _dio.put('/usuarios/$_usuarioId', data: {
-      'email': novoEmail.trim(),
-    });
-
-    final tokenFresquinho = response.data['token'] as String?;
-    if (tokenFresquinho == null || tokenFresquinho.isEmpty) {
-      throw AuthException('Backend não retornou um token válido.');
+    if (_usuarioId == null) {
+      throw AuthException('Utilizador não autenticado.');
     }
 
-    await _sessionStorage.salvarSessao(
-      token: tokenFresquinho,
-      usuarioId: _usuarioId!,
-      nome: _nome ?? 'Usuário',
-    );
+    try {
+      final response = await _dio.put('/usuarios/$_usuarioId', data: {
+        'email': novoEmail.trim(),
+      });
 
-  } catch (e) {
-    throw mapException(e);
+      final tokenFresquinho = response.data['token'] as String?;
+      if (tokenFresquinho == null || tokenFresquinho.isEmpty) {
+        throw AuthException('Backend não retornou um token válido.');
+      }
+
+      await _sessionStorage.salvarSessao(
+        token: tokenFresquinho,
+        usuarioId: _usuarioId!,
+        nome: _nome ?? 'Usuário',
+      );
+      
+      ApiClient().atualizarTokenCache(tokenFresquinho);
+      notifyListeners();
+    } catch (e) {
+      throw mapException(e);
+    }
   }
-}
 
   Future<void> updateFcmToken({required String fcmToken}) async {
     if (_usuarioId == null) {
@@ -235,6 +263,8 @@ Future<void> updateUserName({required String userName}) async {
           usuarioId: _usuarioId!,
           nome: _nome ?? 'Usuário',
         );
+        ApiClient().atualizarTokenCache(tokenFresquinho);
+        notifyListeners();
       }
     } catch (e) {
       throw mapException(e);

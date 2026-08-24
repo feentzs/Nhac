@@ -23,6 +23,9 @@ import 'package:nhac/pages/enderecos_page.dart';
 import 'package:nhac/pages/formas_pagamento_page.dart';
 import 'package:nhac/pages/cupons_page.dart';
 import 'package:nhac/pages/search_page.dart';
+import 'package:nhac/pages/auth/recuperacao_senha/recuperacao_input_page.dart';
+import 'package:nhac/pages/auth/recuperacao_senha/inserir_codigo_recuperacao_page.dart';
+import 'package:nhac/pages/auth/recuperacao_senha/nova_senha_recuperacao_page.dart';
 
 class _SlideRightToLeftPageRoute<T> extends PageRoute<T>
     with MaterialRouteTransitionMixin<T> {
@@ -130,6 +133,7 @@ final GoRouter appRouter = GoRouter(
         state.matchedLocation == '/insira_telefone' ||
         state.matchedLocation == '/verificacao_numero' ||
         state.matchedLocation == '/continuar_senha' ||
+        state.matchedLocation.startsWith('/recuperacao') ||
         state.matchedLocation.startsWith('/cadastro');
 
     final bool noMeioDoCadastro = state.matchedLocation == '/verificacao_numero' || 
@@ -292,6 +296,43 @@ final GoRouter appRouter = GoRouter(
       return _buildSlideRightToLeftPage(
         key: state.pageKey,
         child: SearchPage(initialCategory: categoria),
+      );
+    },
+  ),
+  GoRoute(
+    path: '/recuperacao/input',
+    pageBuilder: (context, state) {
+      final metodo = state.extra as String? ?? 'email';
+      return _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: RecuperacaoInputPage(metodo: metodo),
+      );
+    },
+  ),
+  GoRoute(
+    path: '/recuperacao/codigo',
+    pageBuilder: (context, state) {
+      final data = state.extra as Map<String, dynamic>? ?? {};
+      return _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: InserirCodigoRecuperacaoPage(
+          metodo: data['metodo'] ?? 'email',
+          contato: data['contato'] ?? '',
+        ),
+      );
+    },
+  ),
+  GoRoute(
+    path: '/recuperacao/nova-senha',
+    pageBuilder: (context, state) {
+      final data = state.extra as Map<String, dynamic>? ?? {};
+      return _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: NovaSenhaRecuperacaoPage(
+          metodo: data['metodo'] ?? 'email',
+          contato: data['contato'] ?? '',
+          codigo: data['codigo'] ?? '',
+        ),
       );
     },
   ),
