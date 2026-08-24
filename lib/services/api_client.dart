@@ -21,11 +21,7 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
-        // Render free tier "dorme" após inatividade — o primeiro request
-        // após esse período pode levar 50-60s até o serviço acordar.
-        // 40s era curto demais e causava timeout intermitente sem motivo
-        // aparente. 70s dá folga pro cold-start sem travar o app pra sempre
-        // em caso de falha de rede real.
+   
         connectTimeout: const Duration(seconds: 70),
         receiveTimeout: const Duration(seconds: 70),
         sendTimeout: const Duration(seconds: 70),
@@ -54,7 +50,7 @@ class ApiClient {
         onError: (DioException e, handler) async {
           debugPrint('❌ [ERR HTTP] Status: ${e.response?.statusCode} | Rota: ${e.requestOptions.path}');
           
-          if (e.response?.statusCode == 401) {
+          if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
              _cachedToken = null;
              await authServiceRoteador.logout();
           }
