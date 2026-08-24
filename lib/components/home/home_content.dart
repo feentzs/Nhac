@@ -6,6 +6,7 @@ import 'package:nhac/models/produto/produtos.dart';
 import 'package:nhac/pages/loja_page.dart';
 import 'package:nhac/repositories/loja_repository.dart';
 import 'package:nhac/repositories/produto_repository.dart';
+import 'package:nhac/services/auth_service.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
@@ -521,6 +522,23 @@ class _HomeContentState extends State<HomeContent> {
         if (mounted) {
           setState(() => _currentAddress = endereco);
           LocalCacheService.salvarLocalizacaoGps(endereco);
+          
+          final authService = context.read<AuthService>();
+          final enderecoProvider = context.read<EnderecoProvider>();
+          
+          if (authService.isAuthenticated && enderecoProvider.enderecos.isEmpty) {
+            final novoEndereco = EnderecoModel(
+              id: '',
+              rua: place.street ?? 'Desconhecida',
+              numero: place.subThoroughfare ?? 'S/N',
+              bairro: place.subLocality ?? '',
+              cidade: place.subAdministrativeArea ?? '',
+              estado: place.administrativeArea ?? '',
+              cep: place.postalCode ?? '00000-000',
+              isPadrao: true,
+            );
+            enderecoProvider.adicionarEndereco(novoEndereco).catchError((_) {});
+          }
         }
       }
     } catch (e) {
