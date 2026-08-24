@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/models/pedido_model.dart';
 import 'package:nhac/services/api_client.dart';
-import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class PedidoRepository {
   final _dio = ApiClient().dio;
@@ -54,13 +54,13 @@ class PedidoRepository {
   Future<Map<String, dynamic>> buscarEstatisticas(String usuarioId) async {
     try {
       final response = await _dio.get('/usuarios/$usuarioId/estatisticas');
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.data != null) {
         return response.data;
       }
-      return {'totalPedidos': 0, 'avaliacoes': 0, 'cupons': 0};
+      return {'totalPedidos': 0, 'lojasFavoritadas': 0, 'cuponsResgatados': 0};
     } on DioException catch (e) {
       debugPrint("Erro ao buscar estatísticas: ${e.message}");
-      return {'totalPedidos': 0, 'avaliacoes': 0, 'cupons': 0};
+      return {'totalPedidos': 0, 'lojasFavoritadas': 0, 'cuponsResgatados': 0};
     }
   }
 
@@ -68,10 +68,10 @@ class PedidoRepository {
     try {
       final response = await _dio.get(
         '/usuarios/$usuarioId/pedidos',
-        queryParameters: {'page': page, 'size': size},
+        queryParameters: {'page': page, 'size': size, 'sort': 'criadoEm,desc'},
       );
       if (response.statusCode == 200 && response.data != null) {
-        final List data = extrairLista(response.data);
+        final List data = response.data['content'] ?? []; // Paginado
         return data.map((map) => PedidoModel.fromMap(map)).toList();
       }
       return [];

@@ -1,71 +1,26 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:nhac/models/usuario/favoritos_model.dart';
-import 'package:nhac/services/api_client.dart';
-import 'package:nhac/utils/safe_parse_helpers.dart';
+import 'package:flutter/foundation.dart';
 
 class FavoritoRepository {
-  final _dio = ApiClient().dio;
+  // final _dio = ApiClient().dio;
 
   Future<List<FavoritosModel>> buscarFavoritos(String usuarioId) async {
-    try {
-      final response = await _dio.get('/usuarios/$usuarioId/favoritos');
-      if (response.statusCode == 200 && response.data != null) {
-        final List data = response.data;
-        return data.map((map) => FavoritosModel.fromMap(map, map['id']?.toString() ?? '')).toList();
-      }
-      return [];
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404 || e.response?.statusCode == 500) {
-        return [];
-      }
-      debugPrint("Erro ao buscar favoritos: ${e.message}");
-      throw Exception('Falha ao buscar favoritos');
-    }
+    // API não implementada no backend ainda
+    return [];
   }
 
   Future<FavoritosModel> favoritarProduto(String usuarioId, String produtoId) async {
-    try {
-      final response = await _dio.post('/usuarios/$usuarioId/favoritos', data: {
-        'produtoId': produtoId,
-      });
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final map = response.data;
-        return FavoritosModel.fromMap(map, map['id']?.toString() ?? '');
-      }
-      throw Exception('Erro ao favoritar produto');
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 500) throw Exception('Serviço de favoritos indisponível');
-      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao favoritar produto');
-      throw Exception(mensagem);
-    }
+    // API não implementada no backend ainda
+    return FavoritosModel(id: 'mock', usuarioId: usuarioId, produtoId: produtoId, imagemUrl: '', nome: '', preco: 3);
   }
 
   Future<void> desfavoritarProduto(String usuarioId, String produtoId) async {
-    try {
-      // Usando query params ou path vars conforme o endpoint
-      await _dio.delete('/usuarios/$usuarioId/favoritos/$produtoId');
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 500) return;
-      debugPrint("Erro ao desfavoritar: ${e.message}");
-      final mensagem = extrairMensagemErro(e.response?.data, fallback: 'Erro ao remover dos favoritos');
-      throw Exception(mensagem);
-    }
+    // API não implementada no backend ainda
+    return;
   }
 
   Future<int> contarFavoritos(String produtoId) async {
-    try {
-      final response = await _dio.get('/produtos/$produtoId/favoritos/contagem');
-      if (response.statusCode == 200) {
-        final raw = response.data;
-        if (raw is int) return raw;
-        if (raw is Map) return safeInt(raw['total']);
-        return 0;
-      }
-      return 0;
-    } on DioException catch (e) {
-      debugPrint("Erro ao contar favoritos: ${e.message}");
-      return 0;
-    }
+    // API não implementada no backend ainda
+    return 0;
   }
 }

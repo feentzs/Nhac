@@ -49,7 +49,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
     _produtosDaLojaFuture = null;
 
     _resumoAvaliacoesFuture = _avaliacaoRepository.buscarResumoAvaliacoes(widget.produto.id);
-    _avaliacoesFuture = _avaliacaoRepository.buscarAvaliacoes(widget.produto.id);
+    _avaliacoesFuture = _avaliacaoRepository.buscarAvaliacoes(widget.produto.lojaId);
   }
 
   void _incrementarQuantidade() {

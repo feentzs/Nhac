@@ -128,14 +128,12 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
               BotaoLargoNhac(
                 texto: 'Ir para Acompanhamento de Pedido',
                 onPressed: () {
-                  // Aqui o usuário seria redirecionado para a tela de acompanhamento (ex: /acompanhamento). 
-                  // Vou apenas fechar a tela assumindo que a home ou o histórico de pedidos seja o default para status.
+                  // TODO Aqui o usuário seria redirecionado para a tela de acompanhamento (ex: /acompanhamento). 
                   Navigator.pop(context);
-                  Navigator.pop(context); // Pop back twice to home
+                  Navigator.pop(context); 
                 },
               ),
               SizedBox(height: 16.h),
-              // Botão secundário
               OutlinedButton(
                 onPressed: () {
                   final textToCopy = widget.pixCopiaECola ?? widget.pixQrCode;

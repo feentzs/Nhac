@@ -6,10 +6,10 @@ class CupomModel {
   final String descricao;
   final String codigo;
   final double desconto;
-  final String tipo; // PERCENTUAL ou FIXO
+  final String tipo; 
   final double usoMinimo;
   final String? dataValidade;
-  final String status; // DISPONIVEL, USADO, EXPIRADO
+  final String status; 
 
   CupomModel({
     required this.id,

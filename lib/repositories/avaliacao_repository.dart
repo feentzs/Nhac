@@ -7,9 +7,9 @@ import 'package:nhac/utils/safe_parse_helpers.dart';
 class AvaliacaoRepository {
   final _dio = ApiClient().dio;
 
-  Future<List<AvaliacoesModel>> buscarAvaliacoes(String produtoId, {int page = 0, int size = 10}) async {
+  Future<List<AvaliacoesModel>> buscarAvaliacoes(String lojaId, {int page = 0, int size = 10}) async {
     try {
-      final response = await _dio.get('/produtos/$produtoId/avaliacoes', queryParameters: {
+      final response = await _dio.get('/lojas/$lojaId/avaliacoes', queryParameters: {
         'page': page,
         'size': size,
       });
@@ -25,9 +25,10 @@ class AvaliacaoRepository {
     }
   }
 
-  Future<AvaliacoesModel> criarAvaliacao(String produtoId, double nota, String comentario) async {
+  Future<AvaliacoesModel> criarAvaliacao(String pedidoId, double nota, String comentario) async {
     try {
-      final response = await _dio.post('/produtos/$produtoId/avaliacoes', data: {
+      final response = await _dio.post('/avaliacoes', data: {
+        'pedidoId': pedidoId,
         'nota': nota,
         'comentario': comentario,
       });
@@ -46,25 +47,16 @@ class AvaliacaoRepository {
     try {
       final response = await _dio.get('/produtos/$produtoId/avaliacoes/resumo');
       if (response.statusCode == 200 && response.data != null) {
-        return response.data;
-        /* Esperado:
-        {
-          "media": 4.5,
-          "total": 35,
-          "distribuicao": {
-            "5": 20,
-            "4": 10,
-            "3": 5,
-            "2": 0,
-            "1": 0
-          }
-        }
-        */
+        final data = response.data;
+        return {
+          'media': data['mediaNotas'] ?? 0.0,
+          'total': data['totalAvaliacoes'] ?? 0,
+        };
       }
-      return {'media': 0.0, 'total': 0, 'distribuicao': {'5': 0, '4': 0, '3': 0, '2': 0, '1': 0}};
+      return {'media': 0.0, 'total': 0};
     } on DioException catch (e) {
       debugPrint("Erro ao buscar resumo de avaliações: ${e.message}");
-      return {'media': 0.0, 'total': 0, 'distribuicao': {'5': 0, '4': 0, '3': 0, '2': 0, '1': 0}};
+      return {'media': 0.0, 'total': 0};
     }
   }
 }

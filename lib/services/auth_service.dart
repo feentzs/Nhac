@@ -166,19 +166,23 @@ Future<void> updateUserName({required String userName}) async {
   final nomeLimpo = userName.trim();
 
   try {
-    await _dio.put('/usuarios/$_usuarioId', data: {
+    final response = await _dio.put('/usuarios/$_usuarioId', data: {
       'nome': nomeLimpo 
     });
 
-    final tokenAtual = await _sessionStorage.obterToken();
-    if (tokenAtual == null) {
+    final tokenFresquinho = response.data['token'] as String?;
+    final tokenFinal = (tokenFresquinho != null && tokenFresquinho.isNotEmpty)
+        ? tokenFresquinho
+        : await _sessionStorage.obterToken();
+
+    if (tokenFinal == null) {
       throw AuthException('Sessão inválida ao salvar novo nome.');
     }
 
     _nome = nomeLimpo;
 
     await _sessionStorage.salvarSessao(
-      token: tokenAtual,
+      token: tokenFinal,
       usuarioId: _usuarioId!,
       nome: nomeLimpo,
     );
@@ -221,9 +225,17 @@ Future<void> updateUserName({required String userName}) async {
     }
 
     try {
-      await _dio.put('/usuarios/$_usuarioId', data: {
+      final response = await _dio.put('/usuarios/$_usuarioId', data: {
         'fcmToken': fcmToken.trim(),
       });
+      final tokenFresquinho = response.data['token'] as String?;
+      if (tokenFresquinho != null && tokenFresquinho.isNotEmpty) {
+        await _sessionStorage.salvarSessao(
+          token: tokenFresquinho,
+          usuarioId: _usuarioId!,
+          nome: _nome ?? 'Usuário',
+        );
+      }
     } catch (e) {
       throw mapException(e);
     }

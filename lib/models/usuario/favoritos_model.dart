@@ -2,6 +2,7 @@ import 'package:nhac/utils/safe_parse_helpers.dart';
 
 class FavoritosModel {
   final String id;
+  final String usuarioId;
   final String produtoId;
   final String imagemUrl;
   final String nome;
@@ -13,11 +14,13 @@ class FavoritosModel {
     required this.imagemUrl,
     required this.nome,
     required this.preco,
+    required this.usuarioId,
   });
 
-  factory FavoritosModel.fromMap(Map<String, dynamic> map, String docId){
+  factory FavoritosModel.fromMap(Map<String, dynamic> map, String docId) {
     return FavoritosModel(
       id: docId,
+      usuarioId: map['usuarioId'] ?? '',
       produtoId: map['produtoId'] ?? '',
       imagemUrl: map['imagemUrl'] ?? '',
       nome: map['nome'] ?? '',
@@ -25,7 +28,7 @@ class FavoritosModel {
     );
   }
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'produtoId': produtoId,
       'imagemUrl': imagemUrl,
@@ -33,18 +36,21 @@ class FavoritosModel {
       'preco': preco,
     };
   }
+
   FavoritosModel copyWith({
     String? id,
+    String? usuarioId,
     String? produtoId,
     String? imagemUrl,
     String? nome,
     double? preco,
-  }) => FavoritosModel(
-    id: id ?? this.id,
-    produtoId: produtoId ?? this.produtoId,
-    imagemUrl: imagemUrl ?? this.imagemUrl,
-    nome: nome ?? this.nome,
-    preco: preco ?? this.preco,
-  );
-
+  }) =>
+      FavoritosModel(
+        id: id ?? this.id,
+        usuarioId: usuarioId ?? this.usuarioId,
+        produtoId: produtoId ?? this.produtoId,
+        imagemUrl: imagemUrl ?? this.imagemUrl,
+        nome: nome ?? this.nome,
+        preco: preco ?? this.preco,
+      );
 }
