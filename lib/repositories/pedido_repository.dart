@@ -24,11 +24,15 @@ class PedidoRepository {
     } on DioException catch (e) {
       if (e.response?.statusCode == 422 && e.response?.data != null) {
         final data = e.response!.data;
+        
+        final String message = data['message'] ?? '';
+        final String title = data['title'] ?? (message.toLowerCase().contains('fechada') ? 'Loja Fechada' : 'Estoque Insuficiente');
+        
         throw CustomCheckoutException(
-          message: data['message'] ?? 'Alguns itens do seu carrinho estão esgotados ou com quantidade insuficiente.',
-          title: data['title'] ?? 'Estoque Insuficiente',
+          message: message.isNotEmpty ? message : 'Alguns itens do seu carrinho estão esgotados ou com quantidade insuficiente.',
+          title: title,
           produtoId: data['details']?['produtoId'],
-          suggestions: data['suggestions'],
+          suggestions: data['suggestions'] != null ? List<String>.from(data['suggestions']) : null,
         );
       }
       throw mapException(e);
