@@ -77,11 +77,12 @@ class DadosPessoaisPage extends StatelessWidget {
               subtitulo: usuario.telefone, 
               onTap: () {},
             ),
-            NhacMenuTile(
-              titulo: 'Senha', 
-              subtitulo: hasPassword ? '**************' : 'N�o cadastrada', 
-              onTap: () {},
-            ),
+            if (hasPassword)
+              NhacMenuTile(
+                titulo: 'Senha', 
+                subtitulo: '**************', 
+                onTap: () {},
+              ),
           ],
         ),
       ),
