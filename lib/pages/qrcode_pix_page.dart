@@ -138,9 +138,6 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
                   final textToCopy = widget.pixCopiaECola ?? widget.pixQrCode;
                   Clipboard.setData(ClipboardData(text: textToCopy));
 
-                  SemanticsService.announce(
-                      'Código PIX copiado com sucesso!', TextDirection.ltr);
-
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Código PIX copiado!')),
                   );

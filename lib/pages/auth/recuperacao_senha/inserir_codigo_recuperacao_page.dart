@@ -20,7 +20,6 @@ class _InserirCodigoRecuperacaoPageState extends State<InserirCodigoRecuperacaoP
   int _tempoRestante = 60;
   bool _podeReenviar = false;
   Timer? _timer;
-  bool _isLoading = false;
 
   @override
   void initState() {

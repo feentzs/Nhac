@@ -58,7 +58,6 @@ class _SearchPageState extends State<SearchPage> {
   _FiltroBusca _filtro = _FiltroBusca.tudo;
   List<String> _historico = [];
   bool _temTexto = false;
-  bool _focusAgendado = false;
 
   @override
   void initState() {
