@@ -205,57 +205,61 @@ class _ContinuarSenhaState extends State<ContinuarSenha> {
                         width: double.infinity,
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                                ),
-                                builder: (bottomSheetContext) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(24.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Text(
-                                          'Como deseja recuperar?',
-                                          style: TextStyle(
-                                            fontSize: 20.0,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF5D201C),
+                          child: Semantics(
+                            button: true,
+                            label: 'Toque para recuperar sua senha',
+                            child: GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                  ),
+                                  builder: (bottomSheetContext) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            'Como deseja recuperar?',
+                                            style: TextStyle(
+                                              fontSize: 20.0,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF5D201C),
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        ListTile(
-                                          leading: const Icon(Icons.email, color: Color(0xFFFF6961)),
-                                          title: const Text('Via E-mail'),
-                                          onTap: () {
-                                            Navigator.pop(bottomSheetContext);
-                                            context.push('/recuperacao/input', extra: 'email');
-                                          },
-                                        ),
-                                        ListTile(
-                                          leading: const Icon(Icons.sms, color: Color(0xFFFF6961)),
-                                          title: const Text('Via SMS (Telefone)'),
-                                          onTap: () {
-                                            Navigator.pop(bottomSheetContext);
-                                            context.push('/recuperacao/input', extra: 'sms');
-                                          },
-                                        ),
-                                        const SizedBox(height: 20),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                            child: const Text(
-                              'Esqueceu sua senha?',
-                              style: TextStyle(
-                                fontSize: 14.0,
-                                color: Color(0xFFFF6961),
-                                fontWeight: FontWeight.w600,
+                                          const SizedBox(height: 20),
+                                          ListTile(
+                                            leading: const Icon(Icons.email, color: Color(0xFFFF6961)),
+                                            title: const Text('Via E-mail'),
+                                            onTap: () {
+                                              Navigator.pop(bottomSheetContext);
+                                              context.push('/recuperacao/input', extra: 'email');
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: const Icon(Icons.sms, color: Color(0xFFFF6961)),
+                                            title: const Text('Via SMS (Telefone)'),
+                                            onTap: () {
+                                              Navigator.pop(bottomSheetContext);
+                                              context.push('/recuperacao/input', extra: 'sms');
+                                            },
+                                          ),
+                                          const SizedBox(height: 20),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              child: const Text(
+                                'Esqueceu sua senha?',
+                                style: TextStyle(
+                                  fontSize: 14.0,
+                                  color: Color(0xFFFF6961),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -266,16 +270,20 @@ class _ContinuarSenhaState extends State<ContinuarSenha> {
                         width: double.infinity,
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () {
-                              context.push('/cadastro/nome');
-                            },
-                            child: const Text(
-                              'Não tem conta? Criar conta',
-                              style: TextStyle(
-                                fontSize: 14.0,
-                                color: Color(0xFF5D201C),
-                                fontWeight: FontWeight.w600,
+                          child: Semantics(
+                            button: true,
+                            label: 'Toque para criar uma conta',
+                            child: GestureDetector(
+                              onTap: () {
+                                context.push('/cadastro/nome');
+                              },
+                              child: const Text(
+                                'Não tem conta? Criar conta',
+                                style: TextStyle(
+                                  fontSize: 14.0,
+                                  color: Color(0xFF5D201C),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),

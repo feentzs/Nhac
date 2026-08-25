@@ -71,7 +71,21 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
   void _abrirLojaProfile() async {
     if (_isNavigatingToLoja || _lojaFuture == null) return;
     
-    final loja = await _lojaFuture;
+    dynamic loja;
+    try {
+      loja = await _lojaFuture;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível carregar os dados da loja.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
     if (loja == null) return;
 
     setState(() {

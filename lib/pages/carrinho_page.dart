@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
+import 'package:nhac/globals/ui_utils.dart';
 import 'package:nhac/models/usuario/carrinho_model.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
 import 'package:provider/provider.dart';
@@ -523,10 +524,13 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                                 icon: Icon(
                                                                     Icons.remove,
                                                                     size: 16.r),
-                                                                onPressed: () =>
-                                                                    cartProvider
-                                                                        .removerItem(
-                                                                            item.produtoId),
+                                                                onPressed: () async {
+                                                                  try {
+                                                                    await cartProvider.removerItem(item.produtoId);
+                                                                  } catch (e) {
+                                                                    if (context.mounted) context.showError(e.toString());
+                                                                  }
+                                                                },
                                                               ),
                                                             ),
                                                             Text(
@@ -553,14 +557,20 @@ class _CarrinhoPageState extends State<CarrinhoPage> {
                                                                 icon: Icon(
                                                                     Icons.add,
                                                                     size: 16.r),
-                                                                onPressed: item.esgotado ? null : () => cartProvider.adicionarItemComQuantidade(
-                                                                  idProduto: item.produtoId, 
-                                                                  nome: item.nome,
-                                                                  preco: item.preco,
-                                                                  imagemUrl: item.imagemUrl,
-                                                                  lojaId: item.lojaId,
-                                                                  quantidade: 1, 
-                                                                ),
+                                                                onPressed: item.esgotado ? null : () async {
+                                                                  try {
+                                                                    await cartProvider.adicionarItemComQuantidade(
+                                                                      idProduto: item.produtoId, 
+                                                                      nome: item.nome,
+                                                                      preco: item.preco,
+                                                                      imagemUrl: item.imagemUrl,
+                                                                      lojaId: item.lojaId,
+                                                                      quantidade: 1, 
+                                                                    );
+                                                                  } catch (e) {
+                                                                    if (context.mounted) context.showError(e.toString());
+                                                                  }
+                                                                },
                                                               ),
                                                             ),
                                                           ],

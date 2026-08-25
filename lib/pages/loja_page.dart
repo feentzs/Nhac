@@ -70,16 +70,20 @@ class _LojaPageState extends State<LojaPage>
     try {
       if (_isSeguindo) {
         await _lojaRepository.deixarDeSeguir(auth.usuarioId!, widget.loja.id);
-        setState(() {
-          _isSeguindo = false;
-          _seguidores = (_seguidores > 0) ? _seguidores - 1 : 0;
-        });
+        if (mounted) {
+          setState(() {
+            _isSeguindo = false;
+            _seguidores = (_seguidores > 0) ? _seguidores - 1 : 0;
+          });
+        }
       } else {
         await _lojaRepository.seguirLoja(auth.usuarioId!, widget.loja.id);
-        setState(() {
-          _isSeguindo = true;
-          _seguidores++;
-        });
+        if (mounted) {
+          setState(() {
+            _isSeguindo = true;
+            _seguidores++;
+          });
+        }
       }
     } catch (e) {
       if (mounted) context.showError(e.toString());

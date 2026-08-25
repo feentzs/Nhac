@@ -58,8 +58,6 @@ class _ProfileContentState extends State<ProfileContent> {
     userProvider.limparUsuario();
     carrinho.esvaziarCarrinho();
     await authService.signOut();
-    if (!context.mounted) return;
-    context.go('/bem-vindo');
   }
 
   void _abrirNotificacoes(BuildContext context) {

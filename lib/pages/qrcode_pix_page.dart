@@ -25,7 +25,6 @@ class QrCodePixPage extends StatefulWidget {
 }
 
 class _QrCodePixPageState extends State<QrCodePixPage> {
-
   @override
   void initState() {
     super.initState();
@@ -70,7 +69,8 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
               SizedBox(height: 48.h),
               // QR Code
               Semantics(
-                label: 'QR Code PIX. Valor de R\$ ${widget.valor.toStringAsFixed(2)}',
+                label:
+                    'QR Code PIX. Valor de R\$ ${widget.valor.toStringAsFixed(2)}',
                 image: true,
                 child: Container(
                   padding: EdgeInsets.all(16.w),
@@ -128,9 +128,8 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
               BotaoLargoNhac(
                 texto: 'Ir para Acompanhamento de Pedido',
                 onPressed: () {
-                  // TODO Aqui o usuário seria redirecionado para a tela de acompanhamento (ex: /acompanhamento). 
                   Navigator.pop(context);
-                  Navigator.pop(context); 
+                  Navigator.pop(context);
                 },
               ),
               SizedBox(height: 16.h),
@@ -138,10 +137,10 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
                 onPressed: () {
                   final textToCopy = widget.pixCopiaECola ?? widget.pixQrCode;
                   Clipboard.setData(ClipboardData(text: textToCopy));
-                  
-                  // ignore: deprecated_member_use
-                  SemanticsService.announce('Código PIX copiado com sucesso!', TextDirection.ltr);
-                  
+
+                  SemanticsService.announce(
+                      'Código PIX copiado com sucesso!', TextDirection.ltr);
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Código PIX copiado!')),
                   );

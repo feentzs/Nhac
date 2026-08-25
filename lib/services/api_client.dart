@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/globals/app_constants.dart';
+import 'package:nhac/utils/app_exceptions.dart';
 import 'package:nhac/services/session_storage_service.dart';
 import 'package:nhac/globals/router.dart';
 
@@ -50,15 +51,62 @@ class ApiClient {
         onError: (DioException e, handler) async {
           debugPrint('❌ [ERR HTTP] Status: ${e.response?.statusCode} | Rota: ${e.requestOptions.path}');
           
-          if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+          final responseData = e.response?.data;
+          final statusCode = e.response?.statusCode;
+          final defaultMessage = responseData?['message'] ?? 'Erro desconhecido';
+
+          // Auth: 401 e 403 (Faz logout e direciona)
+          if ((statusCode == 401 || statusCode == 403) && !e.requestOptions.path.contains('/login')) {
              _cachedToken = null;
-             await authServiceRoteador.logout();
+             await authServiceRoteador.logout(); // Rotina de logout
+             if (statusCode == 401) {
+                return handler.reject(DioException(
+                  requestOptions: e.requestOptions, 
+                  error: UnauthorizedException(defaultMessage),
+                ));
+             } else {
+                return handler.reject(DioException(
+                  requestOptions: e.requestOptions, 
+                  error: ForbiddenException("Você não tem permissão para isso."),
+                ));
+             }
           }
 
-          if (e.response?.data != null) {
-            debugPrint('Detalhes do Erro: ${e.response?.data}');
+          if (responseData != null) {
+            debugPrint('Detalhes do Erro: $responseData');
           }
-          return handler.next(e);
+
+          // Tratamento por Status Code
+          Exception customError;
+          switch (statusCode) {
+            case 400:
+              // Verifica se possui o detalhamento de campos
+              if (responseData != null && responseData is Map && responseData.containsKey('details')) {
+                customError = ValidationException(defaultMessage, responseData['details']);
+              } else {
+                customError = BusinessRuleException(defaultMessage);
+              }
+              break;
+            case 404:
+              customError = NotFoundException(defaultMessage);
+              break;
+            case 422:
+              customError = BusinessRuleException(defaultMessage);
+              break;
+            case 429:
+              customError = TooManyRequestsException();
+              break;
+            case 500:
+            default:
+              customError = ServerException();
+              break;
+          }
+
+          // Substitui o erro bruto do Dio pelo nosso erro semântico
+          return handler.reject(DioException(
+            requestOptions: e.requestOptions,
+            error: customError,
+          ));
         },
       ),
     );

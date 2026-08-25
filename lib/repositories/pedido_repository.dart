@@ -37,7 +37,7 @@ class PedidoRepository {
       }
       throw mapException(e);
     } catch (e) {
-      throw Exception("Erro inesperado: $e");
+      throw mapException(e);
     }
   }
   
@@ -52,7 +52,7 @@ class PedidoRepository {
     } on DioException catch (e) {
       throw mapException(e);
     } catch (e) {
-      throw Exception("Erro inesperado: $e");
+      throw mapException(e);
     }
   }
   Future<Map<String, dynamic>> buscarEstatisticas(String usuarioId) async {

@@ -46,6 +46,7 @@ dependencies:
   local_auth_android: ^1.0.56
   flutter_stripe: ^10.1.1
   qr_flutter: ^4.1.0
+  flutter_google_places_sdk: ^0.3.3
 dev_dependencies:
   sentry_dart_plugin: ^3.3.0
   flutter_test:

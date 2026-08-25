@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nhac/utils/app_exceptions.dart' as app_exc;
 
 class AppException implements Exception {
   final String message;
@@ -32,8 +33,12 @@ class CustomCheckoutException extends AppException {
   }) : super(message);
 }
 
-AppException mapException(Object error) {
+Exception mapException(Object error) {
   if (error is DioException) {
+    if (error.error is app_exc.AppException) {
+      return error.error as app_exc.AppException;
+    }
+
     if (error.response?.data != null && error.response!.data is Map) {
       final data = error.response!.data as Map;
       if (data.containsKey('message')) {

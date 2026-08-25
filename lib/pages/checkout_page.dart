@@ -15,6 +15,7 @@ import 'package:nhac/models/usuario/cupom_model.dart';
 import 'package:nhac/repositories/cupom_repository.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:nhac/globals/exceptions.dart';
+import 'package:nhac/repositories/loja_repository.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -38,15 +39,34 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final TextEditingController _cupomController = TextEditingController();
   bool _validandoCupom = false;
   final CupomRepository _cupomRepository = CupomRepository();
+  double _taxaFrete = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _verificarNumeroEndereco();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _carregarDadosIniciais();
+    });
+  }
+
+  Future<void> _carregarDadosIniciais() async {
+    final cartProvider = context.read<CartProvider>();
+    if (cartProvider.lojaId.isNotEmpty) {
+      try {
+        final loja = await LojaRepository().buscarLoja(cartProvider.lojaId);
+        if (loja != null && mounted) {
+          setState(() {
+            _taxaFrete = loja.dadosOperacionais?.taxaEntregaBase ?? 0.0;
+          });
+        }
+      } catch (e) {
+        debugPrint("Erro ao carregar loja: $e");
+      }
+    }
+    await _verificarNumeroEndereco();
   }
 
   Future<void> _verificarNumeroEndereco() async {
-    await Future.delayed(Duration.zero); 
     if (!mounted) return;
     final enderecoProvider = context.read<EnderecoProvider>();
     final EnderecoModel? enderecoisPadrao = enderecoProvider.enderecos.isEmpty
@@ -223,7 +243,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           );
 
     final subtotal = cartProvider.valorTotal;
-    final frete = 5.0; // TODO(backend): usar loja.dadosOperacionais.taxaEntregaBase
+    final frete = _taxaFrete;
     
     double descontoValue = 0.0;
     if (_cupomAplicado != null) {
@@ -665,14 +685,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _buildPaymentOption(String title, IconData icon) {
     final isSelected = _formaPagamento == title;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _formaPagamento = title;
-          _mostrarCampoTroco = (title == 'Dinheiro');
-          if (!_mostrarCampoTroco) _trocoController.clear();
-        });
-      },
+    return Semantics(
+      button: true,
+      label: 'Forma de pagamento $title. ${isSelected ? "Selecionada" : "Toque para selecionar"}',
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _formaPagamento = title;
+            _mostrarCampoTroco = (title == 'Dinheiro');
+            if (!_mostrarCampoTroco) _trocoController.clear();
+          });
+        },
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 12.h),
         child: Row(
@@ -699,6 +722,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -821,7 +845,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       usuarioId: uid,
       lojaId: cartProvider.lojaId,
       valorTotal: total,
-      taxaFrete: 0, 
+      taxaFrete: _taxaFrete, 
       formaPagamento: _formaPagamento == 'Cartão de crédito' ? 'CARTAO' : _formaPagamento,
       trocoPara: trocoPara,
       cpfPagador: _formaPagamento == 'PIX' ? cpfPagador : null,
@@ -830,6 +854,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
       enderecoEntrega: enderecoisPadrao,
       itens: cartProvider.itens.values.toList(),
     );
+
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final mensageiro = ScaffoldMessenger.of(context);
 
     try {
       showDialog(
@@ -845,8 +872,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final pixCopiaECola = respostaPedido['pixCopiaECola'];
       final qrCodeUrl = respostaPedido['qrCodeUrl'];
 
+      navigator.pop(); // Close loading
+      
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // Close loading
 
       if (_formaPagamento == 'Cartão de crédito' && clientSecret != null && clientSecret.toString().isNotEmpty) {
         try {
@@ -857,11 +885,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           );
           await Stripe.instance.presentPaymentSheet();
+          
+          if (!context.mounted) return;
           _exibirSucessoEVoltar(idGerado.toString(), cartProvider);
         } on StripeException {
           if (!context.mounted) return;
           setState(() => _isSubmitting = false);
-          ScaffoldMessenger.of(context).showSnackBar(
+          mensageiro.showSnackBar(
             const SnackBar(
               content: Text('Pagamento cancelado ou falhou.'),
               backgroundColor: Colors.red,
@@ -884,8 +914,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
 
     } on CustomCheckoutException catch (e) {
+      navigator.pop(); // Close loading
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // Close loading
       setState(() => _isSubmitting = false);
       
       if (e.produtoId != null) {
@@ -918,10 +948,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ),
       );
     } catch (e) {
+      navigator.pop(); // Close loading
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // Close loading
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      mensageiro.showSnackBar(
         SnackBar(
           content: Text(e.toString().replaceAll('Exception: ', '')),
           backgroundColor: Colors.red,

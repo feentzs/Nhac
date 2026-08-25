@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late PageController _pageController;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledDown = false;
+  late CartProvider _cartProvider;
   late final AnimationController _cartBarController;
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
@@ -43,14 +44,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userProvider = context.read<UserProvider>();
-      final cartProvider = context.read<CartProvider>();
+      _cartProvider = context.read<CartProvider>();
       final enderecoProvider = context.read<EnderecoProvider>();
 
       userProvider.carregarDadosUsuario();
-      cartProvider.carregarCarrinhoLocal();
+      _cartProvider.carregarCarrinhoLocal();
       enderecoProvider.buscarEnderecos();
 
-      cartProvider.addListener(_onCartChanged);
+      _cartProvider.addListener(_onCartChanged);
     });
   }
 
@@ -79,9 +80,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    try {
-      context.read<CartProvider>().removeListener(_onCartChanged);
-    } catch (_) {}
+    _cartProvider.removeListener(_onCartChanged);
     _pageController.dispose();
     _scrollController.dispose();
     _cartBarController.dispose();

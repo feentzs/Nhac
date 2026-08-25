@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart';
 import 'package:nhac/utils/endereco_utils.dart';
 
 class AddressPickerSheet extends StatefulWidget {
@@ -56,6 +57,7 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
     });
 
     _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (!mounted) return;
       if (_googleApiKey.isEmpty) {
         debugPrint('🚨 ERRO CRÍTICO: A chave do Google (API Key) está vazia!');
         debugPrint('Verifique se o arquivo .env existe e se está declarado no pubspec.yaml.');
@@ -64,43 +66,23 @@ class _AddressPickerSheetState extends State<AddressPickerSheet> {
       }
 
       try {
-        final response = await _dio.get(
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json',
-          queryParameters: {
-            'input': query,
-            'key': _googleApiKey,
-            'components': 'country:br', 
-            'language': 'pt-BR',
-          },
+        final places = FlutterGooglePlacesSdk(_googleApiKey);
+        final response = await places.findAutocompletePredictions(
+          query,
+          countries: ['br'],
         );
-
-        if (response.statusCode == 200) {
-          final data = response.data;
-          
-          if (data['status'] == 'OK') {
-            setState(() {
-              _sugestoes = List<Map<String, dynamic>>.from(data['predictions'].map((p) => {
-                'description': p['description'],
-                'place_id': p['place_id'],
-                'main_text': p['structured_formatting']?['main_text'] ?? p['description'].toString().split(',').first,
-                'secondary_text': p['structured_formatting']?['secondary_text'] ?? p['description'],
-              }));
-              _isLoadingSearch = false;
-            });
-          } else {
-            debugPrint('⚠️ RECUSA DO GOOGLE: Status = ${data['status']}');
-            if (data.containsKey('error_message')) {
-              debugPrint('Motivo detalhado: ${data['error_message']}');
-            }
-            
-            setState(() {
-              _sugestoes = [];
-              _isLoadingSearch = false;
-            });
-          }
-        }
+        
+        setState(() {
+          _sugestoes = response.predictions.map((p) => {
+            'description': p.fullText,
+            'place_id': p.placeId,
+            'main_text': p.primaryText,
+            'secondary_text': p.secondaryText,
+          }).toList();
+          _isLoadingSearch = false;
+        });
       } catch (e) {
-        debugPrint('⚠️ ERRO DE REQUISIÇÃO (Dio): $e');
+        debugPrint('⚠️ ERRO DE REQUISIÇÃO (Places SDK): $e');
         setState(() {
           _sugestoes = [];
           _isLoadingSearch = false;

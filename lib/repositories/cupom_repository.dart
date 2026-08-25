@@ -1,5 +1,4 @@
 import 'package:nhac/models/usuario/cupom_model.dart';
-import 'package:flutter/foundation.dart';
 
 class CupomRepository {
   // final _dio = ApiClient().dio;
