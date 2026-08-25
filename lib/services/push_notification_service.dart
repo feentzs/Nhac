@@ -34,13 +34,20 @@ class PushNotificationService {
       }
 
       // Envia FCM token ao backend quando o usuário faz login
+      // Cria uma variável para guardar o estado anterior do usuário
+      String? lastUserId = _authService.usuarioId;
       _authService.addListener(() async {
-        if (_authService.usuarioId != null) {
+        final currentUserId = _authService.usuarioId;
+        // Só executa se houver um usuário logado E se ele for diferente do anterior (ou seja, acabou de logar)
+        if (currentUserId != null && currentUserId != lastUserId) {
           final fcmToken = await _fcm.getToken();
           if (fcmToken != null) {
             await _guardarTokenNoBancoDeDados(fcmToken);
           }
         }
+        
+        // Atualiza a referência para a próxima checagem
+        lastUserId = currentUserId;
       });
 
       _fcm.onTokenRefresh.listen((novoToken) {

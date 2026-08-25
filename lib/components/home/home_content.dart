@@ -3,6 +3,7 @@ import 'package:nhac/components/home/home_category_chips.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/models/produto/produtos.dart';
+import 'package:nhac/utils/endereco_utils.dart';
 import 'package:nhac/pages/loja_page.dart';
 import 'package:nhac/repositories/loja_repository.dart';
 import 'package:nhac/repositories/produto_repository.dart';
@@ -111,8 +112,12 @@ class _HomeContentState extends State<HomeContent> {
     if (idsUnicos.isEmpty) return;
 
     final entradas = await Future.wait(idsUnicos.map((id) async {
-      final loja = await _lojaRepository.buscarLoja(id);
-      return MapEntry(id, loja?.isAberto ?? true);
+      try {
+        final loja = await _lojaRepository.buscarLoja(id);
+        return MapEntry(id, loja?.isAberto ?? false);
+      } catch (e) {
+        return MapEntry(id, false);
+      }
     }));
 
     if (mounted) {
@@ -533,7 +538,7 @@ class _HomeContentState extends State<HomeContent> {
               numero: place.subThoroughfare ?? 'S/N',
               bairro: place.subLocality ?? '',
               cidade: place.subAdministrativeArea ?? '',
-              estado: place.administrativeArea ?? '',
+              estado: EnderecoUtils.normalizarEstado(place.administrativeArea),
               cep: place.postalCode ?? '00000-000',
               isPadrao: true,
             );
@@ -864,7 +869,7 @@ class _HomeContentState extends State<HomeContent> {
                         : HomeProductSection(
                             key: const ValueKey('section1_content'),
                             title: 'Temos tudo que você precisa',
-                            onSeeAll: () {},
+                            onSeeAll: () => context.push('/search'),
                             products: _produtosNecessidades,
                             lojaAberta: _lojaAbertaMap,
                           ),
@@ -892,7 +897,7 @@ class _HomeContentState extends State<HomeContent> {
                         : HomeProductSection(
                             key: const ValueKey('section2_content'),
                             title: 'Tudo abaixo de R\$ 20',
-                            onSeeAll: () {},
+                            onSeeAll: () => context.push('/search'),
                             products: _produtosPromocao,
                             lojaAberta: _lojaAbertaMap,
                           ),

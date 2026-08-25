@@ -7,6 +7,7 @@ import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/globals/ui_utils.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
+import 'package:nhac/utils/endereco_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -850,7 +851,7 @@ class _BuscaEnderecoOverlayState extends State<_BuscaEnderecoOverlay> {
               'numero': numero,
               'bairro': bairro,
               'cidade': cidade,
-              'estado': estado,
+              'estado': EnderecoUtils.normalizarEstado(estado),
               'cep': cep,
             });
             context.showInfo(
