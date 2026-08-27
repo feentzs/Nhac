@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:nhac/controllers/payment_provider.dart';
 import 'package:nhac/repositories/loja_repository.dart';
 import 'package:nhac/repositories/produto_repository.dart';
 import 'package:nhac/repositories/pedido_repository.dart';
@@ -95,7 +94,6 @@ class MyApp extends StatelessWidget {
             create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => EnderecoProvider()),
-        ChangeNotifierProvider(create: (_) => PaymentProvider()),
         ChangeNotifierProvider<ConnectivityService>(
             create: (context) => ConnectivityService()),
         Provider<LojaRepository>(create: (_) => LojaRepository()),
