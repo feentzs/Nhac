@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:nhac/services/auth_service.dart';
+import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/globals/ui_utils.dart';
@@ -33,6 +34,16 @@ class _InsiraTelefoneState extends State<InsiraTelefone> {
     filter: {'#': RegExp('[0-9]')},
     type: MaskAutoCompletionType.lazy,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    // Limpar estado de cadastro anterior para evitar que dados "sujos"
+    // (ex: email de uma tentativa anterior) poluam o fluxo de cadastro por SMS.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CadastroController>().limparDados();
+    });
+  }
 
   @override
   void dispose() {

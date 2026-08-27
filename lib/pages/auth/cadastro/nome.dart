@@ -113,25 +113,26 @@ class _NomeState extends State<Nome> {
                         final novoNome = _nomeController.text.trim();
                         cadastroData.setNome(novoNome);
 
-                        if (cadastroData.email.isNotEmpty) {
-                          localContext.push('/cadastro/telefone'); 
+                        if (authService.isAuthenticated) {
+                          // Usuário já autenticado (via SMS) — só atualizar o nome e ir pra home.
+                          // Não chamar /auth/registrar novamente.
+                          try {
+                            await authService.updateUserName(userName: novoNome);
+                            if (localContext.mounted) {
+                              localContext.go('/home-page');
+                            }
+                          } catch (e) {
+                            if (localContext.mounted) {
+                              localContext.showError(e.toString());
+                            }
+                          }
+                        } else if (cadastroData.email.isNotEmpty) {
+                          // Fluxo de cadastro por email — continuar para telefone e senha.
+                          localContext.push('/cadastro/telefone');
                         } else {
-                           try {
-                             if (authService.isAuthenticated) {
-                               await authService.updateUserName(userName: novoNome);
-                               if (localContext.mounted) {
-                                 localContext.go('/home-page');
-                               }
-                             } else {
-                               if (localContext.mounted) {
-                                 localContext.showError('Usuário não autenticado.');
-                               }
-                             }
-                           } catch (e) {
-                             if (localContext.mounted) {
-                               localContext.showError(e.toString());
-                             }
-                           }
+                          if (localContext.mounted) {
+                            localContext.showError('Usuário não autenticado.');
+                          }
                         }
                       }
                     : null,
