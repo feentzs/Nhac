@@ -900,6 +900,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
           return;
         }
       } else if (_formaPagamento == 'PIX') {
+        // Esvaziar carrinho — o pedido já foi criado no backend com sucesso,
+        // independentemente de o PIX ter sido pago ou não.
+        await cartProvider.esvaziarCarrinho();
+        if (!context.mounted) return;
         Navigator.push(context, MaterialPageRoute(
           builder: (context) => QrCodePixPage(
             pixQrCode: qrCodeUrl.toString(),
