@@ -81,7 +81,7 @@ class DadosPessoaisPage extends StatelessWidget {
               NhacMenuTile(
                 titulo: 'Senha', 
                 subtitulo: '**************', 
-                onTap: () {},
+                onTap: () => context.push('/editar-senha'),
               ),
           ],
         ),

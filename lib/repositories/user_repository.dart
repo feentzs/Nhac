@@ -38,17 +38,4 @@ class UserRepository {
       throw mapException(e);
     }
   }
-
-  Future<String> uploadFotoPerfil(String id, String filePath) async {
-    try {
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(filePath, filename: 'perfil.jpg'),
-      });
-      final response = await _dio.post('/usuarios/$id/foto', data: formData);
-      return response.data['imagemUrl'] as String;
-    } catch (e) {
-      debugPrint("Erro ao fazer upload da foto na API: $e");
-      throw mapException(e);
-    }
-  }
 }

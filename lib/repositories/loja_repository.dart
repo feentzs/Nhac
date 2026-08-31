@@ -48,20 +48,7 @@ class LojaRepository {
       throw mapException(e);
     }
   }
-  Future<Map<String, dynamic>> calcularFrete(String lojaId, String enderecoId) async {
-    try {
-      final response = await _dio.post(
-        '/lojas/$lojaId/calcular-frete',
-        data: {'enderecoId': enderecoId},
-      );
-      if (response.statusCode == 200) {
-        return response.data; // { 'valor': 5.50, 'tempoEstimado': '30 - 50 min' }
-      }
-      return {'valor': 0.0, 'tempoEstimado': 'N/A'};
-    } catch (e) {
-      throw mapException(e);
-    }
-  }
+
 
   Future<void> seguirLoja(String usuarioId, String lojaId) async {
     try {

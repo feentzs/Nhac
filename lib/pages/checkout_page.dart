@@ -887,6 +887,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
           await Stripe.instance.presentPaymentSheet();
           
           if (!context.mounted) return;
+
+          // Polling curto: verifica o status real do pedido no backend antes
+          // de exibir sucesso. Isso cobre a janela entre o Stripe confirmar
+          // no client e o webhook processar no backend. Se o polling falhar
+          // ou atingir o limite, exibe sucesso mesmo assim (graceful fallback
+          // — o Stripe já confirmou o pagamento no lado do cliente).
+          final pedidoRepo = PedidoRepository();
+          const statusSucesso = {'PAGO', 'CONFIRMADO', 'APROVADO', 'EM_PREPARO', 'PREPARANDO'};
+          bool statusConfirmado = false;
+
+          for (int i = 0; i < 3; i++) {
+            try {
+              await Future.delayed(const Duration(seconds: 2));
+              if (!context.mounted) return;
+              final pedido = await pedidoRepo.buscarPedidoPorId(idGerado.toString());
+              final status = pedido.status?.toUpperCase() ?? '';
+              if (statusSucesso.contains(status)) {
+                statusConfirmado = true;
+                break;
+              }
+            } catch (_) {
+              // Ignora erros de polling — fallback é exibir sucesso de qualquer forma
+            }
+          }
+
+          if (!context.mounted) return;
+          debugPrint('Cartão: status do pedido confirmado pelo backend = $statusConfirmado');
           _exibirSucessoEVoltar(idGerado.toString(), cartProvider);
         } on StripeException {
           if (!context.mounted) return;
@@ -899,6 +926,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           );
           return;
         }
+
       } else if (_formaPagamento == 'PIX') {
         // Esvaziar carrinho — o pedido já foi criado no backend com sucesso,
         // independentemente de o PIX ter sido pago ou não.

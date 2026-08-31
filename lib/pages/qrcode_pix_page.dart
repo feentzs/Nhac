@@ -1,15 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/services.dart';
 
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
+import 'package:nhac/repositories/pedido_repository.dart';
 
 class QrCodePixPage extends StatefulWidget {
   final String pixQrCode;
   final String? pixCopiaECola;
-  final String paymentId;
+  final String paymentId; // Este é o pedidoId retornado pelo backend
   final double valor;
 
   const QrCodePixPage({
@@ -25,14 +27,228 @@ class QrCodePixPage extends StatefulWidget {
 }
 
 class _QrCodePixPageState extends State<QrCodePixPage> {
+  final PedidoRepository _pedidoRepository = PedidoRepository();
+
+  Timer? _pollingTimer;
+  String _statusPedido = 'AGUARDANDO_PAGAMENTO';
+  bool _pagamentoConfirmado = false;
+  int _tentativas = 0;
+  static const int _maxTentativas = 60; // 60 x 5s = 5 minutos
+  static const Duration _intervaloPolling = Duration(seconds: 5);
+
+  // Status que indicam que o pagamento foi processado com sucesso
+  static const _statusSucesso = {
+    'PAGO',
+    'CONFIRMADO',
+    'APROVADO',
+    'EM_PREPARO',
+    'PREPARANDO',
+    'SAIU_PARA_ENTREGA',
+    'ENTREGUE',
+  };
+
+  // Status que indicam falha/cancelamento
+  static const _statusFalha = {
+    'CANCELADO',
+    'RECUSADO',
+    'EXPIRADO',
+    'FALHOU',
+  };
+
   @override
   void initState() {
     super.initState();
+    _iniciarPolling();
   }
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     super.dispose();
+  }
+
+  void _iniciarPolling() {
+    _pollingTimer = Timer.periodic(_intervaloPolling, (_) => _verificarStatus());
+  }
+
+  Future<void> _verificarStatus() async {
+    if (_pagamentoConfirmado || !mounted) return;
+
+    _tentativas++;
+
+    try {
+      final pedido = await _pedidoRepository.buscarPedidoPorId(widget.paymentId);
+      if (!mounted) return;
+
+      final status = pedido.status?.toUpperCase() ?? '';
+
+      setState(() {
+        _statusPedido = status;
+      });
+
+      if (_statusSucesso.contains(status)) {
+        _pollingTimer?.cancel();
+        setState(() => _pagamentoConfirmado = true);
+
+        // Aguarda 2s para o usuario ver o feedback visual antes de navegar
+        await Future.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
+        _navegarParaHome(sucesso: true);
+      } else if (_statusFalha.contains(status)) {
+        _pollingTimer?.cancel();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Pagamento $status. Entre em contato com o suporte.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Erro ao verificar status do pedido: $e');
+    }
+
+    // Timeout: parar polling apos max tentativas
+    if (_tentativas >= _maxTentativas && !_pagamentoConfirmado) {
+      _pollingTimer?.cancel();
+      if (!mounted) return;
+      setState(() {
+        _statusPedido = 'TIMEOUT';
+      });
+    }
+  }
+
+  void _navegarParaHome({bool sucesso = false}) {
+    if (sucesso) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pagamento PIX confirmado! Seu pedido esta sendo preparado.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+    context.go('/home-page');
+  }
+
+  Widget _buildStatusIndicator() {
+    if (_pagamentoConfirmado) {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: Colors.green.shade300),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade700, size: 24.r),
+            SizedBox(width: 8.w),
+            Text(
+              'Pagamento confirmado!',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_statusPedido == 'TIMEOUT') {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: Colors.orange.shade300),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.timer_off, color: Colors.orange.shade700, size: 24.r),
+                SizedBox(width: 8.w),
+                Text(
+                  'Tempo de verificacao esgotado',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Se voce ja pagou, o pedido sera processado normalmente.',
+              style: TextStyle(fontSize: 12.sp, color: Colors.orange.shade600),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_statusFalha.contains(_statusPedido)) {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: Colors.red.shade300),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade700, size: 24.r),
+            SizedBox(width: 8.w),
+            Text(
+              'Pagamento $_statusPedido',
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Aguardando pagamento — estado padrao com animacao
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFE7E5),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 18.r,
+            height: 18.r,
+            child: const CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF5D201C),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Text(
+            'Aguardando pagamento...',
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF5D201C),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -48,7 +264,7 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
           child: Column(
             children: [
               SizedBox(height: 32.h),
-              // Título
+              // Titulo
               Text(
                 'Escaneie o QR Code',
                 style: TextStyle(
@@ -66,29 +282,36 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 48.h),
+              SizedBox(height: 24.h),
+              // Indicador de status do pagamento
+              _buildStatusIndicator(),
+              SizedBox(height: 24.h),
               // QR Code
               Semantics(
                 label:
                     'QR Code PIX. Valor de R\$ ${widget.valor.toStringAsFixed(2)}',
                 image: true,
-                child: Container(
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: QrImageView(
-                    data: widget.pixQrCode,
-                    version: QrVersions.auto,
-                    size: 250.w,
+                child: AnimatedOpacity(
+                  opacity: _pagamentoConfirmado ? 0.4 : 1.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: Container(
+                    padding: EdgeInsets.all(16.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: QrImageView(
+                      data: widget.pixQrCode,
+                      version: QrVersions.auto,
+                      size: 250.w,
+                    ),
                   ),
                 ),
               ),
@@ -124,14 +347,21 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
                 ),
               ),
               SizedBox(height: 48.h),
-              // Botão de confirmação
-              BotaoLargoNhac(
-                texto: 'Ir para Acompanhamento de Pedido',
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-              ),
+              // Botao principal — muda conforme o status
+              if (_pagamentoConfirmado)
+                BotaoLargoNhac(
+                  texto: 'Voltar ao Inicio',
+                  onPressed: () => _navegarParaHome(sucesso: true),
+                )
+              else
+                BotaoLargoNhac(
+                  texto: _statusPedido == 'TIMEOUT'
+                      ? 'Voltar ao Inicio'
+                      : 'Aguardando pagamento...',
+                  onPressed: _statusPedido == 'TIMEOUT'
+                      ? () => _navegarParaHome()
+                      : null, // Desabilitado enquanto aguarda
+                ),
               SizedBox(height: 16.h),
               OutlinedButton(
                 onPressed: () {
@@ -139,14 +369,14 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
                   Clipboard.setData(ClipboardData(text: textToCopy));
 
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Código PIX copiado!')),
+                    const SnackBar(content: Text('Codigo PIX copiado!')),
                   );
                 },
                 style: OutlinedButton.styleFrom(
                   minimumSize: Size(double.infinity, 50.h),
                 ),
                 child: Text(
-                  'Copiar código PIX',
+                  'Copiar codigo PIX',
                   style: TextStyle(fontSize: 16.sp),
                 ),
               ),
