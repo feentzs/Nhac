@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:nhac/globals/router.dart';
 import 'package:nhac/models/usuario/usuario_model.dart';
 import 'package:nhac/repositories/user_repository.dart';
@@ -23,8 +23,8 @@ class UserProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
 
   
-  bool get isGoogleUser => false;
-  bool get hasPassword => true;
+  bool get isGoogleUser => _authService.isGoogleUser;
+  bool get hasPassword => !isGoogleUser;
 
   Future<void> carregarDadosUsuario() async {
     final usuarioId = _authService.usuarioId;
@@ -54,15 +54,21 @@ class UserProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      // Upload para Firebase Storage (mesmo padrão de editar_foto_page.dart).
+      // O login do app usa JWT próprio da API, mas o Firebase Storage depende
+      // de uma sessão do Firebase Auth para as Security Rules. Login anônimo
+      // resolve sem exigir conta Firebase do utilizador.
       final storage = FirebaseStorage.instanceFor(app: Firebase.app());
 
-      // Ver comentário equivalente em editar_foto_page.dart: o Storage
-      // exige request.auth != null, mas o app não usa mais Firebase Auth
-      // para login. Login anônimo satisfaz a regra sem exigir conta.
       if (FirebaseAuth.instance.currentUser == null) {
         await FirebaseAuth.instance.signInAnonymously();
       }
-      final ref = storage.ref().child('usuarios_fotos').child(usuarioId).child('perfil.jpg');
+
+      final ref = storage
+          .ref()
+          .child('usuarios_fotos')
+          .child(usuarioId)
+          .child('perfil.jpg');
 
       await ref.putFile(
         imagem,
@@ -71,6 +77,7 @@ class UserProvider with ChangeNotifier {
 
       final url = await ref.getDownloadURL();
 
+      // Persiste a URL da imagem no backend via PUT /usuarios/{id}
       await _userRepository.atualizarDadosUsuario(usuarioId, {
         'imagemUrl': url,
       });
@@ -90,3 +97,4 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+

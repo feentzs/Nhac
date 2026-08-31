@@ -23,6 +23,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/services/push_notification_service.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -38,6 +39,9 @@ main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
+
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
+  await Stripe.instance.applySettings();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -59,8 +63,7 @@ main() async {
 
   await SentryFlutter.init(
     (options) {
-      options.dsn =
-          'https://426ab5d997cbcb45965278b6b9cc5a32@o4511393718272000.ingest.us.sentry.io/4511393743896577';
+      options.dsn = dotenv.env['SENTRY_DSN'] ?? '';
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
       // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
@@ -107,6 +110,7 @@ class MyApp extends StatelessWidget {
               splitScreenMode: true,
               builder: (context, child) {
                 return MaterialApp.router(
+                  showSemanticsDebugger: false,
                   debugShowCheckedModeBanner: false,
                   theme: AppState.of(context).theme,
                   routerConfig: appRouter,

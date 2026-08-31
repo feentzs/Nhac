@@ -6,9 +6,11 @@ on:
       - main
       - eu-e-tu
       - context-ia-migration
+      - feature/checkout-stripe-tests-fix
   pull_request:
     branches:
       - main
+      - feature/checkout-stripe-tests-fix
   workflow_dispatch:
 
 concurrency:
@@ -50,6 +52,9 @@ jobs:
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
 
+      - name: Create google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -77,7 +82,8 @@ jobs:
     needs: quality
     if: |
       github.ref_name == 'eu-e-tu' || github.base_ref == 'eu-e-tu' ||
-      github.ref_name == 'context-ia-migration' || github.base_ref == 'context-ia-migration'
+      github.ref_name == 'context-ia-migration' || github.base_ref == 'context-ia-migration' ||
+      github.ref_name == 'feature/checkout-stripe-tests-fix' || github.base_ref == 'feature/checkout-stripe-tests-fix'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -107,6 +113,9 @@ jobs:
 
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Create google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
       - name: Install dependencies
         run: flutter pub get
@@ -158,6 +167,9 @@ jobs:
 
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Create google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
       - name: Install dependencies
         run: flutter pub get

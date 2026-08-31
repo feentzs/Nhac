@@ -58,7 +58,6 @@ class _SearchPageState extends State<SearchPage> {
   _FiltroBusca _filtro = _FiltroBusca.tudo;
   List<String> _historico = [];
   bool _temTexto = false;
-  bool _focusAgendado = false;
 
   @override
   void initState() {
@@ -74,6 +73,10 @@ class _SearchPageState extends State<SearchPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _buscarPorCategoriaInicial(widget.initialCategory!);
       });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) FocusScope.of(context).requestFocus(_searchFocus);
+      });
     }
   }
 
@@ -84,33 +87,7 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // O teclado só é aceito pelo SO depois que a transição de entrada da
-    // rota termina; pedir foco antes disso (ex: com autofocus puro) faz o
-    // teclado ser ignorado silenciosamente e exigir um segundo toque.
-    if (_focusAgendado) return;
-    _focusAgendado = true;
 
-    final route = ModalRoute.of(context);
-    final animation = route?.animation;
-    if (animation == null || animation.isCompleted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _searchFocus.requestFocus();
-      });
-      return;
-    }
-
-    void onStatusChange(AnimationStatus status) {
-      if (status == AnimationStatus.completed) {
-        animation.removeStatusListener(onStatusChange);
-        if (mounted) _searchFocus.requestFocus();
-      }
-    }
-
-    animation.addStatusListener(onStatusChange);
-  }
 
   Future<void> _carregarHistorico() async {
     final historico = await LocalCacheService.carregarHistoricoPesquisa();
@@ -193,12 +170,12 @@ class _SearchPageState extends State<SearchPage> {
     final categoriaParaBuscar = _resolverCategoria(termo);
 
     final resultados = await Future.wait([
-      _produtoRepository.buscarProdutosPorNome(termo),
+      _produtoRepository.buscarProdutosPorNome(termo).catchError((_) => <ProdutosModel>[]),
       if (categoriaParaBuscar != null)
-        _produtoRepository.buscarPorCategoria(categoriaParaBuscar)
+        _produtoRepository.buscarPorCategoria(categoriaParaBuscar).catchError((_) => <ProdutosModel>[])
       else
         Future.value(<ProdutosModel>[]),
-      _lojaRepository.buscarLojasPorNome(termo),
+      _lojaRepository.buscarLojasPorNome(termo).catchError((_) => <LojasModel>[]),
     ]);
 
     final produtosPorNome = resultados[0] as List<ProdutosModel>;

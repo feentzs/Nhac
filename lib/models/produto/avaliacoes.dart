@@ -1,3 +1,5 @@
+import 'package:nhac/utils/safe_parse_helpers.dart';
+
 class AvaliacoesModel{
   final String comentario;
   final String? criadoEm;
@@ -37,7 +39,7 @@ class AvaliacoesModel{
       criadoEm: map['criadoEm']?.toString(),
       id: docId,
       nomeUsuario: map['nomeUsuario'] ?? '',
-      nota: (map['nota'] ?? 0).toDouble(),
+      nota: safeDouble(map['nota']),
       userId: map['userId'] ?? '',
     );
   }

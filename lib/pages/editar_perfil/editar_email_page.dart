@@ -67,15 +67,12 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       final authService = context.read<AuthService>();
       final userProvider = context.read<UserProvider>();
       
-      // 1. Chama a atualização na API
       await authService.updateEmail(novoEmail: _emailController.text.trim());
       
-      // 2. Avisa o Provider para recarregar os dados para a tela de Perfil atualizar
       await userProvider.carregarDadosUsuario();
       
       if (!mounted) return;
       
-      // 3. Volta para a tela anterior com sucesso
       context.showSuccess('E-mail alterado com sucesso!');
       context.pop(); 
       
@@ -83,19 +80,23 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       if (mounted) {
         final mensagemErro = e.toString();
         final lower = mensagemErro.toLowerCase();
-        if (lower.contains('já') ||
+        final ehEmailDuplicado = lower.contains('já') ||
             lower.contains('ja') ||
             lower.contains('uso') ||
             lower.contains('existe') ||
             lower.contains('cadastrado') ||
             lower.contains('duplicate') ||
-            lower.contains('already')) {
+            lower.contains('already');
+
+        if (ehEmailDuplicado) {
           setState(() {
             _erroEmail = 'Este e-mail já está em uso';
             _emailValido = false;
           });
+        } else {
+        
+          context.showError(mensagemErro);
         }
-        context.showError(mensagemErro);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -104,7 +105,6 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos o seu próprio Provider para saber se é usuário do Google
     final isGoogleUser = context.watch<UserProvider>().isGoogleUser;
 
     if (isGoogleUser) {

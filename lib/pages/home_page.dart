@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late PageController _pageController;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledDown = false;
+  late CartProvider _cartProvider;
   late final AnimationController _cartBarController;
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
@@ -43,14 +44,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userProvider = context.read<UserProvider>();
-      final cartProvider = context.read<CartProvider>();
+      _cartProvider = context.read<CartProvider>();
       final enderecoProvider = context.read<EnderecoProvider>();
 
       userProvider.carregarDadosUsuario();
-      cartProvider.carregarCarrinhoLocal();
+      _cartProvider.carregarCarrinhoLocal();
       enderecoProvider.buscarEnderecos();
 
-      cartProvider.addListener(_onCartChanged);
+      _cartProvider.addListener(_onCartChanged);
     });
   }
 
@@ -65,6 +66,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           _cartBarController.forward();
         }
       } else {
+        setState(() {
+          _isScrolledDown = false;
+        });
         if (_cartBarController.status != AnimationStatus.reverse &&
             _cartBarController.value != 0.0) {
           _cartBarController.animateBack(0,
@@ -76,9 +80,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    try {
-      context.read<CartProvider>().removeListener(_onCartChanged);
-    } catch (_) {}
+    _cartProvider.removeListener(_onCartChanged);
     _pageController.dispose();
     _scrollController.dispose();
     _cartBarController.dispose();
@@ -204,6 +206,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),
                     opacity: (_isScrolledDown && _selectedIndex == 0) ? 1.0 : 0.0,
+                    child: Semantics(
+                    button: true,
+                    label: 'Voltar ao topo da página',
                     child: GestureDetector(
                   onTap: (_isScrolledDown && _selectedIndex == 0) ? _scrollToTop : null,
                   child: Container(
@@ -227,6 +232,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                   ),
                     ),
+                  ),
                   ),
                 ),
               ),
@@ -326,13 +332,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: () {
         if (_isScrolledDown) {
-          _scrollToTop();
+          if (_selectedIndex == 0) {
+            _scrollToTop();
+          } else {
+            setState(() {
+              _isScrolledDown = false;
+            });
+          }
         }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
-        height: 75.h,
+        constraints: BoxConstraints(minHeight: 75.h),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(50.r),
@@ -370,15 +382,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ],
               );
             },
-            firstChild: SizedBox(
-              width: MediaQuery.of(context).size.width - 48.w,
-              height: 75.h,
+            firstChild: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: MediaQuery.of(context).size.width - 48.w,
+                minHeight: 75.h,
+              ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 physics: const NeverScrollableScrollPhysics(),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width - 48.w,
-                  height: 75.h,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: MediaQuery.of(context).size.width - 48.w,
+                    minHeight: 75.h,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -401,9 +417,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            secondChild: SizedBox(
-              width: 75.w,
-              height: 75.h,
+            secondChild: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: 75.w,
+                minHeight: 75.h,
+              ),
               child: Center(
                 child: Icon(
                   _getIconForIndex(_selectedIndex),
@@ -422,8 +440,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       {required IconData icon, required String label, required int index}) {
     final isSelected = _selectedIndex == index;
 
-    return GestureDetector(
-      onTap: () {
+    return Semantics(
+      button: true,
+      label: label,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: () {
         final oldIndex = _selectedIndex;
         setState(() {
           _selectedIndex = index;
@@ -508,6 +530,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ],
         ),
       ),
+    ),
     );
   }
 

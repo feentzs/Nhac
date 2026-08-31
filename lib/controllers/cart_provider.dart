@@ -45,8 +45,10 @@ class CartProvider extends ChangeNotifier {
     required String lojaId,    
     required int quantidade,
   }) async {
+    if (quantidade <= 0) throw Exception('Quantidade inválida');
+
     if (_itens.isNotEmpty && _lojaIdAtual.isNotEmpty && _lojaIdAtual != lojaId) {
-      return false;   
+      throw Exception('Você só pode adicionar itens de uma loja por vez. Limpe o carrinho atual.');
     }
 
     if (_itens.containsKey(idProduto)) {
@@ -88,6 +90,14 @@ class CartProvider extends ChangeNotifier {
     if (_itens.isEmpty) _lojaIdAtual = '';   
     _recalcularTotais();
     await _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
+  }
+
+  void marcarItemComoEsgotado(String idProduto) {
+    if (_itens.containsKey(idProduto)) {
+      _itens[idProduto]!.esgotado = true;
+      notifyListeners();
+      _cartRepository.salvarCarrinhoLocal(_itens.values.toList());
+    }
   }
 
   Future<void> esvaziarCarrinho() async {

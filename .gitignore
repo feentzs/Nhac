@@ -3,3 +3,4 @@ build/
 .env
 *.iml
 .idea/
+android/app/google-services.json

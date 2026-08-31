@@ -72,10 +72,59 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   }) async {}
   @override
   Future<void> signOut() async {}
+
   @override
   Future<void> updateEmail({required String novoEmail}) async {}
+
   @override
   Future<void> updateUserName({required String userName}) async {}
+
+  @override
+  Future<void> enviarCodigoSms(String telefone) async {}
+
+  @override
+  String formatarTelefoneE164(String telefoneBR) => telefoneBR;
+
+  @override
+  Future<bool> loginSms(String telefone, String codigo) async => true;
+
+  @override
+  Future<void> updateFcmToken({required String fcmToken}) async {}
+
+  @override
+  Future<bool> checarEmail(String email) async {
+    return false;
+  }
+
+  @override
+  Future<void> alterarSenha(String senhaAtual, String novaSenha) {
+    // TODO: implement alterarSenha
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> esqueciSenha(String telefone) {
+    // TODO: implement esqueciSenha
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> redefinirSenha(String telefone, String codigo, String novaSenha) {
+    // TODO: implement redefinirSenha
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> esqueciSenhaEmail(String email) {
+    // TODO: implement esqueciSenhaEmail
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> redefinirSenhaEmail(String email, String codigo, String novaSenha) {
+    // TODO: implement redefinirSenhaEmail
+    throw UnimplementedError();
+  }
 }
 
 void main() {
@@ -98,11 +147,13 @@ void main() {
   }
 
   group('EditarEmailPage Tests', () {
-    testWidgets('Botão deve iniciar desabilitado quando campo está vazio', (WidgetTester tester) async {
+    testWidgets('Botão deve iniciar desabilitado quando campo está vazio',
+        (WidgetTester tester) async {
       final mockUser = MockUserProvider();
       final mockAuth = MockAuthService();
 
-      await tester.pumpWidget(createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
+      await tester.pumpWidget(
+          createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
       await tester.pumpAndSettle();
 
       final botaoFinder = find.byType(BotaoLargoNhac);
@@ -112,11 +163,14 @@ void main() {
       expect(botao.onPressed, isNull);
     });
 
-    testWidgets('Botão deve ficar bloqueado e exibir erro se digitar o e-mail atual', (WidgetTester tester) async {
+    testWidgets(
+        'Botão deve ficar bloqueado e exibir erro se digitar o e-mail atual',
+        (WidgetTester tester) async {
       final mockUser = MockUserProvider();
       final mockAuth = MockAuthService();
 
-      await tester.pumpWidget(createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
+      await tester.pumpWidget(
+          createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
       await tester.pumpAndSettle();
 
       final inputFinder = find.byType(NhacInputField);
@@ -125,38 +179,44 @@ void main() {
       await tester.enterText(inputFinder, 'atual@nhac.com');
       await tester.pumpAndSettle();
 
-      expect(find.text('Este e-mail já está sendo utilizado pela sua conta'), findsOneWidget);
+      expect(find.text('Este e-mail já está sendo utilizado pela sua conta'),
+          findsOneWidget);
 
       final botao = tester.widget<BotaoLargoNhac>(find.byType(BotaoLargoNhac));
       expect(botao.onPressed, isNull);
     });
 
-    testWidgets('Botão deve ficar habilitado se digitar um novo e-mail válido', (WidgetTester tester) async {
+    testWidgets('Botão deve ficar habilitado se digitar um novo e-mail válido',
+        (WidgetTester tester) async {
       final mockUser = MockUserProvider();
       final mockAuth = MockAuthService();
 
-      await tester.pumpWidget(createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
+      await tester.pumpWidget(
+          createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
       await tester.pumpAndSettle();
 
       final inputFinder = find.byType(NhacInputField);
       await tester.enterText(inputFinder, 'novo@nhac.com');
       await tester.pumpAndSettle();
 
-      expect(find.text('Este e-mail já está sendo utilizado pela sua conta'), findsNothing);
+      expect(find.text('Este e-mail já está sendo utilizado pela sua conta'),
+          findsNothing);
 
       final botao = tester.widget<BotaoLargoNhac>(find.byType(BotaoLargoNhac));
       expect(botao.onPressed, isNotNull);
     });
 
-    testWidgets('Botão deve ficar bloqueado se e-mail for inválido', (WidgetTester tester) async {
+    testWidgets('Botão deve ficar bloqueado se e-mail for inválido',
+        (WidgetTester tester) async {
       final mockUser = MockUserProvider();
       final mockAuth = MockAuthService();
 
-      await tester.pumpWidget(createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
+      await tester.pumpWidget(
+          createWidgetUnderTest(userProvider: mockUser, authService: mockAuth));
       await tester.pumpAndSettle();
 
       final inputFinder = find.byType(NhacInputField);
-      await tester.enterText(inputFinder, 'email_invalido');
+      await tester.enterText(inputFinder, 'emailinvalido');
       await tester.pumpAndSettle();
 
       expect(find.text('E-mail inválido'), findsOneWidget);

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nhac/models/usuario/usuario_model.dart';
 import 'package:nhac/services/api_client.dart';
+import 'package:nhac/globals/exceptions.dart';
 
 class UserRepository {
   final _dio = ApiClient().dio;
@@ -16,7 +17,7 @@ class UserRepository {
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null; 
       debugPrint("Erro ao buscar utilizador na API: ${e.message}");
-      rethrow;
+      throw mapException(e);
     }
   }
 
@@ -25,16 +26,16 @@ class UserRepository {
       await _dio.post('/usuarios', data: usuario.toMap());
     } catch (e) {
       debugPrint("Erro ao salvar utilizador na API: $e");
-      rethrow;
+      throw mapException(e);
     }
   }
 
   Future<void> atualizarDadosUsuario(String id, Map<String, dynamic> dados) async {
     try {
-      await _dio.patch('/usuarios/$id', data: dados);
+      await _dio.put('/usuarios/$id', data: dados);
     } catch (e) {
       debugPrint("Erro ao atualizar utilizador na API: $e");
-      rethrow;
+      throw mapException(e);
     }
   }
 }
