@@ -90,7 +90,11 @@ class _EditarSenhaPageState extends State<EditarSenhaPage> {
         final mensagemErro = e.toString().toLowerCase();
         
         // Tratamento amigavel para o bug de contas SMS (que nao possuem senha setada)
-        if (mensagemErro.contains('bcrypt') || mensagemErro.contains('null') || mensagemErro.contains('senha incorreta') || mensagemErro.contains('400')) {
+        if (mensagemErro.contains('bcrypt') || 
+            mensagemErro.contains('null') || 
+            mensagemErro.contains('senha incorreta') || 
+            mensagemErro.contains('400') ||
+            mensagemErro.contains('unauthorized')) {
           context.showError('Senha atual incorreta ou conta sem senha configurada.');
         } else {
           context.showError(e.toString().replaceAll('Exception: ', ''));

@@ -56,7 +56,9 @@ class ApiClient {
           final defaultMessage = responseData?['message'] ?? 'Erro desconhecido';
 
           // Auth: 401 e 403 (Faz logout e direciona)
-          if ((statusCode == 401 || statusCode == 403) && !e.requestOptions.path.contains('/login')) {
+          if ((statusCode == 401 || statusCode == 403) && 
+              !e.requestOptions.path.contains('/login') && 
+              !e.requestOptions.path.contains('/auth/alterar-senha')) {
              _cachedToken = null;
              await authServiceRoteador.logout(); // Rotina de logout
              if (statusCode == 401) {
@@ -86,6 +88,12 @@ class ApiClient {
               } else {
                 customError = BusinessRuleException(defaultMessage);
               }
+              break;
+            case 401:
+              customError = UnauthorizedException(defaultMessage);
+              break;
+            case 403:
+              customError = ForbiddenException(defaultMessage);
               break;
             case 404:
               customError = NotFoundException(defaultMessage);

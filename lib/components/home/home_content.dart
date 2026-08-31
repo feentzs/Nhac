@@ -121,7 +121,21 @@ class _HomeContentState extends State<HomeContent> {
     }));
 
     if (mounted) {
-      setState(() => _lojaAbertaMap = Map.fromEntries(entradas));
+      setState(() {
+        _lojaAbertaMap = Map.fromEntries(entradas);
+        
+        // Ordena para exibir produtos de lojas abertas primeiro
+        int compareLojas(ProdutosModel a, ProdutosModel b) {
+          final aOpen = _lojaAbertaMap[a.lojaId] ?? false;
+          final bOpen = _lojaAbertaMap[b.lojaId] ?? false;
+          if (aOpen && !bOpen) return -1;
+          if (!aOpen && bOpen) return 1;
+          return 0;
+        }
+        
+        _produtosNecessidades.sort(compareLojas);
+        _produtosPromocao.sort(compareLojas);
+      });
     }
   }
 

@@ -64,9 +64,13 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
 
     try {
       if (widget.metodo == 'email') {
-        await authService.esqueciSenhaEmail(_controller.text.trim());
+        await authService.esqueciSenhaEmail(_controller.text.trim()).timeout(const Duration(seconds: 15), onTimeout: () {
+          throw Exception('Tempo limite excedido. O servidor demorou muito para responder.');
+        });
       } else {
-        await authService.esqueciSenha(_controller.text.trim());
+        await authService.esqueciSenha(_controller.text.trim()).timeout(const Duration(seconds: 15), onTimeout: () {
+          throw Exception('Tempo limite excedido. O servidor demorou muito para responder.');
+        });
       }
 
       if (!mounted) return;
