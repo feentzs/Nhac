@@ -119,6 +119,7 @@ class _NomeState extends State<Nome> {
                           try {
                             await authService.updateUserName(userName: novoNome);
                             if (localContext.mounted) {
+                              localContext.read<UserProvider>().carregarDadosUsuario();
                               localContext.go('/home-page');
                             }
                           } catch (e) {

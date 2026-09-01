@@ -219,7 +219,6 @@ Future<void> updateUserName({required String userName}) async {
     );
     
     ApiClient().atualizarTokenCache(tokenFinal);
-    notifyListeners();
   } catch (e) {
     throw mapException(e);
   }

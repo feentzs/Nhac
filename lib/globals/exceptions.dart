@@ -56,7 +56,14 @@ Exception mapException(Object error) {
       return NetworkException('Sem conexão com a internet.');
     }
     
-    return AppException('Ocorreu um erro no servidor: ${error.response?.statusCode ?? error.message}');
+    if (error.type == DioExceptionType.cancel) {
+      return NetworkException('Tempo esgotado. Tente novamente.');
+    }
+
+    return AppException(
+      'Ocorreu um erro no servidor: ${error.response?.statusCode ?? error.message}',
+      code: error.response?.statusCode?.toString(),
+    );
   }
 
   if (error is FirebaseAuthException) {

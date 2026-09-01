@@ -7,7 +7,7 @@ class LojasModel {
   final String descricao;
   final String imagemUrl;
   
-  final bool isAberto; 
+  final bool _isAbertoFlag; 
 
   final DadosOperacionais? dadosOperacionais;
   final EnderecoLoja? endereco;
@@ -19,11 +19,54 @@ class LojasModel {
     required this.categoria,
     this.descricao = '',
     this.imagemUrl = '',
-    this.isAberto = true,
+    bool isAberto = true,
     this.dadosOperacionais,
     this.endereco,
     this.horarios,
-  });
+  }) : _isAbertoFlag = isAberto;
+
+  bool get isAberto {
+    if (!_isAbertoFlag) return false;
+    if (horarios == null) return true;
+
+    final now = DateTime.now();
+    final weekDay = now.weekday; // 1 = Monday
+    String horarioHoje = 'Fechado';
+    switch (weekDay) {
+      case 1: horarioHoje = horarios!.segunda; break;
+      case 2: horarioHoje = horarios!.terca; break;
+      case 3: horarioHoje = horarios!.quarta; break;
+      case 4: horarioHoje = horarios!.quinta; break;
+      case 5: horarioHoje = horarios!.sexta; break;
+      case 6: horarioHoje = horarios!.sabado; break;
+      case 7: horarioHoje = horarios!.domingo; break;
+    }
+
+    if (horarioHoje.toLowerCase() == 'fechado') return false;
+
+    final parts = horarioHoje.split('-');
+    if (parts.length != 2) return true;
+
+    final startParts = parts[0].trim().split(':');
+    final endParts = parts[1].trim().split(':');
+
+    if (startParts.length != 2 || endParts.length != 2) return true;
+
+    final startHour = int.tryParse(startParts[0]) ?? 0;
+    final startMin = int.tryParse(startParts[1]) ?? 0;
+    final endHour = int.tryParse(endParts[0]) ?? 0;
+    final endMin = int.tryParse(endParts[1]) ?? 0;
+
+    final start = startHour * 60 + startMin;
+    final end = endHour * 60 + endMin;
+    final current = now.hour * 60 + now.minute;
+
+    if (start <= end) {
+      return current >= start && current <= end;
+    } else {
+      return current >= start || current <= end;
+    }
+  }
 
   factory LojasModel.fromMap(Map<String, dynamic> map) {
     return LojasModel(

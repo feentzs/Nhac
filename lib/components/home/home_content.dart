@@ -127,6 +127,11 @@ class _HomeContentState extends State<HomeContent> {
     if (mounted) {
       setState(() {
         _lojaAbertaMap = Map.fromEntries(entradas);
+        
+        _produtosNecessidades.removeWhere((p) {
+          return !(_lojaAbertaMap[p.lojaId] ?? false);
+        });
+
         // Sort products to put open stores first. null (unknown) is treated as closed.
         int compareLojas(ProdutosModel a, ProdutosModel b) {
           final aAberto = _lojaAbertaMap[a.lojaId] ?? false;
@@ -860,34 +865,36 @@ class _HomeContentState extends State<HomeContent> {
                   },
                   child: const HomeCategoryChips(),
                 ),
-                SizedBox(height: 28.h),
-                TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 800),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, 30 * (1 - value)),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 600),
-                    child: _isLoadingProdutosNecessidades
-                        ? _buildSectionSkeleton(
-                            key: const ValueKey('section1_skeleton'))
-                        : HomeProductSection(
-                            key: const ValueKey('section1_content'),
-                            title: 'Temos tudo que você precisa',
-                            onSeeAll: () => context.push('/search'),
-                            products: _produtosNecessidades,
-                            lojaAberta: _lojaAbertaMap,
-                          ),
+                if (_isLoadingProdutosNecessidades || _produtosNecessidades.isNotEmpty) ...[
+                  SizedBox(height: 28.h),
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 800),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(
+                          offset: Offset(0, 30 * (1 - value)),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 600),
+                      child: _isLoadingProdutosNecessidades
+                          ? _buildSectionSkeleton(
+                              key: const ValueKey('section1_skeleton'))
+                          : HomeProductSection(
+                              key: const ValueKey('section1_content'),
+                              title: 'Temos tudo que você precisa',
+                              onSeeAll: () => context.push('/search'),
+                              products: _produtosNecessidades,
+                              lojaAberta: _lojaAbertaMap,
+                            ),
+                    ),
                   ),
-                ),
+                ],
                 SizedBox(height: 28.h),
                 TweenAnimationBuilder<double>(
                   duration: const Duration(milliseconds: 800),

@@ -71,11 +71,12 @@ class DadosPessoaisPage extends StatelessWidget {
                 }
               }
             ),
-            NhacMenuTile(
-              titulo: 'E-mail',
-              subtitulo: usuario.email.isEmpty ? 'Toque para adicionar' : usuario.email,
-              onTap: isGoogleUser ? () async {} : () async => context.push('/editar-email'),
-            ),
+            if (usuario.email.isNotEmpty)
+              NhacMenuTile(
+                titulo: 'E-mail',
+                subtitulo: usuario.email,
+                onTap: isGoogleUser ? () async {} : () async => context.push('/editar-email'),
+              ),
             NhacMenuTile(
               titulo: 'Telefone', 
               subtitulo: usuario.telefone, 

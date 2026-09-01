@@ -8,6 +8,7 @@ import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:nhac/utils/validators.dart';
+import 'package:nhac/globals/exceptions.dart';
 
 class RecuperacaoInputPage extends StatefulWidget {
   final String metodo; // 'email' ou 'sms'
@@ -91,8 +92,14 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
     } catch (e) {
       timeoutTimer.cancel();
       if (!mounted) return;
+      
+      String msg = e.toString().replaceAll('Exception: ', '');
+      if (e is AppException && e.code == '500') {
+        msg = 'Não foi possível enviar o e-mail no momento. Tente novamente mais tarde.';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+        SnackBar(content: Text(msg), backgroundColor: Colors.red),
       );
     } finally {
       timeoutTimer.cancel();
@@ -122,7 +129,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
                       const SetaVoltar(),
                       const SizedBox(height: 24.0),
                       Text(
-                        isEmail ? 'Qual o seu e-mail?' : 'Qual o seu telefone?',
+                        'Qual o seu e-mail?',
                         style: const TextStyle(
                           fontSize: 28.0,
                           color: Color(0xFF5D201C),
@@ -132,9 +139,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
                       ),
                       const SizedBox(height: 8.0),
                       Text(
-                        isEmail
-                            ? 'Enviaremos um código para redefinir sua senha.'
-                            : 'Enviaremos um SMS com um código para redefinir sua senha.',
+                        'Enviaremos um código para redefinir sua senha.',
                         style: const TextStyle(
                           fontSize: 16.0,
                           color: Color(0xFFC9BCBC),
@@ -144,8 +149,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
                       const SizedBox(height: 32.0),
                       TextFormField(
                         controller: _controller,
-                        keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.phone,
-                        inputFormatters: isEmail ? [] : [_telefoneMask],
+                        keyboardType: TextInputType.emailAddress,
                         autofocus: true,
                         style: const TextStyle(
                           fontSize: 18.0,
