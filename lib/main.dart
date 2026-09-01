@@ -49,9 +49,8 @@ main() async {
 
   await FirebaseAppCheck.instance.activate(
     // ignore: deprecated_member_use
-    androidProvider: kDebugMode
-        ? AndroidProvider.debug
-        : AndroidProvider.playIntegrity,
+    androidProvider:
+        kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
   );
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -77,14 +76,12 @@ main() async {
 
 @NowaGenerated({'visibleInNowa': false})
 class MyApp extends StatelessWidget {
-  
   @NowaGenerated({'loader': 'auto-constructor'})
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      
       providers: [
         ChangeNotifierProvider<AppState>(create: (context) => AppState()),
         ChangeNotifierProvider<AuthService>.value(value: authServiceRoteador),
@@ -105,7 +102,7 @@ class MyApp extends StatelessWidget {
           builder: (context, connectivity, child) {
             return ScreenUtilInit(
               designSize:
-                  const Size(390, 844), // Tamanho base do seu design no Figma
+                  const Size(390, 844), 
               minTextAdapt: true,
               splitScreenMode: true,
               builder: (context, child) {
