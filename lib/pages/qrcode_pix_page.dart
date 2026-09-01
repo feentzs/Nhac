@@ -71,10 +71,12 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
     _pollingTimer = Timer.periodic(_intervaloPolling, (_) => _verificarStatus());
   }
 
-  Future<void> _verificarStatus() async {
+  bool _mostrarBotaoVerificarManual = false;
+
+  Future<void> _verificarStatus({bool manual = false}) async {
     if (_pagamentoConfirmado || !mounted) return;
 
-    _tentativas++;
+    if (!manual) _tentativas++;
 
     try {
       final pedido = await _pedidoRepository.buscarPedidoPorId(widget.paymentId);
@@ -83,7 +85,12 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
       final status = pedido.status?.toUpperCase() ?? '';
 
       setState(() {
-        _statusPedido = status;
+        if (!status.startsWith('DESCONHECIDO_')) {
+          _statusPedido = status;
+        }
+        if (_tentativas >= 6) {
+          _mostrarBotaoVerificarManual = true;
+        }
       });
 
       if (_statusSucesso.contains(status)) {
@@ -103,6 +110,14 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
             backgroundColor: Colors.red,
           ),
         );
+      } else if (status != 'AGUARDANDO_PAGAMENTO' && status != 'PENDENTE' && status.isNotEmpty) {
+        _pollingTimer?.cancel();
+        if (mounted) {
+           setState(() {
+             _statusPedido = 'DESCONHECIDO_$status';
+             _mostrarBotaoVerificarManual = true;
+           });
+        }
       }
     } catch (e) {
       debugPrint('Erro ao verificar status do pedido: $e');
@@ -219,35 +234,87 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
       );
     }
 
-    // Aguardando pagamento — estado padrao com animacao
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFE7E5),
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 18.r,
-            height: 18.r,
-            child: const CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Color(0xFF5D201C),
+    if (_statusPedido.startsWith('DESCONHECIDO_')) {
+      final realStatus = _statusPedido.replaceFirst('DESCONHECIDO_', '');
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: Colors.blue.shade300),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 24.r),
+                SizedBox(width: 8.w),
+                Text(
+                  'Status: $realStatus',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ],
             ),
+            SizedBox(height: 8.h),
+            Text(
+              'O status do pedido não foi reconhecido automaticamente. Por favor, acompanhe o andamento na tela de pedidos.',
+              style: TextStyle(fontSize: 12.sp, color: Colors.blue.shade800),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Aguardando pagamento — estado padrao com animacao
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFE7E5),
+            borderRadius: BorderRadius.circular(12.r),
           ),
-          SizedBox(width: 12.w),
-          Text(
-            'Aguardando pagamento...',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF5D201C),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 18.r,
+                height: 18.r,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF5D201C),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Text(
+                'Aguardando pagamento...',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF5D201C),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_mostrarBotaoVerificarManual) ...[
+          SizedBox(height: 16.h),
+          TextButton.icon(
+            onPressed: () => _verificarStatus(manual: true),
+            icon: Icon(Icons.refresh, color: const Color(0xFFFF6961), size: 20.r),
+            label: Text(
+              'Já paguei, verificar pedido',
+              style: TextStyle(color: const Color(0xFFFF6961), fontWeight: FontWeight.bold),
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 

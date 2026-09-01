@@ -122,11 +122,15 @@ class AuthService with ChangeNotifier {
  
   Future<void> signOut() => logout();
 
-  Future<void> esqueciSenha(String telefone) async {
+  Future<void> esqueciSenha(String telefone, {CancelToken? cancelToken}) async {
     try {
-      await _dio.post('/auth/esqueci-senha', data: {
-        'telefone': formatarTelefoneE164(telefone),
-      });
+      await _dio.post(
+        '/auth/esqueci-senha', 
+        data: {
+          'telefone': formatarTelefoneE164(telefone),
+        },
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       throw mapException(e);
     }
@@ -144,11 +148,15 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<void> esqueciSenhaEmail(String email) async {
+  Future<void> esqueciSenhaEmail(String email, {CancelToken? cancelToken}) async {
     try {
-      await _dio.post('/auth/esqueci-senha/email', data: {
-        'email': email,
-      });
+      await _dio.post(
+        '/auth/esqueci-senha/email', 
+        data: {
+          'email': email,
+        },
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       throw mapException(e);
     }

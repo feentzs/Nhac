@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
@@ -62,28 +64,38 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
     final authService = context.read<AuthService>();
     setState(() => _isLoading = true);
 
+    final cancelToken = CancelToken();
+    Timer? timeoutTimer = Timer(const Duration(seconds: 15), () {
+      cancelToken.cancel('Tempo limite excedido. O servidor demorou muito para responder.');
+    });
+
     try {
       if (widget.metodo == 'email') {
-        await authService.esqueciSenhaEmail(_controller.text.trim()).timeout(const Duration(seconds: 15), onTimeout: () {
-          throw Exception('Tempo limite excedido. O servidor demorou muito para responder.');
-        });
+        await authService.esqueciSenhaEmail(_controller.text.trim(), cancelToken: cancelToken);
       } else {
-        await authService.esqueciSenha(_controller.text.trim()).timeout(const Duration(seconds: 15), onTimeout: () {
-          throw Exception('Tempo limite excedido. O servidor demorou muito para responder.');
-        });
+        await authService.esqueciSenha(_controller.text.trim(), cancelToken: cancelToken);
       }
+      timeoutTimer.cancel();
 
       if (!mounted) return;
       context.push('/recuperacao/codigo', extra: {
         'metodo': widget.metodo,
         'contato': _controller.text.trim(),
       });
+    } on DioException catch (e) {
+      timeoutTimer.cancel();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Erro desconhecido'), backgroundColor: Colors.red),
+      );
     } catch (e) {
+      timeoutTimer.cancel();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
       );
     } finally {
+      timeoutTimer.cancel();
       if (mounted) setState(() => _isLoading = false);
     }
   }

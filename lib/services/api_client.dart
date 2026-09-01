@@ -78,6 +78,18 @@ class ApiClient {
             debugPrint('Detalhes do Erro: $responseData');
           }
 
+          // Tratamento de conexão e timeouts
+          if (e.type == DioExceptionType.connectionTimeout || 
+              e.type == DioExceptionType.receiveTimeout || 
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.connectionError ||
+              e.type == DioExceptionType.unknown) {
+             return handler.reject(DioException(
+                requestOptions: e.requestOptions,
+                error: ServerException("Sem conexão com a internet ou servidor indisponível. Verifique sua rede e tente novamente."),
+             ));
+          }
+
           // Tratamento por Status Code
           Exception customError;
           switch (statusCode) {

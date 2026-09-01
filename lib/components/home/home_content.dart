@@ -58,7 +58,7 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-  Map<String, bool> _lojaAbertaMap = {};
+  Map<String, bool?> _lojaAbertaMap = {};
 
   @override
   void initState() {
@@ -94,11 +94,15 @@ class _HomeContentState extends State<HomeContent> {
     ]);
     await _atualizarStatusLojas();
 
-    if (mounted && _isLoading) {
+    if (mounted) {
       _loadingTimer?.cancel();
       setState(() {
-        _isLoading = false;
-        _jaCarregouUmaVez = true;
+        _isLoadingProdutosNecessidades = false;
+        _isLoadingProdutosPromocao = false;
+        if (_isLoading) {
+          _isLoading = false;
+          _jaCarregouUmaVez = true;
+        }
       });
     }
   }
@@ -114,25 +118,24 @@ class _HomeContentState extends State<HomeContent> {
     final entradas = await Future.wait(idsUnicos.map((id) async {
       try {
         final loja = await _lojaRepository.buscarLoja(id);
-        return MapEntry(id, loja?.isAberto ?? false);
+        return MapEntry(id, loja?.isAberto);
       } catch (e) {
-        return MapEntry(id, false);
+        return MapEntry(id, null);
       }
     }));
 
     if (mounted) {
       setState(() {
         _lojaAbertaMap = Map.fromEntries(entradas);
-        
-        // Ordena para exibir produtos de lojas abertas primeiro
+        // Sort products to put open stores first. null (unknown) is treated as open to avoid penalizing them.
         int compareLojas(ProdutosModel a, ProdutosModel b) {
-          final aOpen = _lojaAbertaMap[a.lojaId] ?? false;
-          final bOpen = _lojaAbertaMap[b.lojaId] ?? false;
-          if (aOpen && !bOpen) return -1;
-          if (!aOpen && bOpen) return 1;
+          final aAberto = _lojaAbertaMap[a.lojaId] ?? true;
+          final bAberto = _lojaAbertaMap[b.lojaId] ?? true;
+          if (aAberto && !bAberto) return -1;
+          if (!aAberto && bAberto) return 1;
           return 0;
         }
-        
+
         _produtosNecessidades.sort(compareLojas);
         _produtosPromocao.sort(compareLojas);
       });
@@ -146,12 +149,10 @@ class _HomeContentState extends State<HomeContent> {
         setState(() {
           _produtosNecessidades.clear();
           _produtosNecessidades.addAll(produtos);
-          _isLoadingProdutosNecessidades = false;
         });
       }
     } catch (e) {
       debugPrint("Erro ao buscar necessidades da API: $e");
-      if (mounted) setState(() => _isLoadingProdutosNecessidades = false);
     }
   }
 
@@ -162,12 +163,10 @@ class _HomeContentState extends State<HomeContent> {
         setState(() {
           _produtosPromocao.clear();
           _produtosPromocao.addAll(promocoes);
-          _isLoadingProdutosPromocao = false;
         });
       }
     } catch (e) {
       debugPrint("Erro ao buscar promoções da API: $e");
-      if (mounted) setState(() => _isLoadingProdutosPromocao = false);
     }
   }
 
