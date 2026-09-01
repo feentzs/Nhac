@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class NhacMenuTile extends StatefulWidget {
   final String titulo;
   final String? subtitulo;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   const NhacMenuTile({
     super.key,
@@ -23,7 +23,7 @@ class _NhacMenuTileState extends State<NhacMenuTile> {
   void _handleTap() async {
     if (_isTapped) return;
     setState(() => _isTapped = true);
-    widget.onTap();
+    await widget.onTap();
     await Future.delayed(const Duration(milliseconds: 600));
     if (mounted) {
       setState(() => _isTapped = false);

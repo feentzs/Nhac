@@ -84,7 +84,7 @@ class HomeProductSection extends StatelessWidget {
                     },
                     child: ProductCard(
                         produto: item,
-                        lojaFechada: lojaAberta[item.lojaId] == false,
+                        lojaFechada: (lojaAberta[item.lojaId] ?? false) == false,
                     ),
                   ),
                     Positioned(

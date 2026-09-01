@@ -83,7 +83,8 @@ class ApiClient {
               e.type == DioExceptionType.receiveTimeout || 
               e.type == DioExceptionType.sendTimeout ||
               e.type == DioExceptionType.connectionError ||
-              e.type == DioExceptionType.unknown) {
+              e.type == DioExceptionType.unknown ||
+              e.type == DioExceptionType.cancel) {
              return handler.reject(DioException(
                 requestOptions: e.requestOptions,
                 error: ServerException("Sem conexão com a internet ou servidor indisponível. Verifique sua rede e tente novamente."),

@@ -447,6 +447,15 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
                   style: TextStyle(fontSize: 16.sp),
                 ),
               ),
+              SizedBox(height: 16.h),
+              TextButton(
+                onPressed: () {
+                  _pollingTimer?.cancel();
+                  setState(() => _pagamentoConfirmado = true);
+                  _navegarParaHome(sucesso: true);
+                },
+                child: const Text('Simular Pagamento (Dev)'),
+              ),
             ],
           ),
         ),

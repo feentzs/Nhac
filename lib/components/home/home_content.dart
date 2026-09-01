@@ -127,10 +127,10 @@ class _HomeContentState extends State<HomeContent> {
     if (mounted) {
       setState(() {
         _lojaAbertaMap = Map.fromEntries(entradas);
-        // Sort products to put open stores first. null (unknown) is treated as open to avoid penalizing them.
+        // Sort products to put open stores first. null (unknown) is treated as closed.
         int compareLojas(ProdutosModel a, ProdutosModel b) {
-          final aAberto = _lojaAbertaMap[a.lojaId] ?? true;
-          final bAberto = _lojaAbertaMap[b.lojaId] ?? true;
+          final aAberto = _lojaAbertaMap[a.lojaId] ?? false;
+          final bAberto = _lojaAbertaMap[b.lojaId] ?? false;
           if (aAberto && !bAberto) return -1;
           if (!aAberto && bAberto) return 1;
           return 0;

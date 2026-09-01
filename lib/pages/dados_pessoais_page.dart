@@ -60,28 +60,32 @@ class DadosPessoaisPage extends StatelessWidget {
             NhacMenuTile(
               titulo: 'Foto de Perfil',
               subtitulo: (usuario.imagemUrl?.isNotEmpty ?? false) ? 'Alterar foto' : 'Adicionar foto',
-              onTap: () => context.push('/editar-foto'),
+              onTap: () async => context.push('/editar-foto'),
             ),
             NhacMenuTile(
               titulo: 'Nome', 
               subtitulo: usuario.nome, 
-              onTap: () => context.push('/editar-nome-preferencia')
+              onTap: () async {
+                if (GoRouterState.of(context).matchedLocation != '/editar-nome-preferencia') {
+                  await context.push('/editar-nome-preferencia');
+                }
+              }
             ),
             NhacMenuTile(
               titulo: 'E-mail',
               subtitulo: usuario.email.isEmpty ? 'Toque para adicionar' : usuario.email,
-              onTap: isGoogleUser ? () {} : () => context.push('/editar-email'),
+              onTap: isGoogleUser ? () async {} : () async => context.push('/editar-email'),
             ),
             NhacMenuTile(
               titulo: 'Telefone', 
               subtitulo: usuario.telefone, 
-              onTap: () {},
+              onTap: () async {},
             ),
             if (hasPassword)
               NhacMenuTile(
                 titulo: 'Senha', 
                 subtitulo: '**************', 
-                onTap: () => context.push('/editar-senha'),
+                onTap: () async => context.push('/editar-senha'),
               ),
           ],
         ),
