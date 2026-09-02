@@ -29,7 +29,7 @@ dependencies:
   local_auth: ^2.3.0
   image_picker: ^1.1.2
   firebase_storage: ^13.3.0
-  connectivity_plus: ^7.1.1
+  connectivity_plus: ^6.1.0
   flutter_dotenv: ^6.0.1
   cached_network_image: ^3.4.1
   pay: ^3.3.0
