@@ -1,11 +1,15 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:nhac/utils/validators.dart';
+import 'package:nhac/globals/exceptions.dart';
 
 class RecuperacaoInputPage extends StatefulWidget {
   final String metodo; // 'email' ou 'sms'
@@ -21,6 +25,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
   bool _valido = false;
   String? _erro;
   bool _isLoading = false;
+  // ignore: unused_field
   final _telefoneMask = MaskTextInputFormatter(
     mask: '(##) #####-####',
     filter: {"#": RegExp(r'[0-9]')},
@@ -29,6 +34,15 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.metodo == 'email') {
+      final cadastroData = context.read<CadastroController>();
+      if (cadastroData.email.isNotEmpty) {
+        _controller.text = cadastroData.email;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _verificarInput();
+        });
+      }
+    }
     _controller.addListener(_verificarInput);
   }
 
@@ -62,28 +76,44 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
     final authService = context.read<AuthService>();
     setState(() => _isLoading = true);
 
+    final cancelToken = CancelToken();
+    Timer? timeoutTimer = Timer(const Duration(seconds: 15), () {
+      cancelToken.cancel('Tempo limite excedido. O servidor demorou muito para responder.');
+    });
+
     try {
       if (widget.metodo == 'email') {
-        await authService.esqueciSenhaEmail(_controller.text.trim()).timeout(const Duration(seconds: 15), onTimeout: () {
-          throw Exception('Tempo limite excedido. O servidor demorou muito para responder.');
-        });
+        await authService.esqueciSenhaEmail(_controller.text.trim(), cancelToken: cancelToken);
       } else {
-        await authService.esqueciSenha(_controller.text.trim()).timeout(const Duration(seconds: 15), onTimeout: () {
-          throw Exception('Tempo limite excedido. O servidor demorou muito para responder.');
-        });
+        await authService.esqueciSenha(_controller.text.trim(), cancelToken: cancelToken);
       }
+      timeoutTimer.cancel();
 
       if (!mounted) return;
       context.push('/recuperacao/codigo', extra: {
         'metodo': widget.metodo,
         'contato': _controller.text.trim(),
       });
-    } catch (e) {
+    } on DioException catch (e) {
+      timeoutTimer.cancel();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+        SnackBar(content: Text(e.message ?? 'Erro desconhecido'), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      timeoutTimer.cancel();
+      if (!mounted) return;
+      
+      String msg = e.toString().replaceAll('Exception: ', '');
+      if (e is AppException && e.code == '500') {
+        msg = 'Não foi possível enviar o e-mail no momento. Tente novamente mais tarde.';
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red),
       );
     } finally {
+      timeoutTimer.cancel();
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -110,7 +140,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
                       const SetaVoltar(),
                       const SizedBox(height: 24.0),
                       Text(
-                        isEmail ? 'Qual o seu e-mail?' : 'Qual o seu telefone?',
+                        'Qual o seu e-mail?',
                         style: const TextStyle(
                           fontSize: 28.0,
                           color: Color(0xFF5D201C),
@@ -120,9 +150,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
                       ),
                       const SizedBox(height: 8.0),
                       Text(
-                        isEmail
-                            ? 'Enviaremos um código para redefinir sua senha.'
-                            : 'Enviaremos um SMS com um código para redefinir sua senha.',
+                        'Enviaremos um código para redefinir sua senha.',
                         style: const TextStyle(
                           fontSize: 16.0,
                           color: Color(0xFFC9BCBC),
@@ -132,8 +160,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
                       const SizedBox(height: 32.0),
                       TextFormField(
                         controller: _controller,
-                        keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.phone,
-                        inputFormatters: isEmail ? [] : [_telefoneMask],
+                        keyboardType: TextInputType.emailAddress,
                         autofocus: true,
                         style: const TextStyle(
                           fontSize: 18.0,

@@ -17,4 +17,5 @@ class AppConstants {
   static const String secureKeyUsuarioId = 'secure_usuario_id';
   static const String secureKeyNomeUsuario = 'secure_nome_usuario';
   static const String secureKeyLoginGoogle = 'secure_login_google';
+  static const String secureKeyLoginTelefone = 'secure_login_telefone';
 }

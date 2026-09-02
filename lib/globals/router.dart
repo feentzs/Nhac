@@ -6,6 +6,7 @@ import 'package:nhac/pages/auth/email_cliente.dart';
 import 'package:nhac/pages/auth/insira_telefone.dart';
 import 'package:nhac/pages/carrinho_page.dart';
 import 'package:nhac/pages/checkout_page.dart';
+import 'package:nhac/pages/rastreio_pedido_page.dart';
 import 'package:nhac/pages/splash_screen.dart';
 import 'package:nhac/pages/bem_vindo_motoca.dart';
 import 'package:nhac/pages/auth/verificacao_numero.dart';
@@ -341,6 +342,16 @@ final GoRouter appRouter = GoRouter(
           contato: data['contato'] ?? '',
           codigo: data['codigo'] ?? '',
         ),
+      );
+    },
+  ),
+  GoRoute(
+    path: '/rastreio',
+    pageBuilder: (context, state) {
+      final pedidoId = state.uri.queryParameters['pedidoId'] ?? '';
+      return _buildSlideRightToLeftPage(
+        key: state.pageKey,
+        child: RastreioPedidoPage(pedidoId: pedidoId),
       );
     },
   ),

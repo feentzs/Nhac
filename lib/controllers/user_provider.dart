@@ -24,7 +24,8 @@ class UserProvider with ChangeNotifier {
 
   
   bool get isGoogleUser => _authService.isGoogleUser;
-  bool get hasPassword => !isGoogleUser;
+  bool get isPhoneUser => _authService.isPhoneUser;
+  bool get hasPassword => _authService.hasPassword;
 
   Future<void> carregarDadosUsuario() async {
     final usuarioId = _authService.usuarioId;

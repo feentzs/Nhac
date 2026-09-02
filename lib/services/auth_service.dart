@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/services/api_client.dart';
@@ -13,6 +14,7 @@ class AuthService with ChangeNotifier {
   String? _nome;
   bool _carregado = false; 
   bool _isGoogleUser = false;
+  bool _isPhoneUser = false;
 
   bool get isAuthenticated => _usuarioId != null;
   bool get carregado => _carregado;
@@ -27,6 +29,7 @@ class AuthService with ChangeNotifier {
     _usuarioId = await _sessionStorage.obterUsuarioId();
     _nome = await _sessionStorage.obterNome();
     _isGoogleUser = await _sessionStorage.obterLoginGoogle();
+    _isPhoneUser = await _sessionStorage.obterLoginTelefone();
     _carregado = true;
     notifyListeners();
   }
@@ -90,23 +93,25 @@ class AuthService with ChangeNotifier {
         'telefone': formatarTelefoneE164(telefone),
         'codigo': codigo,
       });
-      await _salvarSessaoDaResposta(response.data);
+      await _salvarSessaoDaResposta(response.data, viaTelefone: true);
       return response.data['isNovoUsuario'] == true;
     } catch (e) {
       throw mapException(e);
     }
   }
 
-  Future<void> _salvarSessaoDaResposta(Map<String, dynamic> data, {bool viaGoogle = false}) async {
+  Future<void> _salvarSessaoDaResposta(Map<String, dynamic> data, {bool viaGoogle = false, bool viaTelefone = false}) async {
     final token = data['token'] as String;
     final usuarioId = data['usuarioId'] as String;
     final nome = data['nome'] as String;
     await _sessionStorage.salvarSessao(token: token, usuarioId: usuarioId, nome: nome);
     ApiClient().atualizarTokenCache(token);
     await _sessionStorage.salvarLoginGoogle(viaGoogle);
+    await _sessionStorage.salvarLoginTelefone(viaTelefone);
     _usuarioId = usuarioId;
     _nome = nome;
     _isGoogleUser = viaGoogle;
+    _isPhoneUser = viaTelefone;
     notifyListeners();
   }
 
@@ -116,17 +121,22 @@ class AuthService with ChangeNotifier {
     _usuarioId = null;
     _nome = null;
     _isGoogleUser = false;
+    _isPhoneUser = false;
     notifyListeners();
   }
 
  
   Future<void> signOut() => logout();
 
-  Future<void> esqueciSenha(String telefone) async {
+  Future<void> esqueciSenha(String telefone, {CancelToken? cancelToken}) async {
     try {
-      await _dio.post('/auth/esqueci-senha', data: {
-        'telefone': formatarTelefoneE164(telefone),
-      });
+      await _dio.post(
+        '/auth/esqueci-senha', 
+        data: {
+          'telefone': formatarTelefoneE164(telefone),
+        },
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       throw mapException(e);
     }
@@ -144,11 +154,15 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<void> esqueciSenhaEmail(String email) async {
+  Future<void> esqueciSenhaEmail(String email, {CancelToken? cancelToken}) async {
     try {
-      await _dio.post('/auth/esqueci-senha/email', data: {
-        'email': email,
-      });
+      await _dio.post(
+        '/auth/esqueci-senha/email', 
+        data: {
+          'email': email,
+        },
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       throw mapException(e);
     }
@@ -211,7 +225,6 @@ Future<void> updateUserName({required String userName}) async {
     );
     
     ApiClient().atualizarTokenCache(tokenFinal);
-    notifyListeners();
   } catch (e) {
     throw mapException(e);
   }
@@ -298,5 +311,6 @@ Future<void> updateUserName({required String userName}) async {
 
   
   bool get isGoogleUser => _isGoogleUser;
-  bool get hasPassword => true;
+  bool get isPhoneUser => _isPhoneUser;
+  bool get hasPassword => !_isGoogleUser && !_isPhoneUser;
 }

@@ -46,10 +46,23 @@ class SessionStorageService {
     return valor == 'true';
   }
 
+  Future<void> salvarLoginTelefone(bool viaTelefone) async {
+    await _storage.write(
+      key: AppConstants.secureKeyLoginTelefone,
+      value: viaTelefone.toString(),
+    );
+  }
+
+  Future<bool> obterLoginTelefone() async {
+    final valor = await _storage.read(key: AppConstants.secureKeyLoginTelefone);
+    return valor == 'true';
+  }
+
   Future<void> limparSessao() async {
     await _storage.delete(key: AppConstants.secureKeyToken);
     await _storage.delete(key: AppConstants.secureKeyUsuarioId);
     await _storage.delete(key: AppConstants.secureKeyNomeUsuario);
     await _storage.delete(key: AppConstants.secureKeyLoginGoogle);
+    await _storage.delete(key: AppConstants.secureKeyLoginTelefone);
   }
 }

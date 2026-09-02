@@ -58,7 +58,7 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-  Map<String, bool> _lojaAbertaMap = {};
+  Map<String, bool?> _lojaAbertaMap = {};
 
   @override
   void initState() {
@@ -94,11 +94,15 @@ class _HomeContentState extends State<HomeContent> {
     ]);
     await _atualizarStatusLojas();
 
-    if (mounted && _isLoading) {
+    if (mounted) {
       _loadingTimer?.cancel();
       setState(() {
-        _isLoading = false;
-        _jaCarregouUmaVez = true;
+        _isLoadingProdutosNecessidades = false;
+        _isLoadingProdutosPromocao = false;
+        if (_isLoading) {
+          _isLoading = false;
+          _jaCarregouUmaVez = true;
+        }
       });
     }
   }
@@ -114,9 +118,9 @@ class _HomeContentState extends State<HomeContent> {
     final entradas = await Future.wait(idsUnicos.map((id) async {
       try {
         final loja = await _lojaRepository.buscarLoja(id);
-        return MapEntry(id, loja?.isAberto ?? false);
+        return MapEntry(id, loja?.isAberto);
       } catch (e) {
-        return MapEntry(id, false);
+        return MapEntry(id, null);
       }
     }));
 
@@ -124,15 +128,30 @@ class _HomeContentState extends State<HomeContent> {
       setState(() {
         _lojaAbertaMap = Map.fromEntries(entradas);
         
-        // Ordena para exibir produtos de lojas abertas primeiro
+        _produtosNecessidades.removeWhere((p) {
+          return !(_lojaAbertaMap[p.lojaId] ?? false);
+        });
+        
+        _produtosPromocao.removeWhere((p) {
+          return !(_lojaAbertaMap[p.lojaId] ?? false);
+        });
+
+        _produtosNecessidades.shuffle();
+        _produtosPromocao.shuffle();
+
+        // Limit the number of products to 10 to not overflow the UI and look nice
+        if (_produtosNecessidades.length > 10) _produtosNecessidades.removeRange(10, _produtosNecessidades.length);
+        if (_produtosPromocao.length > 10) _produtosPromocao.removeRange(10, _produtosPromocao.length);
+
+        // Sort products to put open stores first.
         int compareLojas(ProdutosModel a, ProdutosModel b) {
-          final aOpen = _lojaAbertaMap[a.lojaId] ?? false;
-          final bOpen = _lojaAbertaMap[b.lojaId] ?? false;
-          if (aOpen && !bOpen) return -1;
-          if (!aOpen && bOpen) return 1;
+          final aAberto = _lojaAbertaMap[a.lojaId] ?? false;
+          final bAberto = _lojaAbertaMap[b.lojaId] ?? false;
+          if (aAberto && !bAberto) return -1;
+          if (!aAberto && bAberto) return 1;
           return 0;
         }
-        
+
         _produtosNecessidades.sort(compareLojas);
         _produtosPromocao.sort(compareLojas);
       });
@@ -146,12 +165,10 @@ class _HomeContentState extends State<HomeContent> {
         setState(() {
           _produtosNecessidades.clear();
           _produtosNecessidades.addAll(produtos);
-          _isLoadingProdutosNecessidades = false;
         });
       }
     } catch (e) {
       debugPrint("Erro ao buscar necessidades da API: $e");
-      if (mounted) setState(() => _isLoadingProdutosNecessidades = false);
     }
   }
 
@@ -162,12 +179,10 @@ class _HomeContentState extends State<HomeContent> {
         setState(() {
           _produtosPromocao.clear();
           _produtosPromocao.addAll(promocoes);
-          _isLoadingProdutosPromocao = false;
         });
       }
     } catch (e) {
       debugPrint("Erro ao buscar promoções da API: $e");
-      if (mounted) setState(() => _isLoadingProdutosPromocao = false);
     }
   }
 
@@ -418,7 +433,7 @@ class _HomeContentState extends State<HomeContent> {
                                             color: Colors.amber, size: 16.r),
                                         SizedBox(width: 4.w),
                                         Text(
-                                          loja.dadosOperacionais!.avaliacaoMedia
+                                          (loja.dadosOperacionais?.avaliacaoMedia ?? 0.0)
                                               .toStringAsFixed(1),
                                           style: TextStyle(
                                             color: Colors.amber,
@@ -918,6 +933,7 @@ class _HomeContentState extends State<HomeContent> {
                   ),
                 ),
                 SizedBox(height: 28.h),
+
                 TweenAnimationBuilder<double>(
                   duration: const Duration(milliseconds: 800),
                   tween: Tween(begin: 0.0, end: 1.0),

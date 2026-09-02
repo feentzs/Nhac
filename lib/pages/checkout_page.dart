@@ -1015,7 +1015,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             onPressed: () {
               cartProvider.esvaziarCarrinho();
               Navigator.of(dialogContext).pop();
-              if (context.mounted) context.go('/home-page');
+              if (context.mounted) context.go('/rastreio?pedidoId=$idGerado');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFE645C),
