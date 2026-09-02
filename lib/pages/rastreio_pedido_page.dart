@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -6,8 +7,9 @@ import 'package:nhac/models/loja/lojas.dart';
 import 'package:nhac/repositories/pedido_repository.dart';
 import 'package:nhac/repositories/loja_repository.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:go_router/go_router.dart';
 
 class RastreioPedidoPage extends StatefulWidget {
   final String pedidoId;
@@ -26,14 +28,15 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
   LojasModel? _loja;
   bool _isLoading = true;
   String _erro = '';
-  
-  final NumberFormat currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+
+  final NumberFormat currencyFormat =
+      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   GoogleMapController? _mapController;
 
   // Localizações fixas (mock) para o mapa se não tivermos a localização real.
   // Em produção, isso viria da geocodificação do endereço do cliente e do restaurante.
-  final LatLng _lojaLocation = const LatLng(-23.550520, -46.633308); 
-  final LatLng _clienteLocation = const LatLng(-23.558520, -46.640308); 
+  final LatLng _lojaLocation = const LatLng(-23.550520, -46.633308);
+  LatLng _clienteLocation = const LatLng(-23.558520, -46.640308);
 
   @override
   void initState() {
@@ -53,6 +56,13 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
         setState(() {
           _pedido = pedido;
           _loja = loja;
+        });
+      }
+
+      await _atualizarCoordenadasCliente();
+
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -66,23 +76,118 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
     }
   }
 
-  Future<void> _ligarParaRestaurante(String? telefone) async {
-    if (telefone == null || telefone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Telefone indisponível para este restaurante.')),
-      );
-      return;
-    }
-    
-    final uri = Uri.parse('tel:$telefone');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível realizar a chamada.')),
-        );
+  Future<void> _atualizarCoordenadasCliente() async {
+    final endereco = _pedido?.enderecoEntrega;
+    if (endereco == null) return;
+
+    final enderecoCompleto = [
+      endereco.rua,
+      endereco.numero,
+      endereco.bairro,
+      endereco.cidade,
+      endereco.estado,
+      endereco.cep,
+    ].where((valor) => valor.trim().isNotEmpty).join(', ');
+
+    if (enderecoCompleto.trim().isEmpty) return;
+
+    try {
+      final locations = await locationFromAddress(enderecoCompleto);
+      if (locations.isNotEmpty && mounted) {
+        final localizacao = locations.first;
+        setState(() {
+          _clienteLocation =
+              LatLng(localizacao.latitude, localizacao.longitude);
+        });
       }
+    } catch (_) {
+      // Fallback para manter a localização mockada se o geocoding falhar.
+    }
+  }
+
+  Future<void> _abrirMensagemRestaurante() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text(
+              'Canal de mensagem indisponível para esta loja no momento.')),
+    );
+  }
+
+  double _calcularDistanciaKm() {
+    const raioTerra = 6371.0;
+    final lat1 = _lojaLocation.latitude * (math.pi / 180);
+    final lat2 = _clienteLocation.latitude * (math.pi / 180);
+    final dLat =
+        (_clienteLocation.latitude - _lojaLocation.latitude) * (math.pi / 180);
+    final dLng = (_clienteLocation.longitude - _lojaLocation.longitude) *
+        (math.pi / 180);
+
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return raioTerra * c;
+  }
+
+  int _calcularTempoEstimadoMinutos() {
+    final distanciaKm = _calcularDistanciaKm();
+    final tempoBaseLoja = _loja?.dadosOperacionais?.tempoEntregaMax ?? 45;
+    final minutosPorKm = (distanciaKm * 6).round();
+    final status = (_pedido?.status ?? '').toUpperCase();
+
+    switch (status) {
+      case 'AGUARDANDO_PAGAMENTO':
+      case 'PENDENTE':
+        return math.max(25, tempoBaseLoja + 10);
+      case 'PAGO':
+      case 'CONFIRMADO':
+      case 'APROVADO':
+        return math.max(20, (tempoBaseLoja * 0.7 + minutosPorKm).round());
+      case 'EM_PREPARO':
+      case 'PREPARANDO':
+        return math.max(15, (tempoBaseLoja * 0.5 + minutosPorKm).round());
+      case 'SAIU_PARA_ENTREGA':
+        return math.max(10, minutosPorKm + 5);
+      case 'ENTREGUE':
+        return 0;
+      default:
+        return math.max(20, tempoBaseLoja + minutosPorKm);
+    }
+  }
+
+  String _statusPedidoTexto() {
+    final status = (_pedido?.status ?? '').toUpperCase();
+
+    switch (status) {
+      case 'AGUARDANDO_PAGAMENTO':
+        return 'Aguardando pagamento';
+      case 'PENDENTE':
+        return 'Pedido pendente';
+      case 'PAGO':
+      case 'CONFIRMADO':
+      case 'APROVADO':
+        return 'Pagamento confirmado';
+      case 'EM_PREPARO':
+      case 'PREPARANDO':
+        return 'Em preparo';
+      case 'SAIU_PARA_ENTREGA':
+        return 'Saiu para entrega';
+      case 'ENTREGUE':
+        return 'Entregue';
+      case 'CANCELADO':
+        return 'Pedido cancelado';
+      case 'RECUSADO':
+      case 'EXPIRADO':
+        return 'Pagamento falhou';
+      default:
+        if (status.isEmpty) return 'Pedido em andamento';
+        return status.replaceAll('_', ' ').replaceAllMapped(
+              RegExp(r'\b\w'),
+              (match) => match.group(0)!.toUpperCase(),
+            );
     }
   }
 
@@ -119,11 +224,16 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
     }
 
     // Calcula tempo de preparo estimado
-    final dataPedido = _pedido!.criadoEm != null ? DateTime.tryParse(_pedido!.criadoEm!) : DateTime.now();
-    final previsao = dataPedido != null ? dataPedido.add(Duration(minutes: _loja!.dadosOperacionais?.tempoEntregaMax ?? 45)) : DateTime.now();
+    final distanciaKm = _calcularDistanciaKm();
+    final tempoEstimadoMin = _calcularTempoEstimadoMinutos();
+    final previsao = DateTime.now().add(Duration(minutes: tempoEstimadoMin));
     final horaPrevisao = DateFormat('HH:mm').format(previsao);
+    final tempoExibicao = tempoEstimadoMin > 0 ? '$tempoEstimadoMin min total' : 'Entregue';
+    final distanciaTexto = '${distanciaKm.toStringAsFixed(1)} km';
+    final tempoEstimadoTexto = '$tempoEstimadoMin min';
     
-    int quantidadeItens = _pedido!.itens.fold(0, (sum, item) => sum + item.quantidade);
+    int quantidadeItens =
+        _pedido!.itens.fold(0, (sum, item) => sum + item.quantidade);
 
     return Scaffold(
       body: Stack(
@@ -142,12 +252,20 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                   CameraUpdate.newLatLngBounds(
                     LatLngBounds(
                       southwest: LatLng(
-                        _lojaLocation.latitude < _clienteLocation.latitude ? _lojaLocation.latitude : _clienteLocation.latitude,
-                        _lojaLocation.longitude < _clienteLocation.longitude ? _lojaLocation.longitude : _clienteLocation.longitude,
+                        _lojaLocation.latitude < _clienteLocation.latitude
+                            ? _lojaLocation.latitude
+                            : _clienteLocation.latitude,
+                        _lojaLocation.longitude < _clienteLocation.longitude
+                            ? _lojaLocation.longitude
+                            : _clienteLocation.longitude,
                       ),
                       northeast: LatLng(
-                        _lojaLocation.latitude > _clienteLocation.latitude ? _lojaLocation.latitude : _clienteLocation.latitude,
-                        _lojaLocation.longitude > _clienteLocation.longitude ? _lojaLocation.longitude : _clienteLocation.longitude,
+                        _lojaLocation.latitude > _clienteLocation.latitude
+                            ? _lojaLocation.latitude
+                            : _clienteLocation.latitude,
+                        _lojaLocation.longitude > _clienteLocation.longitude
+                            ? _lojaLocation.longitude
+                            : _clienteLocation.longitude,
                       ),
                     ),
                     50.0, // padding
@@ -159,21 +277,27 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
               Marker(
                 markerId: const MarkerId('loja'),
                 position: _lojaLocation,
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueRed),
                 infoWindow: InfoWindow(title: _loja!.nome),
               ),
               Marker(
                 markerId: const MarkerId('cliente'),
                 position: _clienteLocation,
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-                infoWindow: const InfoWindow(title: 'Você'),
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueBlue),
+                infoWindow: InfoWindow(
+                  title: 'Endereço do cliente',
+                  snippet:
+                      '${_pedido!.enderecoEntrega.rua}, ${_pedido!.enderecoEntrega.numero}',
+                ),
               ),
             },
             polylines: {
               Polyline(
                 polylineId: const PolylineId('rota'),
                 points: [_lojaLocation, _clienteLocation],
-                color: Colors.red.withOpacity(0.5),
+                color: Colors.red.withValues(alpha: 0.5),
                 width: 4,
                 patterns: [PatternItem.dash(20), PatternItem.gap(10)],
               ),
@@ -181,13 +305,19 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
           ),
-          
+
           // Botão de voltar
           Positioned(
             top: MediaQuery.of(context).padding.top + 16.h,
             left: 16.w,
             child: InkWell(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () {
+                if (GoRouter.of(context).canPop()) {
+                  GoRouter.of(context).pop();
+                } else {
+                  GoRouter.of(context).go('/home-page');
+                }
+              },
               child: Container(
                 padding: EdgeInsets.all(8.w),
                 decoration: const BoxDecoration(
@@ -197,7 +327,8 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                     BoxShadow(color: Colors.black12, blurRadius: 4),
                   ],
                 ),
-                child: Icon(Icons.arrow_back_ios_new, size: 20.sp, color: Colors.black),
+                child: Icon(Icons.arrow_back_ios_new,
+                    size: 20.sp, color: Colors.black),
               ),
             ),
           ),
@@ -221,11 +352,11 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.turn_left, color: Colors.red, size: 20.sp),
                       SizedBox(width: 8.w),
                       Text(
-                        '1.5 Km', // Valor mockado. Substituir pelo cálculo real no futuro.
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                        _statusPedidoTexto(),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16.sp),
                       ),
                     ],
                   ),
@@ -251,7 +382,10 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
                 boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2)),
+                  BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: Offset(0, -2)),
                 ],
               ),
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
@@ -278,12 +412,14 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                         children: [
                           Text(
                             'Previsão até $horaPrevisao',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.sp),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 20.sp),
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            '$quantidadeItens Itens • ${_loja!.dadosOperacionais?.tempoEntregaMax ?? 45} Min total',
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp),
+                            '$quantidadeItens Itens • $tempoExibicao',
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 14.sp),
                           ),
                         ],
                       ),
@@ -292,12 +428,16 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                         children: [
                           Text(
                             currencyFormat.format(_pedido!.valorTotal),
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.sp, color: Colors.red),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18.sp,
+                                color: Colors.red),
                           ),
                           SizedBox(height: 4.h),
                           Text(
                             'Total',
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp),
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 14.sp),
                           ),
                         ],
                       ),
@@ -321,7 +461,8 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                                 width: 50.r,
                                 height: 50.r,
                                 color: Colors.grey.shade200,
-                                child: Icon(Icons.store, color: Colors.grey.shade400),
+                                child: Icon(Icons.store,
+                                    color: Colors.grey.shade400),
                               ),
                       ),
                       SizedBox(width: 12.w),
@@ -331,11 +472,13 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                           children: [
                             Text(
                               'Restaurante',
-                              style: TextStyle(color: Colors.grey.shade500, fontSize: 12.sp),
+                              style: TextStyle(
+                                  color: Colors.grey.shade500, fontSize: 12.sp),
                             ),
                             Text(
                               _loja!.nome,
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16.sp),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -343,37 +486,51 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
                         ),
                       ),
                       InkWell(
-                        onTap: () => _ligarParaRestaurante(_loja!.endereco?.rua), // Aqui o modelo não tem telefone, colocar um fallback.
+                        onTap: () => _abrirMensagemRestaurante(),
                         child: Container(
                           padding: EdgeInsets.all(12.w),
                           decoration: const BoxDecoration(
-                            color: Colors.green,
+                            color: Colors.blue,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.call, color: Colors.white, size: 24.sp),
+                          child: Icon(Icons.message,
+                              color: Colors.white, size: 24.sp),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 32.h),
-                  // "Slide After Arrival" Botão Simulado
-                  Container(
-                    width: double.infinity,
-                    height: 56.h,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(28.r),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Deslize após a chegada  >',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                        fontSize: 16.sp,
+                  SizedBox(height: 16.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Distância',
+                        style: TextStyle(
+                            color: Colors.grey.shade500, fontSize: 14.sp),
                       ),
-                    ),
+                      Text(
+                        distanciaTexto,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16.sp),
+                      ),
+                    ],
                   ),
+                  SizedBox(height: 8.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Tempo estimado',
+                        style: TextStyle(
+                            color: Colors.grey.shade500, fontSize: 14.sp),
+                      ),
+                      Text(
+                        tempoEstimadoTexto,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 32.h),
                 ],
               ),
             ),
