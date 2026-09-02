@@ -9,7 +9,7 @@ class ProdutoRepository {
   Future<List<ProdutosModel>> buscarPromocoes() async {
     try {
 
-      final response = await _dio.get('/produtos', queryParameters: {'precoMaximo': 20.0, 'size': 10});
+      final response = await _dio.get('/produtos', queryParameters: {'precoMaximo': 20.0, 'size': 50});
       final List<dynamic> conteudo = extrairLista(response.data);
       return conteudo.map((map) => ProdutosModel.fromMap(map)).toList();
     } catch (e) {
@@ -19,7 +19,7 @@ class ProdutoRepository {
 
   Future<List<ProdutosModel>> buscarNecessidades() async {
     try {
-      final response = await _dio.get('/produtos', queryParameters: {'size': 10});
+      final response = await _dio.get('/produtos', queryParameters: {'size': 50});
       final List<dynamic> conteudo = extrairLista(response.data);
       return conteudo.map((map) => ProdutosModel.fromMap(map)).toList();
     } catch (e) {
@@ -29,7 +29,7 @@ class ProdutoRepository {
 
   Future<List<ProdutosModel>> buscarPorCategoria(String categoria) async {
     try {
-      final response = await _dio.get('/produtos', queryParameters: {'categoriaMenu': categoria, 'size': 10});
+      final response = await _dio.get('/produtos', queryParameters: {'categoriaMenu': categoria, 'size': 50});
       final List<dynamic> conteudo = extrairLista(response.data);
       return conteudo.map((map) => ProdutosModel.fromMap(map)).toList();
     } catch (e) {

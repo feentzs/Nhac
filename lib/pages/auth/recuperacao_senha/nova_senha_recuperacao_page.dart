@@ -79,7 +79,7 @@ class _NovaSenhaRecuperacaoPageState extends State<NovaSenhaRecuperacaoPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Senha redefinida com sucesso! Faça login."), backgroundColor: Colors.green),
       );
-      context.go('/');
+      context.go('/bem-vindo');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
