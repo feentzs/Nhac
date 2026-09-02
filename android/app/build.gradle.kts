@@ -40,6 +40,14 @@ android {
         targetSdk = 37
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        val envFile = rootProject.file("../.env")
+        val envProperties = Properties()
+        if (envFile.exists()) {
+            envProperties.load(FileInputStream(envFile))
+        }
+        val googlePlacesApiKey = envProperties.getProperty("GOOGLE_PLACES_API_KEY") ?: ""
+        manifestPlaceholders["googleMapsApiKey"] = googlePlacesApiKey
     }
 
     signingConfigs {
