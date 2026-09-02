@@ -58,9 +58,6 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-  final List<ProdutosModel> _produtosMaisPedidos = [];
-  bool _isLoadingProdutosMaisPedidos = true;
-
   Map<String, bool?> _lojaAbertaMap = {};
 
   @override
@@ -93,7 +90,6 @@ class _HomeContentState extends State<HomeContent> {
     await Future.wait([
       _fetchProdutosNecessidades(),
       _fetchProdutosPromocao(),
-      _fetchProdutosMaisPedidos(),
       _fetchLojas(),
     ]);
     await _atualizarStatusLojas();
@@ -103,7 +99,6 @@ class _HomeContentState extends State<HomeContent> {
       setState(() {
         _isLoadingProdutosNecessidades = false;
         _isLoadingProdutosPromocao = false;
-        _isLoadingProdutosMaisPedidos = false;
         if (_isLoading) {
           _isLoading = false;
           _jaCarregouUmaVez = true;
@@ -116,7 +111,6 @@ class _HomeContentState extends State<HomeContent> {
     final idsUnicos = {
       ..._produtosNecessidades.map((p) => p.lojaId),
       ..._produtosPromocao.map((p) => p.lojaId),
-      ..._produtosMaisPedidos.map((p) => p.lojaId),
     }..removeWhere((id) => id.isEmpty);
 
     if (idsUnicos.isEmpty) return;
@@ -141,15 +135,13 @@ class _HomeContentState extends State<HomeContent> {
         _produtosPromocao.removeWhere((p) {
           return !(_lojaAbertaMap[p.lojaId] ?? false);
         });
-        
-        _produtosMaisPedidos.removeWhere((p) {
-          return !(_lojaAbertaMap[p.lojaId] ?? false);
-        });
+
+        _produtosNecessidades.shuffle();
+        _produtosPromocao.shuffle();
 
         // Limit the number of products to 10 to not overflow the UI and look nice
         if (_produtosNecessidades.length > 10) _produtosNecessidades.removeRange(10, _produtosNecessidades.length);
         if (_produtosPromocao.length > 10) _produtosPromocao.removeRange(10, _produtosPromocao.length);
-        if (_produtosMaisPedidos.length > 10) _produtosMaisPedidos.removeRange(10, _produtosMaisPedidos.length);
 
         // Sort products to put open stores first.
         int compareLojas(ProdutosModel a, ProdutosModel b) {
@@ -162,7 +154,6 @@ class _HomeContentState extends State<HomeContent> {
 
         _produtosNecessidades.sort(compareLojas);
         _produtosPromocao.sort(compareLojas);
-        _produtosMaisPedidos.sort(compareLojas);
       });
     }
   }
@@ -192,20 +183,6 @@ class _HomeContentState extends State<HomeContent> {
       }
     } catch (e) {
       debugPrint("Erro ao buscar promoções da API: $e");
-    }
-  }
-
-  Future<void> _fetchProdutosMaisPedidos() async {
-    try {
-      final produtos = await _produtoRepository.buscarPorCategoria('Lanches');
-      if (mounted) {
-        setState(() {
-          _produtosMaisPedidos.clear();
-          _produtosMaisPedidos.addAll(produtos);
-        });
-      }
-    } catch (e) {
-      debugPrint("Erro ao buscar mais pedidos: $e");
     }
   }
 
@@ -456,7 +433,7 @@ class _HomeContentState extends State<HomeContent> {
                                             color: Colors.amber, size: 16.r),
                                         SizedBox(width: 4.w),
                                         Text(
-                                          loja.dadosOperacionais!.avaliacaoMedia
+                                          (loja.dadosOperacionais?.avaliacaoMedia ?? 0.0)
                                               .toStringAsFixed(1),
                                           style: TextStyle(
                                             color: Colors.amber,
@@ -956,34 +933,7 @@ class _HomeContentState extends State<HomeContent> {
                   ),
                 ),
                 SizedBox(height: 28.h),
-                TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 800),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  curve: const Interval(0.7, 1.0, curve: Curves.easeOutCubic),
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, 30 * (1 - value)),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 600),
-                    child: _isLoadingProdutosMaisPedidos
-                        ? _buildSectionSkeleton(
-                            key: const ValueKey('section3_skeleton'))
-                        : HomeProductSection(
-                            key: const ValueKey('section3_content'),
-                            title: 'Mais pedidos',
-                            onSeeAll: () => context.push('/search'),
-                            products: _produtosMaisPedidos,
-                            lojaAberta: _lojaAbertaMap,
-                          ),
-                  ),
-                ),
-                SizedBox(height: 28.h),
+
                 TweenAnimationBuilder<double>(
                   duration: const Duration(milliseconds: 800),
                   tween: Tween(begin: 0.0, end: 1.0),

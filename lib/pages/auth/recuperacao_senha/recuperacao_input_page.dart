@@ -25,6 +25,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
   bool _valido = false;
   String? _erro;
   bool _isLoading = false;
+  // ignore: unused_field
   final _telefoneMask = MaskTextInputFormatter(
     mask: '(##) #####-####',
     filter: {"#": RegExp(r'[0-9]')},

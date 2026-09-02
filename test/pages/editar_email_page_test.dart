@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +42,10 @@ class MockUserProvider extends ChangeNotifier implements UserProvider {
 
   @override
   Future<void> carregarDadosUsuario() async {}
+
+  @override
+  // TODO: implement isPhoneUser
+  bool get isPhoneUser => throw UnimplementedError();
 }
 
 class MockAuthService extends ChangeNotifier implements AuthService {
@@ -103,7 +108,7 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   }
 
   @override
-  Future<void> esqueciSenha(String telefone) {
+  Future<void> esqueciSenha(String telefone, {CancelToken? cancelToken}) {
     // TODO: implement esqueciSenha
     throw UnimplementedError();
   }
@@ -115,7 +120,7 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   }
 
   @override
-  Future<void> esqueciSenhaEmail(String email) {
+  Future<void> esqueciSenhaEmail(String email, {CancelToken? cancelToken}) {
     // TODO: implement esqueciSenhaEmail
     throw UnimplementedError();
   }
@@ -125,6 +130,10 @@ class MockAuthService extends ChangeNotifier implements AuthService {
     // TODO: implement redefinirSenhaEmail
     throw UnimplementedError();
   }
+
+  @override
+  // TODO: implement isPhoneUser
+  bool get isPhoneUser => throw UnimplementedError();
 }
 
 void main() {

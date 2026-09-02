@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/controllers/cadastro_controller.dart';
+import 'package:nhac/controllers/user_provider.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:go_router/go_router.dart';
@@ -114,8 +115,7 @@ class _NomeState extends State<Nome> {
                         cadastroData.setNome(novoNome);
 
                         if (authService.isAuthenticated) {
-                          // Usuário já autenticado (via SMS) — só atualizar o nome e ir pra home.
-                          // Não chamar /auth/registrar novamente.
+                     
                           try {
                             await authService.updateUserName(userName: novoNome);
                             if (localContext.mounted) {
@@ -128,7 +128,6 @@ class _NomeState extends State<Nome> {
                             }
                           }
                         } else if (cadastroData.email.isNotEmpty) {
-                          // Fluxo de cadastro por email — continuar para telefone e senha.
                           localContext.push('/cadastro/telefone');
                         } else {
                           if (localContext.mounted) {
