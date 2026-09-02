@@ -6,6 +6,7 @@ import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:nhac/utils/validators.dart';
 import 'package:nhac/globals/exceptions.dart';
@@ -32,6 +33,15 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.metodo == 'email') {
+      final cadastroData = context.read<CadastroController>();
+      if (cadastroData.email.isNotEmpty) {
+        _controller.text = cadastroData.email;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _verificarInput();
+        });
+      }
+    }
     _controller.addListener(_verificarInput);
   }
 
