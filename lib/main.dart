@@ -38,31 +38,22 @@ late final SharedPreferences sharedPrefs;
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
-
-  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
-  await Stripe.instance.applySettings();
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  await FirebaseAppCheck.instance.activate(
-    // ignore: deprecated_member_use
-    androidProvider:
-        kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-  );
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  final pushService = PushNotificationService(authServiceRoteador);
-  await pushService.initialize();
-
-  sharedPrefs = await SharedPreferences.getInstance();
+  // Carrega o .env cedo, só para pegar o SENTRY_DSN e já inicializar o
+  // Sentry antes de qualquer outra coisa. Assim, se Stripe/Firebase/FCM
+  // falharem logo em seguida, o erro é reportado em vez de travar a tela
+  // branca do splash silenciosamente (o que antes acontecia porque essas
+  // chamadas ficavam FORA do runZonedGuarded do SentryFlutter.init).
+  String sentryDsn = '';
+  try {
+    await dotenv.load(fileName: ".env");
+    sentryDsn = dotenv.env['SENTRY_DSN'] ?? '';
+  } catch (e, s) {
+    debugPrint('Falha ao carregar .env: $e\n$s');
+  }
 
   await SentryFlutter.init(
     (options) {
-      options.dsn = dotenv.env['SENTRY_DSN'] ?? '';
+      options.dsn = sentryDsn;
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
       // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
@@ -70,8 +61,80 @@ main() async {
       // Setting to 1.0 will profile 100% of sampled transactions:
       //options.profilesSampleRate = 1.0;
     },
-    appRunner: () => runApp(SentryWidget(child: const MyApp())),
+    appRunner: () async {
+      try {
+        Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
+        await Stripe.instance.applySettings();
+
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+
+        await FirebaseAppCheck.instance.activate(
+          // ignore: deprecated_member_use
+          androidProvider: kDebugMode
+              ? AndroidProvider.debug
+              : AndroidProvider.playIntegrity,
+        );
+
+        FirebaseMessaging.onBackgroundMessage(
+            _firebaseMessagingBackgroundHandler);
+
+        final pushService = PushNotificationService(authServiceRoteador);
+        await pushService.initialize();
+
+        sharedPrefs = await SharedPreferences.getInstance();
+
+        runApp(SentryWidget(child: const MyApp()));
+      } catch (e, s) {
+        // Se qualquer inicialização crítica falhar, reporta pro Sentry
+        // (agora já ativo) e mostra uma tela de erro em vez de deixar a
+        // splash branca travada pra sempre.
+        await Sentry.captureException(e, stackTrace: s);
+        debugPrint('Falha ao inicializar o app: $e\n$s');
+        runApp(_StartupErrorApp(error: e));
+      }
+    },
   );
+}
+
+class _StartupErrorApp extends StatelessWidget {
+  const _StartupErrorApp({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Não foi possível iniciar o app.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$error',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 @NowaGenerated({'visibleInNowa': false})

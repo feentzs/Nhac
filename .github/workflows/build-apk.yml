@@ -117,6 +117,20 @@ jobs:
       - name: Create google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
+      - name: Validate .env and google-services.json
+        run: |
+          if [ ! -s .env ]; then
+            echo "::error::.env está vazio - confira o secret ENV_FILE do repositório"
+            exit 1
+          fi
+          python3 -c "import json; json.load(open('android/app/google-services.json'))" || {
+            echo "::error::google-services.json inválido - confira o secret GOOGLE_SERVICES_JSON"
+            exit 1
+          }
+          for key in SENTRY_DSN STRIPE_PUBLISHABLE_KEY GOOGLE_PLACES_API_KEY; do
+            grep -q "^$key=" .env || echo "::warning::$key não encontrada em .env (pode causar crash no boot do app)"
+          done
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -170,6 +184,20 @@ jobs:
 
       - name: Create google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      - name: Validate .env and google-services.json
+        run: |
+          if [ ! -s .env ]; then
+            echo "::error::.env está vazio - confira o secret ENV_FILE do repositório"
+            exit 1
+          fi
+          python3 -c "import json; json.load(open('android/app/google-services.json'))" || {
+            echo "::error::google-services.json inválido - confira o secret GOOGLE_SERVICES_JSON"
+            exit 1
+          }
+          for key in SENTRY_DSN STRIPE_PUBLISHABLE_KEY GOOGLE_PLACES_API_KEY; do
+            grep -q "^$key=" .env || echo "::warning::$key não encontrada em .env (pode causar crash no boot do app)"
+          done
 
       - name: Install dependencies
         run: flutter pub get
