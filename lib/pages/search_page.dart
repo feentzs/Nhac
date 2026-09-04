@@ -117,35 +117,20 @@ class _SearchPageState extends State<SearchPage> {
         (produtos) async => _ResultadoBusca(
           produtos: produtos,
           lojas: const [],
-          lojaAberta: await _statusDasLojas(produtos),
+          lojaAberta: _statusDasLojas(produtos),
         ),
       );
     });
   }
 
-  /// Busca o status aberta/fechada de cada loja distinta entre os produtos
-  /// encontrados — usado pra impedir adicionar ao carrinho item de loja
-  /// fechada direto pelos resultados da busca (antes não tinha essa checagem
-  /// aqui porque a busca não sabia nada sobre a loja de cada produto).
-  Future<Map<String, bool>> _statusDasLojas(List<ProdutosModel> produtos) async {
-    final idsUnicos = produtos.map((p) => p.lojaId).where((id) => id.isNotEmpty).toSet();
-    if (idsUnicos.isEmpty) return {};
-
-    final entradas = await Future.wait(idsUnicos.map((id) async {
-      try {
-        final loja = await _lojaRepository.buscarLoja(id);
-        // Se a loja não veio (ex.: endpoint não retorna lojas fechadas),
-        // tratamos como fechada por segurança, e não como aberta. O mesmo
-        // vale se a busca falhar — bloquear e deixar o usuário tentar de
-        // novo é bem melhor do que liberar "adicionar ao carrinho" de uma
-        // loja que pode estar fechada.
-        return MapEntry(id, loja?.isAberto ?? false);
-      } catch (_) {
-        return MapEntry(id, false);
-      }
-    }));
-
-    return Map.fromEntries(entradas);
+  /// Constrói o mapa de status aberta/fechada a partir do campo `lojaAberta`
+  /// que já vem em cada produto na resposta de `/produtos`.
+  /// Substitui a versão anterior que fazia N chamadas `GET /lojas/{id}`.
+  Map<String, bool> _statusDasLojas(List<ProdutosModel> produtos) {
+    return {
+      for (final p in produtos)
+        if (p.lojaId.isNotEmpty) p.lojaId: p.lojaAberta,
+    };
   }
 
   /// Busca unificada: produtos por NOME + produtos por CATEGORIA (mesclados,
@@ -191,7 +176,7 @@ class _SearchPageState extends State<SearchPage> {
     return _ResultadoBusca(
       produtos: produtosFinais,
       lojas: lojas,
-      lojaAberta: await _statusDasLojas(produtosFinais),
+      lojaAberta: _statusDasLojas(produtosFinais),
     );
   }
 

@@ -9,6 +9,7 @@ class ProdutosModel {
   final String imagemUrl;   
   final int percentualDesconto;
   final String lojaId;
+  final bool lojaAberta;
 
   ProdutosModel({
     required this.id,
@@ -19,6 +20,7 @@ class ProdutosModel {
     this.imagemUrl = '',
     this.percentualDesconto = 0,
     this.lojaId = '',
+    this.lojaAberta = true,
   });
 
   factory ProdutosModel.fromMap(Map<String, dynamic> map) {
@@ -31,6 +33,7 @@ class ProdutosModel {
       imagemUrl: map['imagemUrl']?.toString() ?? '',
       percentualDesconto: safeInt(map['percentualDesconto']),
       lojaId: map['lojaId']?.toString() ?? '',
+      lojaAberta: safeBool(map['lojaAberta'], fallback: true),
     );
   }
 
@@ -45,6 +48,7 @@ class ProdutosModel {
       'imagemUrl': imagemUrl,
       'percentualDesconto': percentualDesconto,
       'lojaId': lojaId,
+      'lojaAberta': lojaAberta,
     };
   }
 }

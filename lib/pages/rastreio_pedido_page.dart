@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -34,8 +36,6 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   GoogleMapController? _mapController;
 
-  // Localizações fixas (mock) para o mapa se não tivermos a localização real.
-  // Em produção, isso viria da geocodificação do endereço do cliente e do restaurante.
   final LatLng _lojaLocation = const LatLng(-23.550520, -46.633308);
   LatLng _clienteLocation = const LatLng(-23.558520, -46.640308);
 
@@ -51,7 +51,14 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
       final lojaRepo = LojaRepository();
 
       final pedido = await pedidoRepo.buscarPedidoPorId(widget.pedidoId);
-      final loja = await lojaRepo.buscarLoja(pedido.lojaId);
+
+      LojasModel? loja;
+      try {
+        loja = await lojaRepo.buscarLoja(pedido.lojaId);
+      } catch (e) {
+        debugPrint("Erro ao buscar loja do pedido: $e");
+       
+      }
 
       if (mounted) {
         setState(() {
@@ -129,7 +136,7 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
         });
       }
     } catch (_) {
-      // Fallback para manter a localização mockada se o geocoding falhar.
+      
     }
   }
 
@@ -251,7 +258,6 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
       );
     }
 
-    // Calcula tempo de preparo estimado
     final distanciaKm = _calcularDistanciaKm();
     final tempoEstimadoMin = _calcularTempoEstimadoMinutos();
     final previsao = DateTime.now().add(Duration(minutes: tempoEstimadoMin));
@@ -266,7 +272,6 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Mapa
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: _lojaLocation,
@@ -274,7 +279,6 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
             ),
             onMapCreated: (controller) {
               _mapController = controller;
-              // Centraliza mapa para mostrar os dois pontos
               Future.delayed(const Duration(milliseconds: 500), () {
                 _mapController?.animateCamera(
                   CameraUpdate.newLatLngBounds(
@@ -334,7 +338,6 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
             zoomControlsEnabled: false,
           ),
 
-          // Botão de voltar
           Positioned(
             top: MediaQuery.of(context).padding.top + 16.h,
             left: 16.w,
@@ -361,7 +364,6 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
             ),
           ),
 
-          // Informação de distância (mockada por enquanto) no topo
           Positioned(
             top: MediaQuery.of(context).padding.top + 16.h,
             left: 70.w,

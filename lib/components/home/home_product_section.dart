@@ -16,7 +16,7 @@ class HomeProductSection extends StatelessWidget {
   final String title;
   final List<ProdutosModel> products;
   final VoidCallback? onSeeAll;
-  final Map<String, bool?> lojaAberta;
+  final Map<String, bool> lojaAberta;
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/models/loja/lojas.dart';
@@ -25,9 +26,16 @@ class LojaRepository {
     try {
       final response = await _dio.get('/lojas/$lojaId');
       return LojasModel.fromMap(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        debugPrint("Loja $lojaId não encontrada (404) — tratando como fechada.");
+        return null;
+      }
+      debugPrint("Erro de rede ao buscar loja $lojaId: $e");
+      rethrow;
     } catch (e) {
-      debugPrint("Erro ao buscar loja $lojaId: $e");
-      return null;
+      debugPrint("Erro inesperado ao buscar loja $lojaId: $e");
+      rethrow;
     }
   }
 

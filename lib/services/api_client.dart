@@ -23,9 +23,9 @@ class ApiClient {
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
    
-        connectTimeout: const Duration(seconds: 70),
-        receiveTimeout: const Duration(seconds: 70),
-        sendTimeout: const Duration(seconds: 70),
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        sendTimeout: const Duration(seconds: 15),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -55,12 +55,11 @@ class ApiClient {
           final statusCode = e.response?.statusCode;
           final defaultMessage = responseData?['message'] ?? 'Erro desconhecido';
 
-          // Auth: 401 e 403 (Faz logout e direciona)
           if ((statusCode == 401 || statusCode == 403) && 
               !e.requestOptions.path.contains('/login') && 
               !e.requestOptions.path.contains('/auth/alterar-senha')) {
              _cachedToken = null;
-             await authServiceRoteador.logout(); // Rotina de logout
+             await authServiceRoteador.logout(); 
              if (statusCode == 401) {
                 return handler.reject(DioException(
                   requestOptions: e.requestOptions, 
@@ -78,7 +77,6 @@ class ApiClient {
             debugPrint('Detalhes do Erro: $responseData');
           }
 
-          // Tratamento de conexão e timeouts
           if (e.type == DioExceptionType.connectionTimeout || 
               e.type == DioExceptionType.receiveTimeout || 
               e.type == DioExceptionType.sendTimeout ||
@@ -123,7 +121,6 @@ class ApiClient {
               break;
           }
 
-          // Substitui o erro bruto do Dio pelo nosso erro semântico
           return handler.reject(DioException(
             requestOptions: e.requestOptions,
             error: customError,

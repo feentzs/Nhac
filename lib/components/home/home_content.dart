@@ -58,7 +58,7 @@ class _HomeContentState extends State<HomeContent> {
   final List<ProdutosModel> _produtosPromocao = [];
   bool _isLoadingProdutosPromocao = true;
 
-  Map<String, bool?> _lojaAbertaMap = {};
+  Map<String, bool> _lojaAbertaMap = {};
 
   @override
   void initState() {
@@ -92,7 +92,7 @@ class _HomeContentState extends State<HomeContent> {
       _fetchProdutosPromocao(),
       _fetchLojas(),
     ]);
-    await _atualizarStatusLojas();
+    _aplicarStatusLojas();
 
     if (mounted) {
       _loadingTimer?.cancel();
@@ -107,55 +107,48 @@ class _HomeContentState extends State<HomeContent> {
     }
   }
 
-  Future<void> _atualizarStatusLojas() async {
-    final idsUnicos = {
-      ..._produtosNecessidades.map((p) => p.lojaId),
-      ..._produtosPromocao.map((p) => p.lojaId),
-    }..removeWhere((id) => id.isEmpty);
+  /// Constrói o mapa de status aberta/fechada a partir do campo `lojaAberta`
+  /// que já vem em cada produto na resposta de `/produtos`.
+  /// Substitui o antigo `_atualizarStatusLojas` que fazia N chamadas
+  /// `GET /lojas/{id}` em paralelo.
+  void _aplicarStatusLojas() {
+    if (!mounted) return;
 
-    if (idsUnicos.isEmpty) return;
+    setState(() {
+      // Constrói o mapa a partir dos próprios produtos — sem requisição HTTP
+      final todos = [..._produtosNecessidades, ..._produtosPromocao];
+      _lojaAbertaMap = {
+        for (final p in todos)
+          if (p.lojaId.isNotEmpty) p.lojaId: p.lojaAberta,
+      };
 
-    final entradas = await Future.wait(idsUnicos.map((id) async {
-      try {
-        final loja = await _lojaRepository.buscarLoja(id);
-        return MapEntry(id, loja?.isAberto);
-      } catch (e) {
-        return MapEntry(id, null);
-      }
-    }));
-
-    if (mounted) {
-      setState(() {
-        _lojaAbertaMap = Map.fromEntries(entradas);
-        
-        _produtosNecessidades.removeWhere((p) {
-          return !(_lojaAbertaMap[p.lojaId] ?? false);
-        });
-        
-        _produtosPromocao.removeWhere((p) {
-          return !(_lojaAbertaMap[p.lojaId] ?? false);
-        });
-
-        _produtosNecessidades.shuffle();
-        _produtosPromocao.shuffle();
-
-        // Limit the number of products to 10 to not overflow the UI and look nice
-        if (_produtosNecessidades.length > 10) _produtosNecessidades.removeRange(10, _produtosNecessidades.length);
-        if (_produtosPromocao.length > 10) _produtosPromocao.removeRange(10, _produtosPromocao.length);
-
-        // Sort products to put open stores first.
-        int compareLojas(ProdutosModel a, ProdutosModel b) {
-          final aAberto = _lojaAbertaMap[a.lojaId] ?? false;
-          final bAberto = _lojaAbertaMap[b.lojaId] ?? false;
-          if (aAberto && !bAberto) return -1;
-          if (!aAberto && bAberto) return 1;
-          return 0;
-        }
-
-        _produtosNecessidades.sort(compareLojas);
-        _produtosPromocao.sort(compareLojas);
+      _produtosNecessidades.removeWhere((p) {
+        return !(_lojaAbertaMap[p.lojaId] ?? false);
       });
-    }
+
+      _produtosPromocao.removeWhere((p) {
+        return !(_lojaAbertaMap[p.lojaId] ?? false);
+      });
+
+      _produtosNecessidades.shuffle();
+      _produtosPromocao.shuffle();
+
+      // Limit the number of products to 10 to not overflow the UI and look nice
+      if (_produtosNecessidades.length > 10) _produtosNecessidades.removeRange(10, _produtosNecessidades.length);
+      if (_produtosPromocao.length > 10) _produtosPromocao.removeRange(10, _produtosPromocao.length);
+
+      // Sort products to put open stores first.
+      int compareLojas(ProdutosModel a, ProdutosModel b) {
+        final aAberto = _lojaAbertaMap[a.lojaId] ?? false;
+        final bAberto = _lojaAbertaMap[b.lojaId] ?? false;
+        if (aAberto && !bAberto) return -1;
+        if (!aAberto && bAberto) return 1;
+        return 0;
+      }
+
+      _produtosNecessidades.sort(compareLojas);
+      _produtosPromocao.sort(compareLojas);
+    });
   }
 
   Future<void> _fetchProdutosNecessidades() async {
