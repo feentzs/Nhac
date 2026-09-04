@@ -87,9 +87,17 @@ class LiveNotificationManager(private val context: Context) {
             builder.setCategory(Notification.CATEGORY_PROGRESS)
 
             try {
-                // Try setShortCriticalText
+                // Try setShortCriticalText (Max ~7 chars recommended for the chip)
+                val shortStatus = when (stageIndex) {
+                    0 -> "Pendente"
+                    1 -> "Pago"
+                    2 -> "Preparo"
+                    3 -> "Na rua"
+                    4 -> "Chegou"
+                    else -> status.take(7)
+                }
                 val method = Notification.Builder::class.java.getMethod("setShortCriticalText", CharSequence::class.java)
-                method.invoke(builder, status)
+                method.invoke(builder, shortStatus)
             } catch (e: Exception) {
                 // Ignore if not available in this API level
             }
