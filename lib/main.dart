@@ -25,10 +25,32 @@ import 'package:nhac/services/push_notification_service.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
+import 'package:nhac/services/live_notification_service.dart';
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint("Notificação em background recebida!");
+  
+  if (message.data.containsKey('pedidoId') && message.data.containsKey('status')) {
+    final status = message.data['status']?.toString().toUpperCase() ?? '';
+    final nomeProduto = message.data['nomeProduto']?.toString() ?? 'Seu pedido';
+    
+    int stageIndex = 0;
+    if (status == 'AGUARDANDO_PAGAMENTO' || status == 'PENDENTE') stageIndex = 0;
+    else if (status == 'PAGO' || status == 'CONFIRMADO' || status == 'APROVADO') stageIndex = 1;
+    else if (status == 'EM_PREPARO' || status == 'PREPARANDO') stageIndex = 2;
+    else if (status == 'SAIU_PARA_ENTREGA') stageIndex = 3;
+    else if (status == 'ENTREGUE') stageIndex = 4;
+
+    LiveNotificationService.updateLiveNotification(
+      pedidoId: message.data['pedidoId'].toString(),
+      nomeProduto: nomeProduto,
+      status: message.data['statusTexto'] ?? status,
+      tempoEstimado: message.data['tempoEstimado'] ?? '',
+      progresso: stageIndex,
+    );
+  }
 }
 
 @NowaGenerated()

@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nhac/services/live_notification_service.dart';
 
 class RastreioPedidoPage extends StatefulWidget {
   final String pedidoId;
@@ -65,6 +66,33 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
         setState(() {
           _isLoading = false;
         });
+        
+        final tempoEstimadoMin = _calcularTempoEstimadoMinutos();
+        final statusTexto = _statusPedidoTexto();
+        
+        int stageIndex = 0;
+        final status = (_pedido?.status ?? '').toUpperCase();
+        if (status == 'AGUARDANDO_PAGAMENTO' || status == 'PENDENTE') stageIndex = 0;
+        else if (status == 'PAGO' || status == 'CONFIRMADO' || status == 'APROVADO') stageIndex = 1;
+        else if (status == 'EM_PREPARO' || status == 'PREPARANDO') stageIndex = 2;
+        else if (status == 'SAIU_PARA_ENTREGA') stageIndex = 3;
+        else if (status == 'ENTREGUE') stageIndex = 4;
+        
+        String nomeProduto = 'Seu pedido';
+        if (_pedido?.itens != null && _pedido!.itens.isNotEmpty) {
+           nomeProduto = _pedido!.itens.first.nome;
+           if (_pedido!.itens.length > 1) {
+              nomeProduto += ' e mais';
+           }
+        }
+        
+        LiveNotificationService.showLiveNotification(
+          pedidoId: widget.pedidoId,
+          nomeProduto: nomeProduto,
+          status: statusTexto,
+          tempoEstimado: tempoEstimadoMin > 0 ? '$tempoEstimadoMin min' : 'Entregue',
+          progresso: stageIndex,
+        );
       }
     } catch (e) {
       if (mounted) {
