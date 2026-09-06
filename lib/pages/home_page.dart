@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nhac/components/fly_to_cart_overlay.dart';
 import 'package:nhac/components/home/home_content.dart';
 import 'package:nhac/components/profile_content.dart';
 import 'package:nhac/components/botoes/botao_nhac.dart';
@@ -26,6 +27,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool _isScrolledDown = false;
   late CartProvider _cartProvider;
   late final AnimationController _cartBarController;
+  late final AnimationController _cartBounceController;
+  final GlobalKey _cartIconKey = GlobalKey();
   final NumberFormat currencyFormat =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
@@ -36,6 +39,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _cartBarController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
+    );
+    _cartBounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
     );
 
     if (_selectedIndex == 1) {
@@ -84,6 +91,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _pageController.dispose();
     _scrollController.dispose();
     _cartBarController.dispose();
+    _cartBounceController.dispose();
     super.dispose();
   }
 
@@ -114,9 +122,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: const Color(0xFFFFE7E5),
+    return FlyToCartOverlay(
+      cartIconKey: _cartIconKey,
+      onLanded: () {
+        _cartBounceController.forward(from: 0.0);
+      },
+      child: Scaffold(
+        extendBody: true,
+        backgroundColor: const Color(0xFFFFE7E5),
       body: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (notification is ScrollUpdateNotification &&
@@ -302,6 +315,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -481,22 +495,33 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           mainAxisSize: MainAxisSize.min,
           children: [
             index == 1
-                ? Selector<CartProvider, int>(
-                    selector: (context, provider) => provider.totalDeUnidades,
-                    builder: (context, count, child) {
-                      return Badge(
-                        label: count > 0 ? Text(count.toString()) : null,
-                        isLabelVisible: count > 0,
-                        backgroundColor: const Color(0xFFFF6961),
-                        child: Icon(
-                          icon,
-                          size: 28.sp,
-                          color: isSelected
-                              ? const Color(0xFFFF6961)
-                              : const Color(0xFFA0A0A0),
-                        ),
+                ? AnimatedBuilder(
+                    animation: _cartBounceController,
+                    builder: (context, child) {
+                      final scale = 1.0 + 0.3 * math.sin(_cartBounceController.value * math.pi);
+                      return Transform.scale(
+                        scale: scale,
+                        child: child,
                       );
                     },
+                    child: Selector<CartProvider, int>(
+                      selector: (context, provider) => provider.totalDeUnidades,
+                      builder: (context, count, child) {
+                        return Badge(
+                          key: _cartIconKey,
+                          label: count > 0 ? Text(count.toString()) : null,
+                          isLabelVisible: count > 0,
+                          backgroundColor: const Color(0xFFFF6961),
+                          child: Icon(
+                            icon,
+                            size: 28.sp,
+                            color: isSelected
+                                ? const Color(0xFFFF6961)
+                                : const Color(0xFFA0A0A0),
+                          ),
+                        );
+                      },
+                    ),
                   )
                 : Icon(
                     icon,

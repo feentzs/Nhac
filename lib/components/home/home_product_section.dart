@@ -11,12 +11,15 @@ class HomeProductSection extends StatelessWidget {
     required this.products,
     this.onSeeAll,
     this.lojaAberta = const {},
+    this.onFlyToCart,
   });
 
   final String title;
   final List<ProdutosModel> products;
   final VoidCallback? onSeeAll;
   final Map<String, bool> lojaAberta;
+  /// Callback para animação fly-to-cart.
+  final void Function(Offset origin, String imageUrl)? onFlyToCart;
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +101,7 @@ class HomeProductSection extends StatelessWidget {
                           child: ProductCard(
                               produto: item,
                               lojaFechada: (lojaAberta[item.lojaId] ?? false) == false,
+                              onFlyToCart: onFlyToCart,
                           ),
                         ),
                           Positioned(

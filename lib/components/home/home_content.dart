@@ -26,6 +26,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/components/fly_to_cart_overlay.dart';
 
 @NowaGenerated()
 class HomeContent extends StatefulWidget {
@@ -894,6 +895,7 @@ class _HomeContentState extends State<HomeContent> {
                             onSeeAll: () => context.push('/search'),
                             products: _produtosNecessidades,
                             lojaAberta: _lojaAbertaMap,
+                            onFlyToCart: FlyToCartOverlay.of(context)?.fly,
                           ),
                   ),
                 ),
@@ -922,6 +924,7 @@ class _HomeContentState extends State<HomeContent> {
                             onSeeAll: () => context.push('/search'),
                             products: _produtosPromocao,
                             lojaAberta: _lojaAbertaMap,
+                            onFlyToCart: FlyToCartOverlay.of(context)?.fly,
                           ),
                   ),
                 ),

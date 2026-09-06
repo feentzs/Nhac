@@ -11,10 +11,14 @@ class ProductCard extends StatelessWidget {
     super.key,
     required this.produto,
     this.lojaFechada = false,
+    this.onFlyToCart,
   });
 
   final ProdutosModel produto;
   final bool lojaFechada;
+  /// Callback que recebe a posição global do botão "+" e a URL da imagem
+  /// para disparar a animação fly-to-cart. Se null, não dispara animação.
+  final void Function(Offset origin, String imageUrl)? onFlyToCart;
 
   @override
   Widget build(BuildContext context) {
@@ -92,47 +96,63 @@ class ProductCard extends StatelessWidget {
                             color: const Color(0xFF5D201C)),
                       ),
                     ),
-                    InkWell(
-                      onTap: () async {
-                        if (lojaFechada) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Esta loja está fechada no momento.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
-                        }
-                        try {
-                          final cartProvider = context.read<CartProvider>();
-                          await cartProvider.adicionarItemComQuantidade(
-                            idProduto: produto.id,
-                            nome: produto.nome,
-                            preco: produto.preco,
-                            imagemUrl: produto.imagemUrl,
-                            lojaId: produto.lojaId,
-                            quantidade: 1,
-                          );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('${produto.nome} adicionado ao carrinho!')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-                            );
-                          }
-                        }
-                      },
+                    Builder(
+                      builder: (btnContext) {
+                        return InkWell(
+                          onTap: () async {
+                            if (lojaFechada) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Esta loja está fechada no momento.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Dispara animação fly-to-cart se callback estiver disponível
+                            if (onFlyToCart != null) {
+                              final renderBox = btnContext.findRenderObject() as RenderBox?;
+                              if (renderBox != null && renderBox.attached) {
+                                final origin = renderBox.localToGlobal(
+                                  renderBox.size.center(Offset.zero),
+                                );
+                                onFlyToCart!(origin, produto.imagemUrl);
+                              }
+                            }
+
+                            try {
+                              final cartProvider = context.read<CartProvider>();
+                              await cartProvider.adicionarItemComQuantidade(
+                                idProduto: produto.id,
+                                nome: produto.nome,
+                                preco: produto.preco,
+                                imagemUrl: produto.imagemUrl,
+                                lojaId: produto.lojaId,
+                                quantidade: 1,
+                              );
+                              if (context.mounted && onFlyToCart == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('${produto.nome} adicionado ao carrinho!')),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                                );
+                              }
+                            }
+                          },
                       child: Container(
                         padding: EdgeInsets.all(4.w),
                         decoration: BoxDecoration(
                             color: lojaFechada ? Colors.grey.shade400 : const Color(0xFF5D201C),
                             shape: BoxShape.circle),
                         child: Icon(Icons.add, color: Colors.white, size: 16.r),
-                      ),
+                        ),
+                        );
+                      },
                     ),
                   ],
                 ),
