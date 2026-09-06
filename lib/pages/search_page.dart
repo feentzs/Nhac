@@ -399,7 +399,7 @@ class _SearchPageState extends State<SearchPage>
                       ]),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, color: Colors.grey),
+                      const Icon(Icons.search_rounded, color: Colors.grey),
                       SizedBox(width: 8.w),
                       Expanded(
                         child: TextField(
