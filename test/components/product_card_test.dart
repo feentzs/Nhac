@@ -93,10 +93,13 @@ void main() {
             lojaId: '',
             quantidade: 1,
           )).called(1);
-      
-      expect(find.byType(SnackBar), findsOneWidget);
-      
-        await tester.pump(const Duration(seconds: 5));
+      // A notificação agora usa o overlay AppNotification em vez de SnackBar.
+      // Usamos pump com duração explícita pois a animação elasticOut não
+      // "estabiliza" do ponto de vista do pumpAndSettle.
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(find.text('Nhac Burger adicionado!'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 }

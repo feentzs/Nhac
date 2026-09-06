@@ -5,6 +5,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 class InserirCodigoRecuperacaoPage extends StatefulWidget {
   final String metodo;
@@ -60,11 +61,11 @@ class _InserirCodigoRecuperacaoPageState extends State<InserirCodigoRecuperacaoP
       }
       _iniciarTimer();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Código reenviado com sucesso!")));
+        context.showSuccess("Código reenviado com sucesso!");
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red));
+        context.showError(e.toString().replaceAll('Exception: ', ''));
       }
     }
   }

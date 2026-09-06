@@ -111,9 +111,7 @@ class _EditarEmailPageState extends State<EditarEmailPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
           context.pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Usuários do Google não podem alterar o e-mail por aqui.')),
-          );
+          context.showError('Usuários do Google não podem alterar o e-mail por aqui.');
         }
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));

@@ -21,8 +21,9 @@ import 'package:nhac/pages/search_page.dart';
 import 'package:nhac/controllers/endereco_provider.dart';
 import 'package:nhac/models/usuario/endereco_model.dart';
 import 'package:nhac/services/local_cache_service.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:nhac/globals/ui_utils.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:nhac/controllers/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -362,11 +363,7 @@ class _HomeContentState extends State<HomeContent> {
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content:
-                                Text('${loja.nome} está fechado no momento.')),
-                      );
+                      context.showError('${loja.nome} está fechado no momento.');
                     }
                   },
                   child: Opacity(

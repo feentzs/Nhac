@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:nhac/globals/ui_utils.dart';
 import 'app_exceptions.dart';
 
 class ErrorUIHelper {
@@ -29,13 +30,7 @@ class ErrorUIHelper {
       displayMessage = exception.message;
     }
 
-    // Usando ScaffoldMessenger para mostrar o feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(displayMessage),
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    // Usando context.showError para mostrar o feedback global
+    context.showError(displayMessage);
   }
 }

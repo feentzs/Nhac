@@ -13,6 +13,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nhac/services/live_notification_service.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 class RastreioPedidoPage extends StatefulWidget {
   final String pedidoId;
@@ -141,11 +142,7 @@ class _RastreioPedidoPageState extends State<RastreioPedidoPage> {
   }
 
   Future<void> _abrirMensagemRestaurante() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text(
-              'Canal de mensagem indisponível para esta loja no momento.')),
-    );
+    context.showError('Canal de mensagem indisponível para esta loja no momento.');
   }
 
   double _calcularDistanciaKm() {

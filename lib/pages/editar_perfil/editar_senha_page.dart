@@ -113,9 +113,7 @@ class _EditarSenhaPageState extends State<EditarSenhaPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
           context.pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Usuarios do Google nao podem alterar a senha por aqui.')),
-          );
+          context.showError('Usuarios do Google nao podem alterar a senha por aqui.');
         }
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));

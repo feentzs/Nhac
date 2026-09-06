@@ -10,6 +10,7 @@ import 'package:nhac/controllers/user_provider.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:nhac/repositories/user_repository.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 
@@ -41,9 +42,7 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao selecionar imagem: $e')),
-      );
+      context.showError('Erro ao selecionar imagem: $e');
     }
   }
 
@@ -121,17 +120,13 @@ class _EditarFotoPageState extends State<EditarFotoPage> {
 
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto de perfil atualizada com sucesso!')),
-      );
+      context.showSuccess('Foto de perfil atualizada com sucesso!');
 
       context.pop();
     } catch (e) {
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao atualizar foto: $e')),
-      );
+      context.showError('Erro ao atualizar foto: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -10,6 +10,7 @@ import 'package:nhac/controllers/cadastro_controller.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:nhac/utils/validators.dart';
 import 'package:nhac/globals/exceptions.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 class RecuperacaoInputPage extends StatefulWidget {
   final String metodo; // 'email' ou 'sms'
@@ -97,9 +98,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
     } on DioException catch (e) {
       timeoutTimer.cancel();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Erro desconhecido'), backgroundColor: Colors.red),
-      );
+      context.showError(e.message ?? 'Erro desconhecido');
     } catch (e) {
       timeoutTimer.cancel();
       if (!mounted) return;
@@ -109,9 +108,7 @@ class _RecuperacaoInputPageState extends State<RecuperacaoInputPage> {
         msg = 'Não foi possível enviar o e-mail no momento. Tente novamente mais tarde.';
       }
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
-      );
+      context.showError(msg);
     } finally {
       timeoutTimer.cancel();
       if (mounted) setState(() => _isLoading = false);

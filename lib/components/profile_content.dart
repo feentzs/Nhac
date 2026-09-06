@@ -382,10 +382,7 @@ class _ProfileContentState extends State<ProfileContent> {
                                           }
                                         } catch (e) {
                                           if (context.mounted) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(SnackBar(
-                                                    content: Text(
-                                                        'Erro ao carregar imagem: $e')));
+                                            context.showError('Erro ao carregar imagem: $e');
                                           }
                                         } finally {
                                           if (mounted) {

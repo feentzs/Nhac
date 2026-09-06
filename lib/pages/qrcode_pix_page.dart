@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/repositories/pedido_repository.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 class QrCodePixPage extends StatefulWidget {
   final String pixQrCode;
@@ -104,12 +105,7 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
       } else if (_statusFalha.contains(status)) {
         _pollingTimer?.cancel();
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pagamento $status. Entre em contato com o suporte.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        context.showError('Pagamento $status. Entre em contato com o suporte.');
       } else if (status != 'AGUARDANDO_PAGAMENTO' && status != 'PENDENTE' && status.isNotEmpty) {
         _pollingTimer?.cancel();
         if (mounted) {
@@ -135,12 +131,7 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
 
   void _navegarParaHome({bool sucesso = false}) {
     if (sucesso) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pagamento PIX confirmado! Seu pedido esta sendo preparado.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      context.showSuccess('Pagamento PIX confirmado! Seu pedido esta sendo preparado.');
     }
     context.go('/home-page');
   }
@@ -435,9 +426,7 @@ class _QrCodePixPageState extends State<QrCodePixPage> {
                   final textToCopy = widget.pixCopiaECola ?? widget.pixQrCode;
                   Clipboard.setData(ClipboardData(text: textToCopy));
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Codigo PIX copiado!')),
-                  );
+                  context.showSuccess('Codigo PIX copiado!');
                 },
                 style: OutlinedButton.styleFrom(
                   minimumSize: Size(double.infinity, 50.h),

@@ -16,6 +16,7 @@ import 'package:nhac/repositories/cupom_repository.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:nhac/globals/exceptions.dart';
 import 'package:nhac/repositories/loja_repository.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -197,19 +198,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
         _cupomAplicado = cupom;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cupom aplicado com sucesso!')),
-        );
+        context.showSuccess('Cupom aplicado com sucesso!');
       }
     } catch (e) {
       setState(() => _cupomAplicado = null);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
-        );
+        context.showError(e.toString().replaceAll('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _validandoCupom = false);
@@ -814,12 +808,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final uid = authService.usuarioId;
     if (uid == null) {
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sessão expirada. Faça login novamente.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      context.showError('Sessão expirada. Faça login novamente.');
       context.go('/bem-vindo');
       return;
     }
@@ -832,12 +821,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final cpfPagador = _cpfController.text.replaceAll(RegExp(r'\D'), '');
     if (_formaPagamento == 'PIX' && cpfPagador.isEmpty) {
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('CPF é obrigatório para pagamento via PIX.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      context.showError('CPF é obrigatório para pagamento via PIX.');
       return;
     }
 
@@ -856,7 +840,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
 
     final navigator = Navigator.of(context, rootNavigator: true);
-    final mensageiro = ScaffoldMessenger.of(context);
 
     try {
       showDialog(
@@ -918,12 +901,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         } on StripeException {
           if (!context.mounted) return;
           setState(() => _isSubmitting = false);
-          mensageiro.showSnackBar(
-            const SnackBar(
-              content: Text('Pagamento cancelado ou falhou.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          context.showError('Pagamento cancelado ou falhou.');
           return;
         }
 
@@ -983,13 +961,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       navigator.pop(); // Close loading
       if (!context.mounted) return;
       setState(() => _isSubmitting = false);
-      mensageiro.showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      context.showError(e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

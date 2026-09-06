@@ -4,6 +4,7 @@ import 'package:nhac/components/botoes/botao_largo_nhac.dart';
 import 'package:nhac/components/seta_voltar.dart';
 import 'package:nhac/services/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 class NovaSenhaRecuperacaoPage extends StatefulWidget {
   final String metodo;
@@ -76,15 +77,11 @@ class _NovaSenhaRecuperacaoPageState extends State<NovaSenhaRecuperacaoPage> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Senha redefinida com sucesso! Faça login."), backgroundColor: Colors.green),
-      );
+      context.showSuccess("Senha redefinida com sucesso! Faça login.");
       context.go('/bem-vindo');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
-      );
+      context.showError(e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

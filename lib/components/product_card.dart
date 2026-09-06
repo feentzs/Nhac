@@ -5,7 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:provider/provider.dart';
-import 'package:nhac/components/cart_notification.dart';
+import 'package:nhac/components/app_notification.dart';
+import 'package:nhac/globals/ui_utils.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -102,12 +103,7 @@ class ProductCard extends StatelessWidget {
                         return InkWell(
                           onTap: () async {
                             if (lojaFechada) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Esta loja está fechada no momento.'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
+                              context.showError('Esta loja está fechada no momento.');
                               return;
                             }
 
@@ -133,17 +129,16 @@ class ProductCard extends StatelessWidget {
                                 quantidade: 1,
                               );
                               if (context.mounted) {
-                                showCartNotification(
+                                showAppNotification(
                                   context,
+                                  type: NotificationType.success,
                                   imageUrl: produto.imagemUrl,
-                                  productName: produto.nome,
+                                  message: '${produto.nome} adicionado!',
                                 );
                               }
                             } catch (e) {
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-                                );
+                                context.showError(e.toString().replaceAll('Exception: ', ''));
                               }
                             }
                           },

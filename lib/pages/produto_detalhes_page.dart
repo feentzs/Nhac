@@ -4,7 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:nhac/components/cart_notification.dart';
+import 'package:nhac/components/app_notification.dart';
+import 'package:nhac/globals/ui_utils.dart';
 import 'package:nhac/components/home/home_product_section.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
@@ -77,12 +78,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
       loja = await _lojaFuture;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Não foi possível carregar os dados da loja.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        context.showError('Não foi possível carregar os dados da loja.');
       }
       return;
     }
@@ -498,12 +494,7 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                           ? null
                           : lojaFechada
                           ? () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Esta loja está fechada no momento.'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
+                              context.showError('Esta loja está fechada no momento.');
                             }
                           : () async {
                         try {
@@ -517,21 +508,16 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                             quantidade: _quantidade,
                           );
                           if (context.mounted) {
-                            showCartNotification(
+                            showAppNotification(
                               context,
+                              type: NotificationType.success,
                               imageUrl: widget.produto.imagemUrl,
-                              productName: '$_quantidade x ${widget.produto.nome}',
+                              message: '$_quantidade x ${widget.produto.nome}',
                             );
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(e.toString().replaceAll('Exception: ', '')),
-                                duration: const Duration(seconds: 4),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            context.showError(e.toString().replaceAll('Exception: ', ''));
                           }
                         }
                       },
