@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
 import 'package:provider/provider.dart';
+import 'package:nhac/components/cart_notification.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -131,9 +132,11 @@ class ProductCard extends StatelessWidget {
                                 lojaId: produto.lojaId,
                                 quantidade: 1,
                               );
-                              if (context.mounted && onFlyToCart == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('${produto.nome} adicionado ao carrinho!')),
+                              if (context.mounted) {
+                                showCartNotification(
+                                  context,
+                                  imageUrl: produto.imagemUrl,
+                                  productName: produto.nome,
                                 );
                               }
                             } catch (e) {

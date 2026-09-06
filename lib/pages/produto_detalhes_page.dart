@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:nhac/components/cart_notification.dart';
 import 'package:nhac/components/home/home_product_section.dart';
 import 'package:nhac/controllers/cart_provider.dart';
 import 'package:nhac/models/produto/produtos.dart';
@@ -516,12 +517,10 @@ class _ProdutoDetalhesPageState extends State<ProdutoDetalhesPage> {
                             quantidade: _quantidade,
                           );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('$_quantidade x ${widget.produto.nome} adicionado ao carrinho!'),
-                                duration: const Duration(seconds: 2),
-                                backgroundColor: Colors.green,
-                              ),
+                            showCartNotification(
+                              context,
+                              imageUrl: widget.produto.imagemUrl,
+                              productName: '$_quantidade x ${widget.produto.nome}',
                             );
                           }
                         } catch (e) {
